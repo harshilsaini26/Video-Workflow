@@ -75,7 +75,7 @@ status, and is the only one that talks to you.
 | 4 | Cut | Cutter | none | `PAPER-CUT.md`, `CUT-REVIEW.html` |
 | A | **Checkpoint A** | Producer | read the cut, reply in plain words | none |
 | 5 | Plan | Director | confirm any diagram it proposes | `storyboard.json`, `ASSET-REQUESTS.md` |
-| 6 | Assets | Researcher, B-roll scout, Sound designer | none | `ASSETS.md` (every file + licence) |
+| 6 | Assets | Researcher, B-roll scout, Sound designer | none | `ASSET-REQUESTS.md` filled in (every file + source + licence) |
 | 7 | Compose | Animator | none | `public/index.html`, `snaps/sheet.png` |
 | B | **Checkpoint B** | Producer | look at the stills, reply in plain words | none |
 | 8 | Render | Renderer | none | `output-*.mp4` |
@@ -191,7 +191,7 @@ sequenceDiagram
     and
         P->>AS: Sound designer: effects, music
     end
-    AS-->>P: files in public/, ASSETS.md
+    AS-->>P: files in public/, ASSET-REQUESTS.md filled
     P->>ANI: brief: compose, check, snapshot
     ANI-->>P: index.html, snaps/sheet.png, all checks clean
     P->>You: ✋ Checkpoint B: here are the stills
@@ -241,21 +241,29 @@ REPORT    files written, checks run and their result, concerns, decisions needed
 
 ### 3.5 Project state `new`
 
-The Producer keeps `STATUS.md` at the top of the project folder:
+Four files `new` hold everything the kit's scripts don't: where the video is, what assets it uses, whether a file
+may go out, and what you asked for. Their templates, every field, every allowed value and filled-in examples are in
+[`templates/`](templates/README.md).
+
+| File | Answers | Written by |
+|---|---|---|
+| [`STATUS.md`](templates/STATUS.md) | Where is this video, and who is it waiting on? | Producer only |
+| [`ASSET-REQUESTS.md`](templates/ASSET-REQUESTS.md) | What does the plan need, who gets it, where did it come from, may we use it? | Director (request), owner agent (fulfilment) |
+| [`QA.md`](templates/QA.md) | Can this file go out? | QA agent only |
+| [`NOTES.md`](templates/NOTES.md) | What did you ask for, and what was done about it? | Producer only |
+
+A short excerpt of `STATUS.md` ([full example](templates/examples/STATUS.md)):
 
 ```
-# my-video, v2
-| Stage | State | Owner | Note |
-|---|---|---|---|
-| Cut | done | Cutter | 0 edge issues, 0 pauses |
-| Checkpoint A | approved | you | "keep the earlier studio take" applied |
-| Plan | done | Director | 14 beats, 1 flow diagram |
-| Assets | done | Researcher, B-roll, Sound | 3 logos, 2 stock clips, 2 effects |
-| Compose | done | Animator | check, beat-check, gap-scan clean |
-| Checkpoint B | waiting | you | snaps/sheet.png |
+| # | Stage | State | Owner | Gate | Updated | Note |
+|---|---|---|---|---|---|---|
+| 4 | Cut | done | Cutter | G2 G3 G4 | 2026-10-05 10:30 | 2:11 → 38.2 s; 0 edge issues; 0 pauses |
+| A | Checkpoint A: the cut | done | you | A | 2026-10-05 11:02 | A01, A02 applied |
+| 9 | Verify | done | QA agent | G10 G11 | 2026-10-06 16:38 | v2 attempt 1 PASS |
+| 10 | Assemble and deliver | in-progress | Assembler | G12 | 2026-10-06 16:42 | - |
 ```
 
-Any new conversation can pick the project up from this file.
+Any new conversation can pick the project up from `STATUS.md`.
 
 ---
 
@@ -285,8 +293,7 @@ videos/
     ├── audio.wav                  Transcriber        the flat cut's audio
     ├── transcript.json            Transcriber        words in FLAT-CUT time (everything after the cut uses this)
     ├── storyboard.json            Director           the plan AND the source of the composition
-    ├── ASSET-REQUESTS.md          new  Director      every asset the plan needs, one row each
-    ├── ASSETS.md                  new  Researcher, B-roll scout, Sound designer   every file, source, licence
+    ├── ASSET-REQUESTS.md          new  Director + asset agents   every asset: request, file, source, licence
     ├── broll-shortlist.md         B-roll scout       two candidates per slot
     ├── broll/raw/                 B-roll scout       downloads before conforming
     ├── public/                    the composition HyperFrames renders
@@ -459,8 +466,8 @@ The Director works through these in order:
 
 ### Stage 6. Gather assets (Researcher, B-roll scout, Sound designer, in parallel)
 
-**Trigger:** `ASSET-REQUESTS.md` exists. Each agent takes its rows and records every file it adds in `ASSETS.md`
-(file, source URL, licence, seconds used).
+**Trigger:** `ASSET-REQUESTS.md` exists. Each agent takes its rows and fills in the file, source URL, licence and
+seconds used on each one ([fields and states](templates/README.md#asset-requestsmd)).
 
 | Agent | Gets | From | Rules |
 |---|---|---|---|
@@ -477,8 +484,8 @@ The Director works through these in order:
 | | prepare | trim the silence before the hit; peak-normalise to -3 dBFS | the audible peak lands within two frames of its cause |
 | | music | a tense track under the hook, a calm lo-fi bed after | ducked 16 dB (hook) / 19 dB (body) under your voice |
 
-**Done when:** every row in `ASSET-REQUESTS.md` is filled or marked "skip" with a reason, and every file is in
-`ASSETS.md` with its licence.
+**Done when:** every row in `ASSET-REQUESTS.md` is `filled` (with its licence), `skip` (with a reason) or `dropped`:
+Gate G6 is clear.
 
 ### Stage 7. Compose and pre-check (Animator)
 
@@ -533,7 +540,7 @@ until you approve.
 | Clipped words | transcribe the render's audio, `verify-render.py --words <render transcript> --kept transcript.json` | a kept word missing |
 | Every sound is there | decode render and footage, gain-match, subtract, read the RMS in each sound's window against two quiet windows | a sound's window looks like the quiet ones |
 | Motion | `ffmpeg … select='between(n,A,B)',tile=6x7` strips across every transition | a jump-then-crawl, a dead stop, a one-frame pop |
-| Loudness | `ebur128` | far from -14 LUFS, true peak over -1 dB |
+| Loudness | `ebur128` | on the master: far from -14 LUFS, or true peak over -1 dB. A part arrives at camera level (about -25 LUFS) and is only noted; `assemble.py` levels it |
 | Lip sync (long cuts) | a flat frame against the source at `src_start + x` | more than one frame off |
 
 Writes `VERIFY.md`, `render-sheet.png` and `QA.md` `new` with **PASS** or **FAIL** and, for each FAIL, the time, the
@@ -653,7 +660,7 @@ must never do.
 | **Job** | The real pages, logos, posts and screenshots the plan names |
 | **Runs** | after the Director, in parallel with the B-roll scout and Sound designer |
 | **Reads** | its rows in `ASSET-REQUESTS.md` |
-| **Writes** | files into `public/img/` or `videos/_shared/img/`, rows in `ASSETS.md` |
+| **Writes** | files into `public/img/` or `videos/_shared/img/`; the fulfilment columns of its rows in `ASSET-REQUESTS.md` |
 | **Uses** | `npx hyperframes capture`, Chrome (Claude's browser setting), headless Chrome screenshots, `remove-background` |
 | **Done when** | every row is filled, or marked "skip" with a reason, and every file has a source and licence |
 | **Never** | works around a bot block, a paywall or a login; fakes a screenshot; uses a person's photo you didn't give |
@@ -665,7 +672,7 @@ must never do.
 | **Job** | Stock footage for every B-roll slot, licensed and conformed |
 | **Runs** | the search can start as soon as the slots are known; the conform after the storyboard is final |
 | **Reads** | its rows in `ASSET-REQUESTS.md` |
-| **Writes** | `broll-shortlist.md`, `broll/raw/`, `public/broll/*.mp4` (+ a 3-frame sheet each), `broll/conform-stock.sh`, rows in `ASSETS.md` |
+| **Writes** | `broll-shortlist.md`, `broll/raw/`, `public/broll/*.mp4` (+ a 3-frame sheet each), `broll/conform-stock.sh`; the fulfilment columns of its rows in `ASSET-REQUESTS.md` |
 | **Uses** | Pexels API (free key), Coverr, Mixkit free, `broll-conform.py` |
 | **Done when** | every slot has a conformed clip whose sheet has been read |
 | **Never** | uses a paid, restricted or AI-labelled clip; leaves a readable logo or third-party screen unblurred |
@@ -677,7 +684,7 @@ must never do.
 | **Job** | The few sounds that earn a place, and the music bed |
 | **Runs** | after the Director, in parallel; again after a sound note |
 | **Reads** | its rows in `ASSET-REQUESTS.md` |
-| **Writes** | `videos/_shared/sfx/*.mp3` (trimmed and levelled), the music bed, rows in `ASSETS.md` |
+| **Writes** | `videos/_shared/sfx/*.mp3` (trimmed and levelled), the music bed; the fulfilment columns of its rows in `ASSET-REQUESTS.md` |
 | **Uses** | the free HyperFrames sound library (`npx hyperframes skills update media-use`), or Epidemic Sound if connected; ffmpeg (`silenceremove`, `volumedetect`) |
 | **Done when** | every requested sound exists, trimmed to its hit and normalised to -3 dBFS peak |
 | **Never** | adds a sound nothing on screen would make |
