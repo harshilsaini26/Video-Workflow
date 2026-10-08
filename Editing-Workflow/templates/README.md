@@ -96,6 +96,7 @@ The one page that says where the video is. Any conversation can pick the project
 | Section | What it holds |
 |---|---|
 | Header | project, profile, parts, version, current stage, waiting on, next step, updated |
+| Brief | the creator's answers at the start: title, thumbnail, promise, audience, target length, sponsor, music, terms to spell right, must-include moments. The Director plans against it; the Assembler takes the terms and the sponsor from it |
 | Stages | all 15 rows (stages 1 to 12, checkpoints A and B, Done), always in this order |
 | Versions | one row per version: when it started, why, its QA results, when it was delivered, the file |
 | Decisions for you | every question the Producer asked you, the options, your answer |
@@ -267,6 +268,12 @@ It never fixes anything itself.
 | 12 | Lip sync | a flat frame matched to the source at `src_start + x` | within one frame |
 | 13 | Safe zones (reels) | `render-sheet.png` | nothing important in the bottom ~20 % or the right edge |
 | 14 | Frame rate | `ffprobe` | the profile's rate, constant |
+
+**On an assembled master** (long-form), five more rows follow: **15** duration (the sum of the parts), **16** chapters
+(`0:00` first, at least 3, each at least 10 s, in order), **17** captions (`captions.srt` parses, cues in order, no
+overlaps, 1 to 6 s, at most 2 lines), **18** end-screen zone (nothing in the end-screen element areas in the last
+20 s), **19** music under voice (the bed present, the voice never masked). Details in
+`Editing-Workflow/longform/agents/longform-qa.md`.
 
 ### Results
 

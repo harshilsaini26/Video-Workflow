@@ -15,6 +15,8 @@ Rules
 - A new version (v2, v3...) resets stages 5 to 11 to not-started, unless the note only touches a later stage
   (e.g. a render glitch resets 8 to 10 only). Stages 2 to 4 reset only when the cut changes.
 - Never delete rows from Versions, Decisions, Blockers or Log. Close them instead.
+- The Brief is filled at the start from the creator's answers and changes only when the creator changes it
+  (log the change). The Director plans against it; the Assembler takes the terms list and sponsor from it.
 - Times are local: YYYY-MM-DD HH:MM. Paths are relative to this folder.
 Full field definitions: Editing-Workflow/templates/README.md
 -->
@@ -31,6 +33,20 @@ Full field definitions: Editing-Workflow/templates/README.md
 | **Waiting on** | {you \| agent name \| nobody} |
 | **Next step** | {one sentence} |
 | **Updated** | {YYYY-MM-DD HH:MM} |
+
+## Brief
+
+| | |
+|---|---|
+| **Title** | {working title} |
+| **Thumbnail** | {what it shows} |
+| **Promise** | {what the viewer gets, in one line} |
+| **For** | {who it is for} |
+| **Target length** | {m:ss} |
+| **Sponsor** | {none \| brand, and what is said} |
+| **Music** | {yes \| no} |
+| **Terms** | {names and words to spell right} |
+| **Must include** | {moments, demos, links} |
 
 ## Stages
 
