@@ -13,12 +13,12 @@ jobs, a fixed order, file hand-offs, quality gates and a learning loop.
 | this README | the workflow, the team, the stages, the gates | ✅ |
 | [`templates/`](templates/README.md) | the four project files: `STATUS.md`, `ASSET-REQUESTS.md`, `QA.md`, `NOTES.md` | ✅ |
 | [`longform/`](longform/README.md) | the agent team for **YouTube long-form** (8 to 25 min, 4K 30 fps): the Producer skill, the long-form playbook, 13 agent files, and the research behind them | ✅ |
-| `reels/` | the agent team for Reels (9:16, 1080x1920, 60 fps) | to build (section 10) |
+| [`reels/`](reels/README.md) | the agent team for **Reels** (9:16, 1080x1920, 60 fps, free tools only): the Producer skill, the Reels playbook, 11 agent files, tested vertical scripts, and the research behind them | ✅ |
 
 > **Marking used in this document**
 > - `kit`: comes from the reference kit, works today.
 > - `new`: added by this workflow (a file, a step or a rule the kit does not have).
-> - `to build`: needed for the reels profile and not written yet.
+> - `to build`: planned and not written yet.
 
 ---
 
@@ -873,37 +873,30 @@ The workflow is the same for both. What changes is the size, the frame rate and 
 | Output | 3840x2160 (4K) | 1080x1920 |
 | Frame rate | 30 fps | 60 fps |
 | Record | 4K, 30 fps | 4K **vertical** (2160x3840), 60 fps |
-| Captions | none (long form: two or three key words) | word by word, on the kept words, ~280 px from the bottom |
-| Hero text | ~100 px | 88 to 110 px |
-| Cards | sized to the safe zone | full width minus 48 px |
-| Keep clear | your face | your face, and Instagram's buttons and caption (bottom ~20 %, right edge) |
-| Music | ducked bed in the master | none in the file; add it in the Instagram app |
-| Tools | everything in the kit | free only: no Tella, no Epidemic Sound, no AI B-roll |
+| Captions | none burned in; a closed-caption SRT (long form: two or three key words on screen) | burned in, word by word, from the final cut, in the caption slot (y 1050 to 1248) |
+| Hero text | ~100 px | hook 96 px, headline 84 px, max 60 characters for the hook |
+| Cards | sized to the face-safe zone | inside the platforms' safe zone (65 / 269 / 672 px), narrower near the button column |
+| Keep clear | your face | your face, the top 14 %, the bottom 35 %, 6 % each side, the button column |
+| Music | ducked bed on the master | none in the file (added in the app) or a free licensed track, about 18 dB under the voice |
+| Tools | everything in the kit | free only: no Tella, no Epidemic Sound, no paid stock, no AI generation |
+| Team | [`longform/`](longform/README.md): Producer + 13 agents | [`reels/`](reels/README.md): Producer + 11 agents |
 
-### What works for reels today
+### How the Reels profile is built
 
-| Stage | Status | Note |
-|---|---|---|
-| 1 Record | ✅ | 4K vertical, 60 fps |
-| 2 Ingest | ⚠️ `new` step | convert phone footage to a constant 60 fps first |
-| 3 Transcribe | ✅ | |
-| 4 Cut | ✅ | `apply-cut.py --fps 60` |
-| 5 Plan | ⚠️ `to build` | the Director needs vertical layout rules (safe zones, caption slot, which formats fit 9:16) |
-| 6 Assets | ⚠️ `to build` | `broll-conform.py` always writes 30 fps at 16:9; needs `--fps` and a vertical size. Pexels has portrait clips |
-| 7 Compose | ❌ `to build` | `compose.py` only builds a 1920x1080, 30 fps stage; every format is laid out for 16:9 |
-| 8 Render | ⚠️ after compose | renders at the composition's size; no `--resolution 4k` |
-| 9 Verify | ✅ | `verify-render.py --res 1080x1920` (the bitrate floor scales with size) |
-| 10 Assemble | ✅ | `"width": 1080, "height": 1920, "fps": 60` in `assembly.json` |
-| 12 Learn | ⚠️ `to build` | a Reels section in SKILL.md and a Reels column in STYLE-GUIDE.md |
+The kit only builds 16:9 at 30 fps and the reference folder stays untouched, so the Reels profile has its own tested
+scripts in [`reels/skill/reels/scripts/`](reels/README.md#5-the-scripts-and-how-they-were-verified):
 
-### Build order for reels
-
-1. `compose.py`: a `"canvas": "9:16"` option (1080x1920, 60 fps) with vertical positions for a starter set of formats:
-   word captions, lower line, pills, logo card, punchline chip, chapter tag, clip, stat tiles (stacked), search.
-2. `broll-conform.py`: `--fps` and `--size`.
-3. Tests for both under `scripts/tests/`.
-4. A Reels section in SKILL.md and a Reels column in STYLE-GUIDE.md.
-5. A reels agent team (like [`longform/`](longform/README.md)), with the profile passed in every brief.
+| Stage | Reels |
+|---|---|
+| 2 Ingest | orientation, phone variable frame rate → constant 60 fps; 30 fps footage is flagged, never faked |
+| 4 Cut | the kit's cut stage at 60 fps (`apply-cut.py --fps 60`), dead air under 0.30 s, the strongest line moved first |
+| 5 Plan | the Reels PLAYBOOK (§R0 to §R14): hook, safe zone, captions, pacing, loop |
+| 6 Assets | free sources only; `reels-conform.py` makes any clip vertical at 60 fps |
+| 7 Compose | `reels-compose.py`: 1080x1920, 60 fps, 10 formats, burned-in captions, the safe zone enforced by construction; the kit's beat-check and gap-scan run on it unchanged |
+| 8 Render | `npx hyperframes render --resolution portrait --fps 60 --video-bitrate 20M` |
+| 9 Verify | the kit's `verify-render.py --res 1080x1920`, plus five reel checks (first frame, length, bitrate ceiling, loop, captions) |
+| 10 Package | audio levelled with the picture copied; cover, SRT, post caption, checklist (no assembly: one file) |
+| 12 Learn | rules go to the Reels PLAYBOOK; repeated mistakes become checks in the Reels scripts, with tests |
 
 ---
 
@@ -944,7 +937,8 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 
 3. The tests, from the skill's scripts folder: `python3 -m unittest tests` → 31 tests, `OK`.
 4. `new` The agent team for your profile. **YouTube long-form:** install the Producer skill, the playbook, the
-   templates and the 13 agent files as in [`longform/README.md`](longform/README.md) § 2. Reels: to build.
+   templates and the 13 agent files as in [`longform/README.md`](longform/README.md) § 2. **Reels:** the Producer
+   skill, the playbook, the scripts, the templates and the 11 agent files as in [`reels/README.md`](reels/README.md) § 2.
 5. Open a **new** conversation: skills and agents load at the start of a conversation.
 
 ---

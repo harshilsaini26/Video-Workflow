@@ -198,4 +198,5 @@ Full detail, sources and confidence levels: [`RESEARCH.md`](RESEARCH.md).
 - **Captions are built by the Assembler** from the master's transcript, following §L12; a dedicated script with a test
   would make this more robust (a good first job for the Librarian).
 - **Retention data** comes from you (a screenshot or CSV of YouTube Studio); the agents have no YouTube account access.
-- **Reels** (9:16, 1080x1920, 60 fps) is a separate profile, still to build (see the workflow README § 10).
+- **Reels** (9:16, 1080x1920, 60 fps, free tools only) is a separate profile with its own team:
+  [`../reels/`](../reels/README.md). Its `moments` route cuts reels out of a long-form project.
