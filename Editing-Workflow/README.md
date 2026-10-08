@@ -8,6 +8,13 @@ stays untouched. The kit supplies the rules (`youtube-edit/SKILL.md`), the scrip
 (`STYLE-GUIDE.md`) and the prompts (`PROMPTS.md`). This folder adds the layer on top: a team of agents with clear
 jobs, a fixed order, file hand-offs, quality gates and a learning loop.
 
+| Folder | What it is | Status |
+|---|---|---|
+| this README | the workflow, the team, the stages, the gates | ✅ |
+| [`templates/`](templates/README.md) | the four project files: `STATUS.md`, `ASSET-REQUESTS.md`, `QA.md`, `NOTES.md` | ✅ |
+| [`longform/`](longform/README.md) | the agent team for **YouTube long-form** (8 to 25 min, 4K 30 fps): the Producer skill, the long-form playbook, 13 agent files, and the research behind them | ✅ |
+| `reels/` | the agent team for Reels (9:16, 1080x1920, 60 fps) | to build (section 10) |
+
 > **Marking used in this document**
 > - `kit`: comes from the reference kit, works today.
 > - `new`: added by this workflow (a file, a step or a rule the kit does not have).
@@ -896,7 +903,7 @@ The workflow is the same for both. What changes is the size, the frame rate and 
 2. `broll-conform.py`: `--fps` and `--size`.
 3. Tests for both under `scripts/tests/`.
 4. A Reels section in SKILL.md and a Reels column in STYLE-GUIDE.md.
-5. The agent files in `.claude/agents/`, with the profile passed in every brief.
+5. A reels agent team (like [`longform/`](longform/README.md)), with the profile passed in every brief.
 
 ---
 
@@ -936,7 +943,8 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 | yt-dlp (optional, Analyst only) | `yt-dlp --version` | ✅ |
 
 3. The tests, from the skill's scripts folder: `python3 -m unittest tests` → 31 tests, `OK`.
-4. `new` The agent files in `.claude/agents/` (one per agent in section 2), not written yet.
+4. `new` The agent team for your profile. **YouTube long-form:** install the Producer skill, the playbook, the
+   templates and the 13 agent files as in [`longform/README.md`](longform/README.md) § 2. Reels: to build.
 5. Open a **new** conversation: skills and agents load at the start of a conversation.
 
 ---

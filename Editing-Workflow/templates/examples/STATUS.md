@@ -13,6 +13,20 @@
 | **Next step** | Assembler levels v2 to -14 LUFS and writes STORYBOARD.md; then you watch v2 |
 | **Updated** | 2026-10-06 16:42 |
 
+## Brief
+
+| | |
+|---|---|
+| **Title** | I Let AI Edit My YouTube Videos for a Month |
+| **Thumbnail** | my face next to a timeline with no clips on it |
+| **Promise** | how an AI editing setup works, and whether it's actually faster |
+| **For** | solo creators who edit their own videos |
+| **Target length** | 0:40 (this project is the hook only) |
+| **Sponsor** | none |
+| **Music** | yes |
+| **Terms** | HyperFrames, Parakeet, FFmpeg |
+| **Must include** | the empty timeline shot from the thumbnail |
+
 ## Stages
 
 | # | Stage | State | Owner | Gate | Updated | Note |
