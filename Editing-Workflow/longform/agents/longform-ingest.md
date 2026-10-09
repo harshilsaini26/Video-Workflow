@@ -59,6 +59,11 @@ them (order, which are talking head, which are screen recordings), and the profi
    ```
    Flag: integrated below -38 LUFS (mic too far or gain too low), true peak above -0.5 dBTP (clipping), or a clip
    more than 6 LU away from the others (a level jump at the join).
+   **Noise floor** (the Transcriber sets the speech threshold from it): record `noise_floor_db` and `speech_db` in
+   `metadata.json`:
+   ```bash
+   ffmpeg -v error -i "$W/audio-raw.wav" -ac 1 -ar 16000 -f s16le - | python3 -c "import sys, numpy as n; x = n.frombuffer(sys.stdin.buffer.read(), n.int16) / 32768; k = len(x) // 1600; r = 20 * n.log10(n.sqrt((x[:k * 1600].reshape(k, 1600) ** 2).mean(1)) + 1e-9); print('floor %.0f dB, speech %.0f dB' % (n.percentile(r, 10), n.percentile(r, 50)))"
+   ```
 8. **Measure colour** (§L10). Sample one frame every 10 s at 320 px and read `signalstats`:
    ```bash
    ffmpeg -v error -i "<clip>" -vf "fps=1/10,scale=320:-2,signalstats,metadata=print:file=-" -f null - | grep -E "YAVG|YMIN|YMAX|UAVG|VAVG"

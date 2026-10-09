@@ -30,7 +30,8 @@ render yourself.
 - The kit (`$SK/SKILL.md`, its tests OK) and this skill (`$RS/SKILL.md`, `$RS/PLAYBOOK.md`, `$RS/scripts/` with its tests:
   `cd "$RS/scripts" && python3 -m unittest tests` → OK; `$RS/templates/`).
 - The agents: `.claude/agents/reels-{ingest,transcriber,cutter,director,asset-scout,animator,renderer,qa,packager,librarian,analyst}.md`.
-- Tools: Node 22+, HyperFrames (`npx hyperframes doctor`), FFmpeg, Python 3 + numpy, auto-editor, Parakeet, Chrome.
+- Tools: Node 22+, HyperFrames (`npx hyperframes doctor`), FFmpeg, Python 3 + numpy, auto-editor, Chrome, and the
+  transcriber for the creator's language: Parakeet (English, European languages) or Whisper large-v3 (Hindi and others).
 - GSAP locally: `$RS/assets/vendor/gsap.min.js` (the Animator fetches it once with `npm pack gsap@3.14.2`; renders then
   work offline).
 - Optional, free: `PEXELS_API_KEY` for stock footage.
@@ -46,7 +47,8 @@ Ask once, in one numbered message (skip what the creator already said):
 5. The footage: new recordings (where, which are talking head, which are screen recordings), or **from a long video**
    (which project).
 6. Music: **none in the file** (add in the app when posting) or **in the file** (free licensed track).
-7. Names and terms to spell right on screen.
+7. Names and terms to spell right on screen, and the **language** spoken (it picks the transcriber: Parakeet for English
+   and European languages, Whisper large-v3 for Hindi and others).
 8. Must-include moments; a call to action, if any (comment a word, follow for part 2, the full video).
 
 Create `$W`, copy `$RS/templates/{STATUS,NOTES}.md`, fill the header and **Brief** (profile `reels`, version v1), log

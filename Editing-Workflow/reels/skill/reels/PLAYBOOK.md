@@ -167,7 +167,7 @@ What `reels-compose.py` builds (JSON shapes in its docstring). Every one has an 
 
 | Job | Free tool or source |
 |---|---|
-| Edit, transcribe, render | the kit: Parakeet, auto-editor, FFmpeg, HyperFrames (+ GSAP, a free library) |
+| Edit, transcribe, render | the kit: Parakeet (English, European languages) or Whisper large-v3 (Hindi and others), auto-editor, FFmpeg, HyperFrames (+ GSAP, a free library) |
 | Screen recording | OBS Studio, or the OS recorder (macOS Screenshot toolbar, Windows Game Bar / Snipping Tool) |
 | Stock footage | Pexels (free API key), Coverr, Mixkit free licence |
 | Logos, pages | the brand's press kit; `npx hyperframes capture`; headless Chrome |
