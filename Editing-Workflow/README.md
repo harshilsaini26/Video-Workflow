@@ -3,14 +3,15 @@
 How a video goes from the camera to a finished, checked file, who does each part, and how the parts hand work to each
 other.
 
-This system is built on the reference kit in [`../WeAreNoCode-YouTube-Editor/`](../WeAreNoCode-YouTube-Editor/), which
-stays untouched. The kit supplies the rules (`youtube-edit/SKILL.md`), the scripts (`youtube-edit/scripts/`), the look
+This system is built on a kit, kept in [`kit/`](kit/README.md): a YouTube creator's Claude Code editing skill, kept as
+it came apart from two fixes (the font folder and `storyboard-md.py`). The kit supplies the rules (`youtube-edit/SKILL.md`), the scripts (`youtube-edit/scripts/`), the look
 (`STYLE-GUIDE.md`) and the prompts (`PROMPTS.md`). This folder adds the layer on top: a team of agents with clear
 jobs, a fixed order, file hand-offs, quality gates and a learning loop.
 
 | Folder | What it is | Status |
 |---|---|---|
 | this README | the workflow, the team, the stages, the gates | ✅ |
+| [`kit/`](kit/README.md) | the kit everything builds on: the `youtube-edit` skill (rules, scripts and their tests, fonts), the style guide, the setup guide and the prompts | ✅ |
 | [`templates/`](templates/README.md) | the four project files: `STATUS.md`, `ASSET-REQUESTS.md`, `QA.md`, `NOTES.md` | ✅ |
 | [`longform/`](longform/README.md) | the agent team for **YouTube long-form** (8 to 25 min, 4K 30 fps, free tools only): the Producer skill, the long-form playbook, 13 agent files, and the research behind them | ✅ |
 | [`reels/`](reels/README.md) | the agent team for **Reels** (9:16, 1080x1920, 60 fps, free tools only): the Producer skill, the Reels playbook, 11 agent files, tested vertical scripts, and the research behind them | ✅ |
@@ -20,7 +21,7 @@ jobs, a fixed order, file hand-offs, quality gates and a learning loop.
 > the like) or paid trials. The one paid part is the Claude plan that runs Claude Code. See section 12.
 
 > **Marking used in this document**
-> - `kit`: comes from the reference kit, works today.
+> - `kit`: comes from the kit in [`kit/`](kit/README.md), works today.
 > - `new`: added by this workflow (a file, a step or a rule the kit does not have).
 > - `to build`: planned and not written yet.
 
@@ -977,7 +978,7 @@ The workflow is the same for both. What changes is the size, the frame rate and 
 
 ### How the Reels profile is built
 
-The kit only builds 16:9 at 30 fps and the reference folder stays untouched, so the Reels profile has its own tested
+The kit only builds 16:9 at 30 fps and its files stay as they came, so the Reels profile has its own tested
 scripts in [`reels/skill/reels/scripts/`](reels/README.md#5-the-scripts-and-how-they-were-verified):
 
 | Stage | Reels |
@@ -1000,7 +1001,7 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 
 | When | Type |
 |---|---|
-| Once, to install | *Install the youtube-edit skill from the WeAreNoCode-YouTube-Editor folder into this project's .claude/skills folder. Then check everything it needs, install what's missing, and run its tests.* |
+| Once, to install | *Install the youtube-edit skill from the Editing-Workflow/kit folder into this project's .claude/skills folder. Then check everything it needs, install what's missing, and run its tests.* |
 | To start a hook | *Please use my YouTube editing skill to edit this hook for my YouTube video.* + what you know about the clip ("when I say zoom, show a zoom") |
 | To start a full video | *Please use my YouTube editing skill to edit this full video. The raw clips are [file names], in this order. I also recorded [number] screen recordings called [names].* |
 | At Checkpoint A | *Keep the earlier take of the studio line.* / *The joke at 1:12 goes.* |
@@ -1013,7 +1014,7 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 
 ## 12. Setup
 
-1. `SETUP.md` steps 1 to 6 in the reference kit: the Claude desktop app, a paid plan, Claude Code on **Local** in your
+1. [`kit/SETUP.md`](kit/SETUP.md) steps 1 to 6: the Claude desktop app, a paid plan, Claude Code on **Local** in your
    project folder, permissions on **Auto**, the browser setting on. Skip the kit's optional Tella and Epidemic Sound
    connectors: this workflow is free tools only.
 2. The install prompt (section 11). Claude installs and checks:
