@@ -43,8 +43,10 @@ M = json.load(open(args.manifest))
 W, H, FPS = int(M.get("width", 3840)), int(M.get("height", 2160)), int(M.get("fps", 30))
 LUFS = M.get("loudness", -14)
 work = args.work or os.path.join(mdir, "assembly-work")
-work_is_ours = not os.path.exists(work)   # only a folder this run created is deleted at the end; in one you already had,
-os.makedirs(work, exist_ok=True)          # only the files this run wrote are
+# the default folder is always the script's own; a --work folder you named is deleted only if this run created it
+# (in one you already had, only the files this run wrote are removed)
+work_is_ours = args.work is None or not os.path.exists(work)
+os.makedirs(work, exist_ok=True)
 written = []
 
 def resolve(p):

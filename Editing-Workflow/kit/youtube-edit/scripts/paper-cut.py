@@ -165,7 +165,7 @@ for s in S:
     if run: runs.append({"idx": run, "clamp": None})
 # A run followed by a word that was dropped (a removed sentence: a flub, a "cut that" marker, an earlier take) also stops
 # before that word, so a removal spoken in the same breath (the same speech chunk) is cut out of the sound as well.
-kept_idx = {i for s in S if not s["remove"] for i in s["idx"]}
+kept_idx = {i for r in runs for i in r["idx"]}   # what is heard: a head folded into a restart is not in any run
 for r in runs:
     nxt = r["idx"][-1] + 1
     if r["clamp"] is None and nxt < len(words) and nxt not in kept_idx:
@@ -183,7 +183,7 @@ if args.speech and kept_words:
             segments.append({"start": w0 - args.before, "end": min(wend + args.after, r["clamp"] or 1e9)}); continue
         for n, (a, b) in enumerate(hit):
             st = (w0 - args.before) if n == 0 else a   # first chunk: start on the ASR word, so a restart sharing the chunk is cut
-            en = b if r["clamp"] is None or n < len(hit) - 1 else min(b, r["clamp"] - 0.02)
+            en = b if r["clamp"] is None else min(b, r["clamp"] - 0.02)   # every chunk: a boundary may fall before the dropped word
             if en > st: segments.append({"start": st, "end": en})
     for i in range(1, len(segments)):
         g = segments[i]["start"] - segments[i - 1]["end"]
