@@ -54,7 +54,9 @@ if still:
     dur = a.dur
 else:
     src_dur = float(p["format"]["duration"])
-    dur = a.dur if a.dur else src_dur - a.start
+    dur = a.dur if a.dur is not None else src_dur - a.start
+    if dur <= 0:
+        sys.exit("nothing to conform: --start %.2f s with --dur %.2f s on a %.2f s source" % (a.start, dur, src_dur))
     if a.start + dur > src_dur + 1e-3:
         sys.exit("requested %.2f s from %.2f s is longer than the source (%.2f s): pick a shorter window" % (dur, a.start, src_dur))
 

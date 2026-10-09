@@ -194,7 +194,8 @@ where it came from, its licence and the seconds used.
 | `sfx` | Sound designer | which allowed sound, what on screen causes it, the volume (README section 6.7) |
 | `music` | Sound designer | role (hook tension or body bed), length, how far it ducks under your voice |
 
-Rows owned by **You** start as `needs-you`.
+Rows owned by **You** start as `needs-you`. **In the Reels profile** one agent fills every non-You row: the owner is
+`Asset scout` wherever this table says Researcher, B-roll scout or Sound designer.
 
 ### States
 

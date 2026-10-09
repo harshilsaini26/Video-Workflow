@@ -21,7 +21,7 @@ reels/
 │       ├── reels-captions.py       an SRT caption file for Shorts / TikTok / Facebook
 │       ├── reels-storyboard-md.py  the delivery STORYBOARD.md (beats, captions, loop, assets and licences)
 │       ├── reels_lib.py            shared: the safe zone, caption chunking, SRT
-│       └── tests/                  30 tests (python3 -m unittest tests)
+│       └── tests/                  34 tests (python3 -m unittest tests)
 └── agents/                         → install to .claude/agents/
     ├── reels-ingest.md        ├── reels-animator.md
     ├── reels-transcriber.md   ├── reels-renderer.md
@@ -54,7 +54,7 @@ From the folder you run Claude Code in, with the kit's `youtube-edit` skill alre
 ```bash
 mkdir -p .claude/skills .claude/agents
 cp -R Editing-Workflow/reels/skill/reels .claude/skills/
-cp -R Editing-Workflow/templates .claude/skills/reels/templates
+mkdir -p .claude/skills/reels/templates && cp -R Editing-Workflow/templates/. .claude/skills/reels/templates/
 cp Editing-Workflow/reels/agents/reels-*.md .claude/agents/
 # GSAP (free animation library) locally, so renders work offline:
 mkdir -p .claude/skills/reels/assets/vendor && cd .claude/skills/reels/assets/vendor \
@@ -150,14 +150,14 @@ reels unchanged.
 
 | Script | Does |
 |---|---|
-| `reels-compose.py` | 10 formats (hook, headline, point, steps, pills, logo, chip, stat, clip, image), burned-in captions, camera, sounds; fails the build on a block past the safe zone, a hook over 60 characters, a beat without an anchor, a zoom over 1.6; warns on the same device twice in a row and on an empty first 0.5 s |
+| `reels-compose.py` | 10 formats (hook, headline, point, steps, pills, logo, chip, stat, clip, image), burned-in captions, camera, sounds; fails the build on a block past the safe zone or into the caption slot while captions show, a hook over 60 characters, a beat without an anchor, a zoom over 1.6; warns on the same device twice in a row and on an empty first 0.5 s |
 | `reels-conform.py` | any source → 1080x1920 (or 2160x3840) at 60 fps, no audio, dense keyframes, BT.709; `--fit cover --focus`, `blur` (screen recordings), `contain`; stills become a push; a 3-frame sheet |
 | `reels-safezone.py` | red: covered by the app; orange: the button-column band; cyan: the caption slot; on any 9:16 snapshot, plus a sheet |
 | `reels-captions.py` | an SRT from the final transcript, names spelled right |
 | `reels-storyboard-md.py` | the delivery storyboard with assets and licences |
 
 **Verified on 2026-10-08:**
-- **30 unit tests pass.** They include the kit's own `beat-check.py` and `gap-scan.py` running on a composed reel.
+- **The unit tests pass** (34 as of 2026-10-09). They include the kit's own `beat-check.py` and `gap-scan.py` running on a composed reel.
 - **A synthetic 12 s reel went through the whole pipeline.** It used every format, a conformed landscape clip, captions and sounds:
   1. composed
   2. `npx hyperframes check` passed (0 errors)
@@ -165,6 +165,7 @@ reels unchanged.
   4. rendered with HyperFrames at **1080x1920, 60/1 fps, 20.1 Mb/s**
   5. passed the kit's `verify-render.py` on size, colour tags, bitrate, duration, A/V and black frames
 - **That run caught a real bug.** An SVG logo without its own size rendered as an empty plate. It's fixed, and a test now guards it.
+- **A code review on 2026-10-09 found two layout gaps.** A headline that wrapped to more lines in the narrow column could pass the safe bottom, and a low block could sit in the caption slot. Both now fail the build, and tests guard them.
 
 ## 6. Limits
 

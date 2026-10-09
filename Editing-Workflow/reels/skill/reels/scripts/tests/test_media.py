@@ -46,6 +46,12 @@ class Conform(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("longer than the source", r.stderr)
         self.assertFalse(os.path.exists(out))
+        r = run("reels-conform.py", "--in", src, "--out", out, "--start", "9")      # starts past the end
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("nothing to conform", r.stderr)
+        r = run("reels-conform.py", "--in", src, "--out", out, "--dur", "0")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("nothing to conform", r.stderr)
 
 
 @needs_ffmpeg
@@ -85,6 +91,17 @@ class StoryboardMd(unittest.TestCase):
                        "## What changed"):
             self.assertIn(needle, md)
         self.assertNotIn("| r02 |", md)       # only filled rows are delivered
+
+    def test_numbers_anchors_and_captions_true(self):
+        d = scratch(self)
+        spec = {"id": "t", "duration": 4.0, "captions": True, "beats": [
+            {"type": "stat", "id": "sn", "value": 1250.5, "decimals": 1, "suffix": " hrs", "in": 0.2, "out": 2.0, "anchor": "a | b"}]}
+        out = os.path.join(d, "STORYBOARD.md")
+        r = run("reels-storyboard-md.py", "--spec", write(os.path.join(d, "storyboard.json"), spec), "--out", out, "--title", "t")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        md = read(out)
+        self.assertIn('| 0.2 - 2.0 | count-up number | 1,250.5 hrs | "a / b" |', md)   # full digits; a pipe can't break the row
+        self.assertIn("**Captions:** burned in", md)
 
 
 class Captions(unittest.TestCase):
