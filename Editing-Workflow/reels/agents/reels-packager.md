@@ -48,7 +48,7 @@ they want. The picture is never re-encoded: audio work copies the video stream.
    file to YouTube Shorts / TikTok if wanted, with `captions.srt` where accepted; the phone preview if QA asked for one.
 7. **`STORYBOARD.md`**: `python3 "$RS/scripts/reels-storyboard-md.py" --spec "$W/storyboard.json" --assets "$W/ASSET-REQUESTS.md" --title "<project> v<n>" --out "$D/STORYBOARD.md" [--note "..."] [--concern "..."]`
    (every beat, the captions, the camera, the loop, and every filled asset with its source and licence). The kit's
-   storyboard-md.py doesn't read Reels' mixed item shapes; use this one.
+   storyboard-md.py knows only the 16:9 formats and has no captions, loop or licences; use this one.
 8. **Deliver:** md5 `reel.mp4` and confirm the copy matches; never pass it through a chat download. Then the Producer
    asks QA for the final check (loudness rows now PASS/FAIL, rows 15 to 19).
 
