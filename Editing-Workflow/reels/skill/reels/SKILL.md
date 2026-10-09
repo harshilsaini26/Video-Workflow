@@ -12,7 +12,8 @@ render yourself.
 - `SK=.claude/skills/youtube-edit` (the kit), `RS=.claude/skills/reels` (this skill: PLAYBOOK.md, `scripts/`,
   `templates/`), agents in `.claude/agents/reels-*.md`, `W=videos/<project>`.
 - **Read `$RS/PLAYBOOK.md` at the start of every project.** It is the doctrine; you check the agents' work against it.
-- **Free tools only** (PLAYBOOK §R10): never propose Tella, Epidemic Sound, paid stock, AI generation or a paid trial.
+- **Free tools only** (PLAYBOOK §R10): never propose Tella, Epidemic Sound, paid stock, AI generation (Motion by
+  Mosaic included) or a paid trial.
 
 ## The rules you never break
 

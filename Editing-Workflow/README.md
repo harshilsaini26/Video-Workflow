@@ -12,8 +12,12 @@ jobs, a fixed order, file hand-offs, quality gates and a learning loop.
 |---|---|---|
 | this README | the workflow, the team, the stages, the gates | ✅ |
 | [`templates/`](templates/README.md) | the four project files: `STATUS.md`, `ASSET-REQUESTS.md`, `QA.md`, `NOTES.md` | ✅ |
-| [`longform/`](longform/README.md) | the agent team for **YouTube long-form** (8 to 25 min, 4K 30 fps): the Producer skill, the long-form playbook, 13 agent files, and the research behind them | ✅ |
+| [`longform/`](longform/README.md) | the agent team for **YouTube long-form** (8 to 25 min, 4K 30 fps, free tools only): the Producer skill, the long-form playbook, 13 agent files, and the research behind them | ✅ |
 | [`reels/`](reels/README.md) | the agent team for **Reels** (9:16, 1080x1920, 60 fps, free tools only): the Producer skill, the Reels playbook, 11 agent files, tested vertical scripts, and the research behind them | ✅ |
+
+> **Free tools only.** Every profile uses free tools and free licences, nothing else. The kit's paid routes (Tella,
+> Epidemic Sound, AI B-roll) are never used, nor paid stock or music, AI video generators (Motion by Mosaic, Runway and
+> the like) or paid trials. The one paid part is the Claude plan that runs Claude Code. See section 12.
 
 > **Marking used in this document**
 > - `kit`: comes from the reference kit, works today.
@@ -348,7 +352,6 @@ Each stage lists its trigger, the agent, the steps, what comes out, and the gate
 | A talking section over 3 min | Cut with windowed transcription + `stutter-scan.py` + `CUT-REVIEW.html`; plan under the long-form rules; render per section |
 | A flat cut you made yourself | re-encode it with dense keyframes, transcribe (Stage 3), then straight to Stage 5 (the Pipeline in SKILL.md) |
 | Face file + screen file | `sync-tracks.py --write-aligned`; the face file is cut, the screen becomes full-frame `clip` cutaways |
-| A Tella recording (optional, paid) | the Tella route in SKILL.md |
 | All the finished parts of one video | straight to Stage 10 |
 
 **Steps:**
@@ -487,7 +490,7 @@ seconds used on each one ([fields and states](templates/README.md#asset-requests
 | B-roll scout | stock clips | Pexels first, then Coverr, Mixkit free licence | never Mixkit Restricted, never AI-labelled, never paid |
 | | | two candidates per slot in `broll-shortlist.md`, take the first unless a risk rules it out | real people, moody screen-lit rooms, no watermark, nobody looking into the lens, no readable logos |
 | | conform | `broll-conform.py --in … --out public/broll/<job>.mp4 --start s --dur d` | 30 fps, no audio, dense keyframes, BT.709; pick the sharpest window; blur anything readable |
-| Sound designer | effects | the free HyperFrames library (or Epidemic Sound if connected) | only the allowed list (section 6.7) |
+| Sound designer | effects | the free HyperFrames library | only the allowed list (section 6.7) |
 | | prepare | trim the silence before the hit; peak-normalise to -3 dBFS | the audible peak lands within two frames of its cause |
 | | music | a tense track under the hook, a calm lo-fi bed after | ducked 16 dB (hook) / 19 dB (body) under your voice |
 
@@ -520,8 +523,7 @@ step comes from one tween; stay under about 40 heavy effects (blur, gradients, c
 
 The Producer shows you `snaps/sheet.png` and a short list of what is on screen when. Answer in plain words:
 *"the card at 0:14 covers my face"*, *"no sound on the logo"*. Changing a time is one number in `storyboard.json`; the
-Animator rebuilds and re-snapshots. AI B-roll (paid, optional) and any diagram are approved here too. Nothing renders
-until you approve.
+Animator rebuilds and re-snapshots. Any diagram is approved here too. Nothing renders until you approve.
 
 ### Stage 8. Render (Renderer)
 
@@ -692,7 +694,7 @@ must never do.
 | **Runs** | after the Director, in parallel; again after a sound note |
 | **Reads** | its rows in `ASSET-REQUESTS.md` |
 | **Writes** | `videos/_shared/sfx/*.mp3` (trimmed and levelled), the music bed; the fulfilment columns of its rows in `ASSET-REQUESTS.md` |
-| **Uses** | the free HyperFrames sound library (`npx hyperframes skills update media-use`), or Epidemic Sound if connected; ffmpeg (`silenceremove`, `volumedetect`) |
+| **Uses** | the free HyperFrames sound library (`npx hyperframes skills update media-use`); ffmpeg (`silenceremove`, `volumedetect`) |
 | **Done when** | every requested sound exists, trimmed to its hit and normalised to -3 dBFS peak |
 | **Never** | adds a sound nothing on screen would make |
 
@@ -878,7 +880,7 @@ The workflow is the same for both. What changes is the size, the frame rate and 
 | Cards | sized to the face-safe zone | inside the platforms' safe zone (65 / 269 / 672 px), narrower near the button column |
 | Keep clear | your face | your face, the top 14 %, the bottom 35 %, 6 % each side, the button column |
 | Music | ducked bed on the master | none in the file (added in the app) or a free licensed track, about 18 dB under the voice |
-| Tools | everything in the kit | free only: no Tella, no Epidemic Sound, no paid stock, no AI generation |
+| Tools | free only: the kit without its Tella, Epidemic Sound and AI B-roll routes | free only: no Tella, no Epidemic Sound, no paid stock, no AI generation |
 | Team | [`longform/`](longform/README.md): Producer + 13 agents | [`reels/`](reels/README.md): Producer + 11 agents |
 
 ### How the Reels profile is built
@@ -920,7 +922,8 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 ## 12. Setup
 
 1. `SETUP.md` steps 1 to 6 in the reference kit: the Claude desktop app, a paid plan, Claude Code on **Local** in your
-   project folder, permissions on **Auto**, the browser setting on. Tella and Epidemic Sound are optional.
+   project folder, permissions on **Auto**, the browser setting on. Skip the kit's optional Tella and Epidemic Sound
+   connectors: this workflow is free tools only.
 2. The install prompt (section 11). Claude installs and checks:
 
 | Needs | Check | Free |

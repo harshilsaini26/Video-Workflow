@@ -1,6 +1,6 @@
 ---
 name: youtube-longform
-description: Produce a YouTube long-form video (roughly 8 to 25 minutes, several sections) end to end as the Producer, directing the longform-* agent team through ingest, cut, story pass, Checkpoint A, section split, storyboards, assets, composition, Checkpoint B, render, QA, assembly, delivery and the learning loop. Use when the creator asks to edit a full or long YouTube video, says "use my long-form team", hands over several raw clips for one video, or asks for a retention review of a published long-form video. For a single hook or a short clip, the kit's youtube-edit skill alone is enough.
+description: Produce a YouTube long-form video (roughly 8 to 25 minutes, several sections) end to end as the Producer, directing the longform-* agent team through ingest, cut, story pass, Checkpoint A, section split, storyboards, assets, composition, Checkpoint B, render, QA, assembly, delivery and the learning loop. Use when the creator asks to edit a full or long YouTube video, says "use my long-form team", hands over several raw clips for one video, or asks for a retention review of a published long-form video. Free tools only. For a single hook or a short clip, the kit's youtube-edit skill alone is enough.
 ---
 
 # Producer: YouTube long-form
@@ -14,6 +14,9 @@ judge a render yourself: the agents do, and their files are the record.
   `$W/<NN-slug>/`.
 - **Read `$LF/PLAYBOOK.md` once at the start of every project**; it is the doctrine every agent follows, and you
   check their work against it.
+- **Free tools only** (PLAYBOOK §L0): never propose or use Tella, Epidemic Sound, paid stock or music, AI generation
+  (the kit's AI B-roll route), paid AI video services such as Motion (motion.so), or a paid trial. The kit's Tella,
+  Epidemic Sound and AI B-roll routes are off for this team.
 
 ## The rules you never break
 
@@ -32,7 +35,7 @@ Check, and tell the creator plainly what is missing:
 - this skill: `$LF/SKILL.md`, `$LF/PLAYBOOK.md`, `$LF/templates/{STATUS,ASSET-REQUESTS,QA,NOTES}.md`;
 - the agents: `.claude/agents/longform-{ingest,transcriber,cutter,director,researcher,broll-scout,sound-designer,animator,renderer,qa,assembler,librarian,analyst}.md`;
 - the tools in SKILL › Setup check (Node 22+, HyperFrames, FFmpeg, Python + numpy, auto-editor, Parakeet, Chrome);
-- optional: `PEXELS_API_KEY` for stock B-roll; the Tella and Epidemic Sound connectors.
+- optional, free: `PEXELS_API_KEY` for stock B-roll.
 Agents load at the start of a conversation: after installing them, the creator opens a new one.
 
 ## 1. Starting a project
@@ -127,7 +130,7 @@ cut answers, and run its gates again. Only then the split (4c).
 
 Per section, as each is ready (or all at once if the creator prefers):
 - `<part>/snaps/sheet.png` and a short list of what is on screen when (from the storyboard);
-- every diagram, AI shot, DRAFT format (`*`) and colour correction waiting for a yes;
+- every diagram, DRAFT format (`*`) and colour correction waiting for a yes;
 - the voice polish pair (`voice/before.wav`, `voice/after.wav`) if prepared: "listen on headphones and a phone
   speaker; keep or skip?";
 - the Animator's concerns.
@@ -160,7 +163,7 @@ On PASS, tell the creator:
 - what was added (formats, B-roll, sounds), and **the agents' concerns**;
 - the publish checklist from `DESCRIPTION.md`: upload the master; paste the chapters; upload `captions.srt` "with
   timing"; place the ad breaks from `ad-breaks.txt` (8 minutes or more); declare paid promotion / branded content if
-  there is a sponsor or product placement; the altered or synthetic content label if any AI shot was used; add the end
+  there is a sponsor or product placement; add the end
   screen in the last 5 to 20 s; fill the links marked `<add link>`.
 
 ## 9. Notes and versions

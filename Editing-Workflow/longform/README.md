@@ -1,6 +1,7 @@
 # YouTube long-form: the agent team
 
-The agent team for **YouTube long-form videos**: roughly 8 to 25 minutes, a hook and several sections, 4K at 30 fps.
+The agent team for **YouTube long-form videos**: roughly 8 to 25 minutes, a hook and several sections, 4K at 30 fps,
+**free tools only**.
 It implements the workflow in [`../README.md`](../README.md) for this one profile, on top of the reference kit
 ([`../../WeAreNoCode-YouTube-Editor/`](../../WeAreNoCode-YouTube-Editor/)), with the project files from
 [`../templates/`](../templates/README.md), and with professional long-form practice built in from
@@ -96,7 +97,7 @@ flowchart LR
 | `longform-cutter` | `cut`, `note`, `split` | the flat cut; cut notes; after Checkpoint A | `cut-list.json`, `cut-map.json`, `PAPER-CUT.md`, `CUT-REVIEW.html`, `keeps.txt`, `sections.json`, `<part>/public/input-video.mp4` |
 | `longform-director` | `story`, `plan`, `replan` | before Checkpoint A; per section; on-screen notes | `STORY.md`, `<part>/storyboard.json`, `<part>/ASSET-REQUESTS.md` |
 | `longform-researcher` | logos, sites, pages, posts, screenshots, product photos, icons | per section, in parallel | files in `public/img/` and `_shared/img/`; its rows |
-| `longform-broll-scout` | stock B-roll (and approved AI shots) | per section, in parallel | `broll-shortlist.md`, `broll/`, `<part>/public/broll/`; its rows |
+| `longform-broll-scout` | free licensed stock B-roll | per section, in parallel | `broll-shortlist.md`, `broll/`, `<part>/public/broll/`; its rows |
 | `longform-sound-designer` | `assets`, `voice`, `bed` | per section; voice before Checkpoint B; bed after assembly | `_shared/sfx/`, `music/`, `voice/`; its rows |
 | `longform-animator` | `build`, `rebuild` | per section, after Gate G6 | `<part>/public/index.html`, `<part>/snaps/` |
 | `longform-renderer` | `render`, `patch` | per section, after Checkpoint B | `<part>/output-4k.mp4` (earlier versions kept) |
