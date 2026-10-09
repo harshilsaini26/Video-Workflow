@@ -2,8 +2,8 @@
 
 The agent team for **YouTube long-form videos**: roughly 8 to 25 minutes, a hook and several sections, 4K at 30 fps,
 **free tools only**.
-It implements the workflow in [`../README.md`](../README.md) for this one profile, on top of the reference kit
-([`../../WeAreNoCode-YouTube-Editor/`](../../WeAreNoCode-YouTube-Editor/)), with the project files from
+It implements the workflow in [`../README.md`](../README.md) for this one profile, on top of the kit
+([`../kit/`](../kit/README.md)), with the project files from
 [`../templates/`](../templates/README.md), and with professional long-form practice built in from
 [background research](RESEARCH.md).
 
@@ -46,7 +46,8 @@ them:
 ## 2. Install
 
 From the folder you run Claude Code in (the one with your `videos/`), with this repository's `Editing-Workflow/`
-folder and the kit's `youtube-edit` skill already installed (`.claude/skills/youtube-edit/`):
+folder and the kit's `youtube-edit` skill already installed (`.claude/skills/youtube-edit/`, copied from
+`Editing-Workflow/kit/youtube-edit`):
 
 ```bash
 mkdir -p .claude/skills .claude/agents

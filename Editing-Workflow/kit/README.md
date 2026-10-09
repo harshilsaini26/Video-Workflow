@@ -17,9 +17,10 @@ I record, drop the raw files into Claude Code, and it hands me back a first vers
 ## Install in four steps
 
 1. Set up Claude Code: `SETUP.md`, steps 1 to 6.
-2. Put this folder inside the project folder you work in.
+2. Put this repository's `Editing-Workflow` folder (this kit is `Editing-Workflow/kit`) inside the project folder you
+   work in.
 3. Type this into Claude Code:
-   > Install the youtube-edit skill from the WeAreNoCode-YouTube-Editor folder into this project's .claude/skills folder. Then check everything it needs, install what's missing, and run its tests.
+   > Install the youtube-edit skill from the Editing-Workflow/kit folder into this project's .claude/skills folder. Then check everything it needs, install what's missing, and run its tests.
 4. Drop in a raw clip and use the first editing prompt from `PROMPTS.md`.
 
 ## What it costs to run

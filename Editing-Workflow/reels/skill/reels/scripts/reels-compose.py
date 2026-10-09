@@ -69,7 +69,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 kit_cands = [args.kit] if args.kit else []
 kit_cands += [os.path.join(HERE, "..", "..", "youtube-edit"),                                   # installed side by side
               os.path.join(os.getcwd(), ".claude", "skills", "youtube-edit"),
-              os.path.join(HERE, "..", "..", "..", "..", "..", "WeAreNoCode-YouTube-Editor", "youtube-edit")]   # this repository
+              os.path.join(HERE, "..", "..", "..", "..", "kit", "youtube-edit")]   # this repository (Editing-Workflow/kit)
 KIT = next((os.path.abspath(k) for k in kit_cands if k and os.path.isdir(k)), None)
 
 def stage(src, dst):

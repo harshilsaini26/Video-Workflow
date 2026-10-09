@@ -36,9 +36,9 @@ Both are optional. Without Tella, export your screen recordings as files. Withou
 
 ## 7. Install the skill
 
-Put the `WeAreNoCode-YouTube-Editor` folder inside your project folder. Then type:
+Put this repository's `Editing-Workflow` folder inside your project folder. Then type:
 
-> Install the youtube-edit skill from the WeAreNoCode-YouTube-Editor folder into this project's .claude/skills folder. Then check everything it needs, install what's missing, and run its tests.
+> Install the youtube-edit skill from the Editing-Workflow/kit folder into this project's .claude/skills folder. Then check everything it needs, install what's missing, and run its tests.
 
 Claude installs the rest itself: FFmpeg (the tool that joins and encodes video), HyperFrames (it draws the animations and renders the frames), auto-editor and Parakeet (they find where you speak and write down every word with its exact time), plus a few Python packages. If it can't find HyperFrames, search "HyperFrames" (it's on GitHub, and it's in the Connectors list too).
 

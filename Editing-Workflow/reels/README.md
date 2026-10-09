@@ -2,8 +2,8 @@
 
 The agent team for **vertical short videos**: Instagram Reels first, and the same file posts as a YouTube Short and a
 TikTok. **1080x1920, 60 fps, 15 to 60 s by default (up to 3 minutes), free tools only.** It implements the workflow in
-[`../README.md`](../README.md) for this profile, on top of the reference kit
-([`../../WeAreNoCode-YouTube-Editor/`](../../WeAreNoCode-YouTube-Editor/), untouched), with the project files from
+[`../README.md`](../README.md) for this profile, on top of the kit
+([`../kit/`](../kit/README.md)), with the project files from
 [`../templates/`](../templates/README.md), short-form practice from [background research](RESEARCH.md), and **new,
 tested scripts** for the vertical format the kit doesn't have.
 
@@ -49,7 +49,7 @@ reels/
 ## 2. Install
 
 From the folder you run Claude Code in, with the kit's `youtube-edit` skill already installed
-(`.claude/skills/youtube-edit/`) and this repository's `Editing-Workflow/` folder present:
+(`.claude/skills/youtube-edit/`, copied from `Editing-Workflow/kit/youtube-edit`) and this repository's `Editing-Workflow/` folder present:
 
 ```bash
 mkdir -p .claude/skills .claude/agents
@@ -166,7 +166,7 @@ flowchart TD
 
 ## 5. The scripts, and how they were verified
 
-The kit builds 16:9 only, and the reference folder stays untouched, so Reels has its own scripts. They write the same
+The kit builds 16:9 only, and its files stay as they came, so Reels has its own scripts. They write the same
 structure the kit's checkers read, so `beat-check.py`, `gap-scan.py`, `snap-beats.py` and `verify-render.py` work on
 reels unchanged.
 

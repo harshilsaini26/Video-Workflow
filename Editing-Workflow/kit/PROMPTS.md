@@ -4,7 +4,7 @@ Copy them, then change the parts in [brackets].
 
 ## Install this kit
 
-> Install the youtube-edit skill from the WeAreNoCode-YouTube-Editor folder into this project's .claude/skills folder. Then check everything it needs, install what's missing, and run its tests.
+> Install the youtube-edit skill from the Editing-Workflow/kit folder into this project's .claude/skills folder. Then check everything it needs, install what's missing, and run its tests.
 
 ## Or build your own from scratch
 

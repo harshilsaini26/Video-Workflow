@@ -9,7 +9,7 @@ needs_ffmpeg = unittest.skipUnless(HAS_FFMPEG, "ffmpeg / ffprobe not on PATH")
 
 _kit = [os.environ.get("KIT_SCRIPTS", ""),
         os.path.join(SCRIPTS, "..", "..", "youtube-edit", "scripts"),                                        # installed
-        os.path.join(SCRIPTS, "..", "..", "..", "..", "..", "WeAreNoCode-YouTube-Editor", "youtube-edit", "scripts")]   # repository
+        os.path.join(SCRIPTS, "..", "..", "..", "..", "kit", "youtube-edit", "scripts")]   # repository (Editing-Workflow/kit)
 KIT_SCRIPTS = next((os.path.abspath(k) for k in _kit if k and os.path.exists(os.path.join(k, "beat-check.py"))), None)
 needs_kit = unittest.skipUnless(KIT_SCRIPTS, "the kit's youtube-edit scripts were not found")
 
