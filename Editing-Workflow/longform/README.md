@@ -72,22 +72,21 @@ rule, it lists the files it changed; copy them back here so the repository keeps
 ## 3. The team
 
 ```mermaid
-flowchart LR
-    YOU(("You")) <--> P["<b>Producer</b><br/>skill: youtube-longform<br/>(main conversation)"]
-    P --> I["longform-ingest"]
-    P --> T["longform-transcriber"]
-    P --> C["longform-cutter"]
-    P --> D["longform-director"]
-    P --> R["longform-researcher"]
-    P --> B["longform-broll-scout"]
-    P --> S["longform-sound-designer"]
-    P --> A["longform-animator"]
-    P --> RE["longform-renderer"]
-    P --> Q["longform-qa"]
-    P --> AS["longform-assembler"]
-    P --> L["longform-librarian"]
-    P -.-> AN["longform-analyst"]
+flowchart TD
+    YOU(["🙋 You"]):::you <--> P["🧑‍💼 The Producer<br/>your project manager,<br/>the only one<br/>you talk to"]:::lead
+    P --> G1["✂️ Prep crew<br/>gets the footage in,<br/>writes every word down,<br/>cuts the mistakes<br/><i>Ingest · Transcriber · Cutter</i>"]:::team
+    P --> G2["🎨 Creative crew<br/>plans each section,<br/>finds pages, clips<br/>and sounds<br/><i>Director · Researcher</i><br/><i>B-roll scout</i><br/><i>Sound designer</i>"]:::team
+    P --> G3["🎬 Build crew<br/>animates and<br/>renders each section<br/><i>Animator · Renderer</i>"]:::team
+    P --> G4["🔍 Quality crew<br/>checks every file,<br/>joins the sections,<br/>adds chapters<br/><i>QA · Assembler</i>"]:::team
+    P --> G5["📚 Memory crew<br/>saves your feedback,<br/>studies your<br/>YouTube stats<br/><i>Librarian · Analyst</i>"]:::team
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
 ```
+
+<sub>🟨 yellow = you · 🟦 blue = the AI team · 🟩 green = finished</sub>
 
 | Agent | Jobs | Runs | Writes |
 |---|---|---|---|
@@ -107,6 +106,28 @@ flowchart LR
 | `longform-analyst` | `teardown`, `retention` | every two videos; a week after publishing | `videos/_teardown/COMPARE.md`, `RETENTION.md` |
 
 ## 4. The long-form flow
+
+```mermaid
+flowchart TD
+    A["🎥 You record"]:::you --> B["✂️ The team cuts out<br/>mistakes and checks<br/>the story flows"]:::team
+    B --> C["👀 Checkpoint A<br/>you check the cut<br/>and the story"]:::you
+    C --> D["📑 The video is split<br/>into sections"]:::team
+    D --> E["🎨 Each section gets<br/>its text, graphics,<br/>clips and sounds"]:::team
+    E --> F["👀 Checkpoint B<br/>you check the stills"]:::you
+    F --> G["🎬 Each section<br/>is made and checked"]:::team
+    G --> H["🧩 The sections become<br/>one video, with music,<br/>chapters and captions"]:::team
+    H --> I["📝 You watch it<br/>and give notes"]:::you
+    I --> J["✅ Ready to upload,<br/>with a checklist"]:::done
+    J -. "a week after publishing" .-> K["📈 Optional: learn from<br/>your YouTube stats"]:::team
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
+```
+
+<details>
+<summary>Show the detailed version (every stage, check and file)</summary>
 
 ```mermaid
 flowchart TD
@@ -141,6 +162,8 @@ flowchart TD
     DEL -. "a week after publishing" .-> RET["Analyst<br/>retention review"]
     RET -. "proposed rules, your yes" .-> LIB
 ```
+
+</details>
 
 ## 5. Files the long-form team adds
 
