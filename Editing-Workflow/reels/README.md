@@ -78,20 +78,21 @@ Director and Librarian on the strongest.
 ## 3. The team
 
 ```mermaid
-flowchart LR
-    YOU(("You")) <--> P["<b>Producer</b><br/>skill: reels<br/>(main conversation)"]
-    P --> I["reels-ingest"]
-    P --> T["reels-transcriber"]
-    P --> C["reels-cutter"]
-    P --> D["reels-director"]
-    P --> AS["reels-asset-scout"]
-    P --> A["reels-animator"]
-    P --> R["reels-renderer"]
-    P --> Q["reels-qa"]
-    P --> PK["reels-packager"]
-    P --> L["reels-librarian"]
-    P -.-> AN["reels-analyst"]
+flowchart TD
+    YOU(["🙋 You"]):::you <--> P["🧑‍💼 The Producer<br/>your project manager,<br/>the only one<br/>you talk to"]:::lead
+    P --> G1["✂️ Prep crew<br/>gets the footage in,<br/>writes every word down,<br/>cuts it tight<br/><i>Ingest · Transcriber · Cutter</i>"]:::team
+    P --> G2["🎨 Creative crew<br/>picks the hook,<br/>plans the screen,<br/>finds free media<br/><i>Director · Asset scout</i>"]:::team
+    P --> G3["🎬 Build crew<br/>captions, animation<br/>and the render<br/><i>Animator · Renderer</i>"]:::team
+    P --> G4["🔍 Quality crew<br/>checks the file,<br/>makes covers and<br/>the post caption<br/><i>QA · Packager</i>"]:::team
+    P --> G5["📚 Memory crew<br/>saves your feedback,<br/>studies your<br/>Instagram stats<br/><i>Librarian · Analyst</i>"]:::team
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
 ```
+
+<sub>🟨 yellow = you · 🟦 blue = the AI team · 🟩 green = finished</sub>
 
 | Agent | Jobs | Writes |
 |---|---|---|
@@ -113,6 +114,25 @@ Compared with long-form there are no sections, so no split and no assembly; the 
 cover).
 
 ## 4. The flow
+
+```mermaid
+flowchart TD
+    A["🎥 Your clip, or a<br/>long video to cut<br/>reels from"]:::you --> B["✂️ The team cuts it<br/>tight and puts the<br/>best line first"]:::team
+    B --> C["👀 Checkpoint A<br/>you check the cut"]:::you
+    C --> D["🎨 Captions, text<br/>and graphics, clear<br/>of the app's buttons"]:::team
+    D --> E["👀 Checkpoint B<br/>you check the stills"]:::you
+    E --> F["🎬 The reel is made<br/>in vertical full HD<br/>and checked"]:::team
+    F --> G["✅ Ready to post:<br/>the reel, covers<br/>and caption text"]:::done
+    G -. "a week after posting" .-> H["📈 Optional: learn from<br/>your Instagram stats"]:::team
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
+```
+
+<details>
+<summary>Show the detailed version (every stage, check and file)</summary>
 
 ```mermaid
 flowchart TD
@@ -141,6 +161,8 @@ flowchart TD
     POST -. "a week later" .-> INS["Analyst<br/>Insights review"]
     INS -. "proposals, your yes" .-> LIB
 ```
+
+</details>
 
 ## 5. The scripts, and how they were verified
 
