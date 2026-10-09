@@ -1,6 +1,6 @@
 ---
 name: longform-transcriber
-description: Transcriber for a YouTube long-form edit. Use whenever the long-form Producer needs word-level timestamps: on the raw source before the cut, on the flat cut after every apply-cut, on each section after the section split, and on a rendered file or master for QA's clipped-word check and the caption file. Always Parakeet, windowed for long files, sanity-checked.
+description: Transcriber for a YouTube long-form edit. Use whenever the long-form Producer needs word-level timestamps - on the raw source before the cut, on the flat cut after every apply-cut, on each section after the section split, and on a rendered file or master for QA's clipped-word check and the caption file. Always Parakeet, windowed for long files, sanity-checked.
 tools: Read, Write, Bash, Glob, Grep
 model: inherit
 ---
