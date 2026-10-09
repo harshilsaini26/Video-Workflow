@@ -22,6 +22,26 @@ point at each other.
 ## How the four files connect
 
 ```mermaid
+flowchart TD
+    P["🧑‍💼 Producer"]:::lead -- "keeps it up to date" --> S["📋 STATUS.md<br/>where the project is<br/>and who it waits on"]:::file
+    YOU(["🙋 You"]):::you -- "your feedback" --> P
+    P -- "writes your words down" --> N["📝 NOTES.md<br/>every note you give<br/>and who fixes it"]:::file
+    D["🎨 Director"]:::team -- "lists what is needed" --> A["🧾 ASSET-REQUESTS.md<br/>every image, clip<br/>and sound, where it<br/>came from, its licence"]:::file
+    Q["🔍 QA agent"]:::team -- "ticks it off" --> QA["✅ QA.md<br/>the checklist every<br/>video must pass"]:::file
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
+    classDef file fill:#F2F2F2,stroke:#777777,color:#1a1a1a
+```
+
+<sub>🟨 yellow = you · 🟦 blue = the AI team · 🟩 green = finished</sub>
+
+<details>
+<summary>Show the detailed version (who reads and writes each file)</summary>
+
+```mermaid
 flowchart LR
     YOU(("You")) -- "answers and notes" --> P["Producer"]
     P -- "writes" --> NOTES["NOTES.md"]
@@ -42,6 +62,8 @@ flowchart LR
     AG -- "reports" --> P
     ASM -- "reports" --> P
 ```
+
+</details>
 
 The Producer is the only one that writes `STATUS.md` and `NOTES.md`; the QA agent is the only one that writes
 `QA.md`; `ASSET-REQUESTS.md` is shared, but by column: the Director owns the request, the owner agent owns the
@@ -127,6 +149,23 @@ The one page that says where the video is. Any conversation can pick the project
 | `skipped` | not needed for this video (e.g. Assemble for a single part delivered directly) |
 
 ```mermaid
+flowchart LR
+    A["⏳ not-started"]:::ask --> B["🔧 in-progress"]:::team --> C["✅ done"]:::done
+    B -- "a check fails" --> D["❌ failed"]:::ask
+    D -- "the fix starts" --> B
+    A -- "a checkpoint" --> E["🙋 waiting-on-you"]:::you
+    E -- "you say OK" --> C
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
+```
+
+<details>
+<summary>Show every state and what moves a stage between them</summary>
+
+```mermaid
 stateDiagram-v2
     state "not-started" as ns
     state "in-progress" as ip
@@ -144,6 +183,8 @@ stateDiagram-v2
     ns --> skipped: not needed
     done --> ns: a new version resets it
 ```
+
+</details>
 
 ### Rules
 
@@ -209,6 +250,22 @@ Rows owned by **You** start as `needs-you`. **In the Reels profile** one agent f
 | `dropped` | no longer needed (the plan changed, or you said skip) | Director or Producer |
 
 ```mermaid
+flowchart LR
+    A["📝 open<br/>asked for"]:::ask --> B["🔍 in-progress<br/>being found"]:::team --> C["✅ filled<br/>found, with its licence"]:::done
+    B -- "not possible for free<br/>or within the rules" --> D["⏭️ skip<br/>the Director picks<br/>something else"]:::ask
+    B -- "only you have it" --> E["🙋 needs-you"]:::you
+    E -- "you send it" --> A
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
+```
+
+<details>
+<summary>Show every state and what moves a row between them</summary>
+
+```mermaid
 stateDiagram-v2
     state "in-progress" as ip
     state "needs-you" as ny
@@ -224,6 +281,8 @@ stateDiagram-v2
     filled --> open: the spec changed
     skip --> dropped: Director replaces the beat
 ```
+
+</details>
 
 ### Rules
 
@@ -362,6 +421,21 @@ it is what the Librarian learns from.
 | `needs-you` | unclear; the Producer has asked you one question |
 
 ```mermaid
+flowchart LR
+    A["📝 open<br/>you gave a note"]:::you --> B["🔧 in-progress<br/>with the agent<br/>who fixes it"]:::team --> C["✅ done"]:::done
+    A -- "not clear" --> D["🙋 needs-you<br/>one question back"]:::you
+    D -- "you answer" --> B
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
+```
+
+<details>
+<summary>Show every state and what moves a note between them</summary>
+
+```mermaid
 stateDiagram-v2
     state "in-progress" as ip
     state "needs-you" as ny
@@ -373,6 +447,8 @@ stateDiagram-v2
     ip --> done: owner reports the fix
     ip --> wd: not possible, you agree
 ```
+
+</details>
 
 ### The learning loop in this file
 

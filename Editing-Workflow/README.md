@@ -51,6 +51,31 @@ on the draft. Everything else is the agents' job.
 
 ```mermaid
 flowchart TD
+    A["🎥 You record<br/>your video"]:::you --> B["✂️ The team cuts out<br/>mistakes and pauses"]:::team
+    B --> C["👀 Checkpoint A<br/>you read the cut<br/>and say OK"]:::you
+    C --> D["🎨 The team plans<br/>the text and graphics<br/>and finds clips, sounds"]:::team
+    D --> E["👀 Checkpoint B<br/>you look at stills<br/>and say OK"]:::you
+    E --> F["🎬 The team makes<br/>the video and<br/>checks it"]:::team
+    F --> G["📝 You watch it<br/>and give notes"]:::you
+    G --> H["✅ Your finished video"]:::done
+    G -. "notes → version 2" .-> D
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
+```
+
+<sub>🟨 yellow = you · 🟦 blue = the AI team · 🟩 green = finished</sub>
+
+At each 👀 checkpoint you can ask for changes in plain words; the team redoes that part before going on. Nothing is
+made until you have said OK to the stills.
+
+<details>
+<summary>Show the detailed version (every stage and the agent that runs it)</summary>
+
+```mermaid
+flowchart TD
     REC["🎥 1. Record<br/><i>you</i>"] --> ING["2. Ingest<br/><b>Ingest agent</b>"]
     ING --> TR1["3. Transcribe raw<br/><b>Transcriber</b>"]
     TR1 --> CUT["4. Cut<br/><b>Cutter</b>"]
@@ -72,6 +97,8 @@ flowchart TD
     NOTES -- "done" --> DONE["✅ Final file"]
     LIB -. "next video starts<br/>from the new rules" .-> REC
 ```
+
+</details>
 
 The **Producer** (the main Claude Code conversation) sits above all of this. It starts each agent, keeps the project's
 status, and is the only one that talks to you.
@@ -100,22 +127,23 @@ status, and is the only one that talks to you.
 ## 2. The team: a Producer and twelve agents
 
 ```mermaid
-flowchart LR
-    YOU(("You")) <--> P["<b>Producer</b><br/>orchestrator<br/>(main conversation)"]
-    P --> A1["Ingest agent"]
-    P --> A2["Transcriber"]
-    P --> A3["Cutter"]
-    P --> A4["Director"]
-    P --> A5["Researcher"]
-    P --> A6["B-roll scout"]
-    P --> A7["Sound designer"]
-    P --> A8["Animator"]
-    P --> A9["Renderer"]
-    P --> A10["QA agent"]
-    P --> A11["Assembler"]
-    P --> A12["Librarian"]
-    P -.-> A13["Analyst<br/>(optional)"]
+flowchart TD
+    YOU(["🙋 You"]):::you <--> P["🧑‍💼 The Producer<br/>your project manager,<br/>the only one<br/>you talk to"]:::lead
+    P --> G1["✂️ Prep crew<br/>gets the footage in,<br/>writes every word down,<br/>cuts the mistakes<br/><i>Ingest · Transcriber · Cutter</i>"]:::team
+    P --> G2["🎨 Creative crew<br/>plans the screen,<br/>finds images, clips<br/>and sounds<br/><i>Director · Researcher</i><br/><i>B-roll scout</i><br/><i>Sound designer</i>"]:::team
+    P --> G3["🎬 Build crew<br/>animates and<br/>renders the video<br/><i>Animator · Renderer</i>"]:::team
+    P --> G4["🔍 Quality crew<br/>checks the file,<br/>gets it ready<br/>to upload<br/><i>QA agent · Assembler</i>"]:::team
+    P --> G5["📚 Memory crew<br/>remembers your<br/>feedback for<br/>the next video<br/><i>Librarian · Analyst</i>"]:::team
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
 ```
+
+<sub>🟨 yellow = you · 🟦 blue = the AI team · 🟩 green = finished</sub>
+
+The twelve agents and what each one does are in the table below.
 
 | # | Agent | One-line job | Kit scripts it runs | Model tier |
 |---|---|---|---|---|
@@ -159,6 +187,30 @@ a new format or an unfamiliar problem deserves the strongest.
   lets independent jobs run at once; it does not change the steps or the rules.
 
 ### 3.2 One video, end to end
+
+```mermaid
+sequenceDiagram
+    actor You
+    participant P as Producer (project manager)
+    participant T as The team
+    You->>P: "Edit this video" + your clips
+    P->>T: Bring the footage in and cut the mistakes
+    T-->>P: The cut
+    P->>You: ✋ Checkpoint A - here is the cut. OK?
+    You->>P: "Yes, but keep the earlier take of that line"
+    P->>T: Apply that, then plan and build the graphics
+    T-->>P: Still pictures of every moment
+    P->>You: ✋ Checkpoint B - this is how it will look. OK?
+    You->>P: "The card at 0:14 covers my face"
+    P->>T: Fix it, make the video, check it
+    T-->>P: The finished file, checked
+    P->>You: Version 1 is ready
+    You->>P: Notes, or "save this for next time"
+
+```
+
+<details>
+<summary>Show the detailed version (every hand-off and file)</summary>
 
 ```mermaid
 sequenceDiagram
@@ -220,6 +272,8 @@ sequenceDiagram
     P->>LIB: brief: the note, the section it belongs to
     LIB-->>P: SKILL.md updated, tests OK
 ```
+
+</details>
 
 ### 3.3 The brief: what the Producer sends every agent `new`
 
@@ -387,6 +441,23 @@ no word clipped.
 
 ```mermaid
 flowchart TD
+    A["🎞️ The raw recording"]:::you --> B["Keep the best take<br/>of every sentence"]:::team
+    B --> C["Trim the gaps,<br/>breaths and long pauses"]:::team
+    C --> D{"Any word cut off,<br/>or a pause left?"}:::ask
+    D -- "yes: fix that spot" --> C
+    D -- "no" --> E["👀 Checkpoint A<br/>you read the cut"]:::you
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
+```
+
+<details>
+<summary>Show the detailed version (every script and check)</summary>
+
+```mermaid
+flowchart TD
     S["transcript-raw.json + speech.v1"] --> PC["paper-cut.py<br/>keep the last take of every line"]
     PC --> HC{"misreads?<br/>(a list read as restarts,<br/>a wrong number in the last take)"}
     HC -- yes --> HAND["hand-cut.py --keep A-B"]
@@ -404,6 +475,8 @@ flowchart TD
     DA -- yes --> ST["stutter-scan.py (second opinion)<br/>+ CUT-REVIEW.html on long sections"]
     ST --> OUT["✋ Checkpoint A"]
 ```
+
+</details>
 
 | Script | What it decides | Writes |
 |---|---|---|
@@ -838,6 +911,23 @@ The system improves because every note you give can become a rule, and a rule yo
 
 ```mermaid
 flowchart LR
+    A["📝 You give a note<br/><i>no sound here</i>"]:::you --> B["🔧 The team fixes it<br/>in the next version"]:::team
+    B --> C{"You say<br/>save this?"}:::ask
+    C -- "yes" --> D["📚 It becomes a rule<br/>for every future video"]:::team
+    D --> E{"The same note<br/>a second time?"}:::ask
+    E -- "yes" --> F["🤖 It becomes an<br/>automatic check"]:::done
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef lead fill:#E4DCF7,stroke:#6B4FBB,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
+```
+
+<details>
+<summary>Show the detailed version (where each rule is saved)</summary>
+
+```mermaid
+flowchart LR
     N["Your note<br/><i>'no sound on this part'</i>"] --> F["Producer routes it;<br/>the owner fixes v2"]
     F --> Q{"Worth keeping?"}
     Q -- "you: 'save this to the skill'" --> R["Librarian writes ONE plain rule<br/>in the right SKILL.md section"]
@@ -853,6 +943,8 @@ flowchart LR
     T -- no --> NEXT["next video starts<br/>from the new rules"]
     CODE --> RUN["run all tests → OK"] --> NEXT
 ```
+
+</details>
 
 | Kind of note | Becomes |
 |---|---|
