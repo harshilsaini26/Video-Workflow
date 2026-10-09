@@ -103,7 +103,8 @@ would cover the face) gets a proposed alternative, not silent refusal.
 - Invent a claim, number, quote, step or result; diagrams use the creator's own points ("about seven days" stays
   "seven days").
 - Cover the creator's face (a card that won't fit the safe zone becomes a lower line).
-- Build or approve a diagram, an AI shot, or a creative colour look without the creator's yes.
+- Build or approve a diagram or a creative colour look without the creator's yes.
+- Plan an AI shot or anything paid (§L0: free tools only).
 - Write HTML or render: the Animator builds, the Renderer renders.
 - Add a sound with no physical cause, or a whoosh under text.
 

@@ -16,7 +16,7 @@ Rules
 - spec says exactly what is needed, in one line. The owner must not have to guess.
 - state is one of: open | in-progress | filled | skip | needs-you | dropped
   - skip:      the owner could not get it within the rules; note says why; the Director picks another format.
-  - needs-you: only you can supply or decide it (a person's photo, a paid AI shot); the Producer asks you.
+  - needs-you: only you can supply or decide it (a person's photo, a screen recording); the Producer asks you.
 - filled needs file, source and licence. A row without a licence is not filled.
 - THE GATE (G6): the Animator starts only when no row is open, in-progress or needs-you.
 - Paths are relative to this project folder. Times are seconds in the flat cut (transcript.json time).

@@ -37,8 +37,7 @@ it once approved), **`bed`** (after assembly: one full-length music bed).
 1. A row asking for anything else, or a sound with no physical cause on screen: mark it `skip` with the reason and
    tell the Producer (the Director planned something the house rules forbid).
 2. Source: the free HyperFrames library (`npx hyperframes skills update media-use`; 19 effects in the media-use skill's
-   `audio/assets/sfx/`, Pixabay Content License), or Epidemic Sound if the connector is attached
-   (`SearchSoundEffects` filtered by duration, `DownloadSoundEffect`).
+   `audio/assets/sfx/`, Pixabay Content License). Free sources only (§L0): never Epidemic Sound or any paid library.
 3. **Trim the silence before the hit** so the audible peak lands within two frames of its cause:
    `ffmpeg -y -i in.mp3 -af silenceremove=start_periods=1:start_threshold=-40dB out.mp3`.
 4. **Peak-normalise to -3 dBFS**: read `max_volume` (`ffmpeg -i out.mp3 -af volumedetect -f null - 2>&1 | grep max_volume`),
@@ -48,9 +47,9 @@ it once approved), **`bed`** (after assembly: one full-length music bed).
 
 **Music** (§L9): a track with some tension under the hook (~18 s), a calm lo-fi bed for the body, and at most one bed
 change per section, only where the mood changes.
-- Free sources: Pixabay Music (Pixabay Content License), the HyperFrames library (`resolve.mjs --type bgm`), or
-  Epidemic Sound if connected (`SearchRecordings`, `DownloadRecording` with stems, `EditRecording` to an exact
-  `targetDurationMs`). A track the creator downloads themselves (e.g. the YouTube Audio Library) is a `needs-you` row.
+- Free sources only: Pixabay Music (Pixabay Content License) or the HyperFrames library (`resolve.mjs --type bgm`);
+  never Epidemic Sound or any paid library (§L0). Trim or loop a track to length with ffmpeg. A track the creator
+  downloads themselves (e.g. the YouTube Audio Library) is a `needs-you` row.
 - Save to `$W/music/`; record the licence. A bed that must loop: check the loop point has no click (a 20 ms crossfade).
 
 ## Job `voice` (opt-in, §L9)
