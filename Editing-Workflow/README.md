@@ -425,12 +425,14 @@ Each stage lists its trigger, the agent, the steps, what comes out, and the gate
 **Trigger:** a new source file, and again after **every** `apply-cut.py`.
 
 1. `ffmpeg … -vn -acodec pcm_s16le -ar 16000 -ac 1` → a 16 kHz mono WAV.
-2. `npx hyperframes transcribe <wav> --engine parakeet --json`. **Always `--engine parakeet`**: with `auto`, a missing
-   Parakeet silently falls back to another engine.
+2. `npx hyperframes transcribe <wav> <engine> --json`, the engine by the Brief's **language**: `--engine parakeet` for
+   English and European languages, `--engine whisper --model large-v3 --language <code>` for Hindi and the rest. Never
+   `auto`: a missing Parakeet silently falls back to another engine.
 3. Raw files over ~3 min: transcribe ~25 s windows cut at silences, shift each window's word times by its start, merge
    (Parakeet can drop whole sentences on long files).
-4. On the raw file only: `auto-editor <clip> --edit audio:-30dB --margin 0.12s,0.35s --export v1 -o speech.v1` (where
-   you speak, by loudness).
+4. On the raw file only: `auto-editor <clip> --edit audio:<threshold> --margin 0.12s,0.35s --export v1 -o speech.v1`
+   (where you speak, by loudness). The threshold comes from the noise floor Ingest measured: `-30dB` for a camera mic in
+   a quiet room, about floor + 20 dB for phone audio; a `speech.v1` with no pauses in a talking clip is a FAIL.
 
 **Outputs:** `transcript-raw.json` (raw time) or `transcript.json` (flat-cut time). **Done when:** the word count is
 plausible for the length and the last word sits near the end of the audio.
@@ -708,7 +710,7 @@ must never do.
 | **Runs** | on the raw file; after **every** `apply-cut.py`; on every render for the clipped-word check |
 | **Reads** | a video or WAV |
 | **Writes** | `audio-raw.wav`, `transcript-raw.json`, `speech.v1`, `audio.wav`, `transcript.json` |
-| **Uses** | ffmpeg, `npx hyperframes transcribe --engine parakeet --json`, auto-editor |
+| **Uses** | ffmpeg, `npx hyperframes transcribe` (Parakeet, or Whisper large-v3 for Hindi and others), auto-editor |
 | **Done when** | the transcript matches the file it was made from (beat-check fails a transcript older than the video) |
 | **Never** | uses `--engine auto`; transcribes a long raw file in one pass |
 
@@ -1026,7 +1028,8 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 | FFmpeg + ffprobe | `ffmpeg -version` | ✅ |
 | Python 3 + numpy | `python3 -c "import numpy"` | ✅ |
 | auto-editor | `auto-editor --version` | ✅ |
-| Parakeet | `npx hyperframes models install parakeet`, then transcribe a 5 s WAV | ✅ |
+| Parakeet (English, European languages) | `npx hyperframes models install parakeet`, then transcribe a 5 s WAV | ✅ |
+| Whisper large-v3 (Hindi and others) | downloads on the first `--engine whisper --model large-v3` transcribe (about 3 GB) | ✅ |
 | Google Chrome | for snapshots and captures | ✅ |
 | GSAP (optional local copy) | `assets/vendor/gsap.min.js` | ✅ |
 | yt-dlp (optional, Analyst only) | `yt-dlp --version` | ✅ |

@@ -46,6 +46,7 @@ Full field definitions: Editing-Workflow/templates/README.md
 | **Sponsor** | {none \| brand, and what is said} |
 | **Music** | {yes \| no} |
 | **Terms** | {names and words to spell right} |
+| **Language** | {spoken language, e.g. en, hi: it picks the transcriber} |
 | **Must include** | {moments, demos, links} |
 
 ## Stages

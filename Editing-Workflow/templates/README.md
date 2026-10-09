@@ -118,7 +118,7 @@ The one page that says where the video is. Any conversation can pick the project
 | Section | What it holds |
 |---|---|
 | Header | project, profile, parts, version, current stage, waiting on, next step, updated |
-| Brief | the creator's answers at the start: title, thumbnail, promise, audience, target length, sponsor, music, terms to spell right, must-include moments. The Director plans against it; the Assembler takes the terms and the sponsor from it |
+| Brief | the creator's answers at the start: title, thumbnail, promise, audience, target length, sponsor, music, terms to spell right, the spoken language (it picks the transcriber), must-include moments. The Director plans against it; the Assembler takes the terms and the sponsor from it |
 | Stages | all 15 rows (stages 1 to 12, checkpoints A and B, Done), always in this order |
 | Versions | one row per version: when it started, why, its QA results, when it was delivered, the file |
 | Decisions for you | every question the Producer asked you, the options, your answer |

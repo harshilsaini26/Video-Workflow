@@ -52,6 +52,11 @@ long-form project: its folder).
 7. **Face + screen pairs:** `python3 "$SK/scripts/sync-tracks.py" --a <face> --b <screen> --write-aligned "$W/aligned"`.
 8. **Measure** levels (`ebur128`, flag below -38 LUFS or true peak above -0.5 dBTP) and colour (`signalstats` every 5 s:
    flag a cast or exposure far from the main clip), as in the long-form Ingest agent. Propose, never correct.
+   **Noise floor** (the Transcriber sets the speech threshold from it): record `noise_floor_db` and `speech_db` in
+   `metadata.json`:
+   ```bash
+   ffmpeg -v error -i "$W/audio-raw.wav" -ac 1 -ar 16000 -f s16le - | python3 -c "import sys, numpy as n; x = n.frombuffer(sys.stdin.buffer.read(), n.int16) / 32768; k = len(x) // 1600; r = 20 * n.log10(n.sqrt((x[:k * 1600].reshape(k, 1600) ** 2).mean(1)) + 1e-9); print('floor %.0f dB, speech %.0f dB' % (n.percentile(r, 10), n.percentile(r, 50)))"
+   ```
 9. Write `$W/metadata.json` (the cut source) and `$W/ingest/INGEST.md` (one row per file: class, size, orientation, fps,
    VFR, duration, audio, flags, the source the cut uses, the face position for landscape sources).
 

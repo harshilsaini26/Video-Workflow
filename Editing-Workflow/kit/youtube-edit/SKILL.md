@@ -36,6 +36,7 @@ runs the tests. Check again after updating HyperFrames or moving the skill.
 | Python 3 with numpy | `python3 -c "import numpy"` | `python3 -m pip install numpy` |
 | auto-editor | `auto-editor --version` | `pip install auto-editor` or `brew install auto-editor` |
 | Parakeet, the transcriber `npx hyperframes transcribe --engine parakeet` uses | transcribe a 5 s WAV with `--engine parakeet --json` | `npx hyperframes models install parakeet` |
+| Whisper large-v3, for languages Parakeet doesn't cover (Hindi) | transcribe a 5 s WAV with `--engine whisper --model large-v3 --language hi --json` | downloads itself on first use (about 3 GB, from huggingface.co) |
 | Google Chrome | snapshots, page captures and headless screenshots run in it | google.com/chrome |
 | GSAP | compose.py prints a note when it falls back to the CDN (the first render then needs internet) | optional local copy: `mkdir -p "$SK/assets/vendor" && curl -sL https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js -o "$SK/assets/vendor/gsap.min.js"` |
 | yt-dlp (optional) | `yt-dlp --version` | `brew install yt-dlp` or `pip install yt-dlp` |
@@ -130,7 +131,7 @@ when long); you answer in plain words ("keep the earlier take of the studio line
 mkdir -p "$W/raw" "$W/public" && cp "<card or folder>/<clip>.MP4" "$W/raw/"     # eject the card only after the copy is confirmed
 ffmpeg -y -v error -i "$W/raw/<clip>.MP4" -vn -acodec pcm_s16le -ar 16000 -ac 1 "$W/audio-raw.wav"
 npx hyperframes transcribe "$W/audio-raw.wav" -d "$W" --engine parakeet --json && mv "$W/transcript.json" "$W/transcript-raw.json"
-auto-editor "$W/raw/<clip>.MP4" --edit audio:-30dB --margin 0.12s,0.35s --export v1 -o "$W/speech.v1"   # speech chunks by the audio
+auto-editor "$W/raw/<clip>.MP4" --edit audio:-30dB --margin 0.12s,0.35s --export v1 -o "$W/speech.v1"   # speech chunks by the audio; -30dB is for a quiet camera mic: phone audio needs a threshold from its noise floor (the Transcriber agents)
 python3 "$SK/scripts/paper-cut.py" --transcript "$W/transcript-raw.json" --duration <seconds> --out-dir "$W" --speech "$W/speech.v1"
 #   read PAPER-CUT.md; fix misreads with hand-cut.py (it rewrites cut-list.json)
 python3 "$SK/scripts/tighten-cut.py" --audio "$W/audio-raw.wav" --cut-list "$W/cut-list.json" --out "$W/cut-list.json"
@@ -828,7 +829,9 @@ fades are fine without backdrop-filter (lower lines). Glass that has not arrived
   ui-sans-serif, system-ui, sans-serif`, so Chrome draws in the system face (San Francisco on a Mac) at these metrics.
   That is the approved look; the full variable DM Sans reads rounder and wider. Body `font-family` lists concrete names,
   never a CSS variable, and a scene element never sets `"DM Sans"` alone (a whole scene once rendered in Times).
-- **Always pass `--engine parakeet`:** with `auto`, a missing Parakeet falls back to whisper without a word.
+- **Always pass the engine for the language:** `--engine parakeet` for English and the European languages it covers;
+  `--engine whisper --model large-v3 --language <code>` for any other (Hindi: `hi`). With `auto`, a missing Parakeet
+  falls back to whisper without a word. Behind a proxy, model downloads need `NODE_USE_ENV_PROXY=1`.
 - **Snapshot filenames:** `snapshot --at 8.0` writes `frame-00-at-8s.png` (no ".0") and wipes the folder each run; copy
   by exact name (`snap-beats.py` does).
 

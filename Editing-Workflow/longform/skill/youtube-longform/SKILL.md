@@ -34,7 +34,8 @@ Check, and tell the creator plainly what is missing:
 - the kit: `.claude/skills/youtube-edit/SKILL.md` and its tests (`cd "$SK/scripts" && python3 -m unittest tests` → OK);
 - this skill: `$LF/SKILL.md`, `$LF/PLAYBOOK.md`, `$LF/templates/{STATUS,ASSET-REQUESTS,QA,NOTES}.md`;
 - the agents: `.claude/agents/longform-{ingest,transcriber,cutter,director,researcher,broll-scout,sound-designer,animator,renderer,qa,assembler,librarian,analyst}.md`;
-- the tools in SKILL › Setup check (Node 22+, HyperFrames, FFmpeg, Python + numpy, auto-editor, Parakeet, Chrome);
+- the tools in SKILL › Setup check (Node 22+, HyperFrames, FFmpeg, Python + numpy, auto-editor, Chrome, and the
+  transcriber for the language: Parakeet, or Whisper large-v3 for Hindi and others);
 - optional, free: `PEXELS_API_KEY` for stock B-roll.
 Agents load at the start of a conversation: after installing them, the creator opens a new one.
 
@@ -48,7 +49,8 @@ Ask once, in one short numbered message (skip what the creator already said):
 5. The raw files: where, in what order, which are talking head, which are screen recordings.
 6. A **sponsor** or product placement? (yes/no, brand)
 7. Music: yes or no.
-8. Names and terms to spell right (people, products, tools).
+8. Names and terms to spell right (people, products, tools), and the **language** spoken (it picks the transcriber:
+   Parakeet for English and European languages, Whisper large-v3 for Hindi and others).
 9. Anything that must be in it (a moment, a demo, a link).
 
 Then: `mkdir -p "$W"`, copy the templates (`cp "$LF/templates/"{STATUS,NOTES}.md "$W/"`), fill the STATUS header and
