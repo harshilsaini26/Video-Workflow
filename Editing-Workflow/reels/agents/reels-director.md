@@ -61,7 +61,9 @@ Input: `$W/transcript.json` (fresh, after any re-cut), `$W/cut-map.json`, `$W/pu
    - `sounds`: only sounds with a physical cause (§R7), each also a row in ASSET-REQUESTS.md.
    - `loop`: `{"first": "<first words>", "last": "<last words>", "note": "..."}` (§R6).
 3. **Asset requests**: one row per file (logo, site, page, screenshot, b-roll in 9:16 or a landscape clip to conform,
-   screen recording, sfx, music), with a spec the owner can't misread. **Free sources only** (§R10).
+   screen recording, sfx, music), with a spec the owner can't misread. **Free sources only** (§R10). The kinds table in
+   the templates names the long-form owners; in a reel, every row is owned by `Asset scout`, except `photo` and
+   `screen-recording`, which are `You`.
 4. **Self-check** before reporting: something meaningful changes every 2 to 4 s; nothing lands later than 0.3 s at
    the start; the last 2 s hold the payoff (or a CTA after it); §R14's patterns.
 

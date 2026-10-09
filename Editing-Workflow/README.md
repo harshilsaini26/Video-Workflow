@@ -566,8 +566,8 @@ passing, is noted, not failed.
    passes (camera renders arrive at -25 to -33), joined, tagged BT.709. Writes `ASSEMBLY.md` and `chapters.txt`.
 3. Music, if any: ducked under your voice with a -1 dB limiter; a no-music copy is kept.
 4. QA runs again on the master.
-5. `storyboard-md.py` → `STORYBOARD.md`: time, beat, what is on screen, what changed, concerns, every stock clip with
-   its page, licence and seconds.
+5. `storyboard-md.py` → `STORYBOARD.md`: time, beat, what is on screen, what changed, concerns; the Assembler then adds
+   every stock clip with its page, licence and seconds (from ASSET-REQUESTS.md).
 6. Copy to the delivery folder, check the md5 against the render, put `STORYBOARD.md` and `PAPER-CUT.md` next to it.
    Never pass the MP4 through a chat download.
 7. Report to the Producer: where it is, what was added, **its own concerns** (a card held too long, a cut hidden under
