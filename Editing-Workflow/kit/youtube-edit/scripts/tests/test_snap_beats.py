@@ -4,13 +4,13 @@ import hashlib, os, stat, sys, unittest
 from .helpers import needs_ffmpeg, run, scratch, write
 
 FAKE_NPX = r'''#!%s
-# fake `npx hyperframes snapshot <public> --at <t>`: writes frame-00-at-<t>s.png in a colour of its own, keeps a copy
+# fake `npx hyperframes snapshot <public> --at <t>`: writes frame-00-at-<t>s.png (4.0 -> 4s) in a colour of its own
 import os, subprocess, sys
 pub, t = sys.argv[3], sys.argv[5]
 if t == os.environ.get("FAKE_FAIL_AT"):
     sys.exit("snapshot failed")
 os.makedirs(os.path.join(pub, "snapshots"), exist_ok=True)
-out = os.path.join(pub, "snapshots", "frame-00-at-%%ss.png" %% t)
+out = os.path.join(pub, "snapshots", "frame-00-at-%%gs.png" %% float(t))   # HyperFrames names: 0.6s, 8s
 colour = "0x%%06x" %% (int(float(t) * 100) * 4099 %% 0xFFFFFF)
 subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "color=c=%%s:s=64x36" %% colour, "-frames:v", "1", out], check=True)
 os.makedirs(os.environ["FAKE_RECORD"], exist_ok=True)
@@ -30,7 +30,8 @@ class SnapBeats(unittest.TestCase):
         P = os.path.join(d, "proj")
         write(os.path.join(P, "storyboard.json"), {"id": "t", "duration": 5.0, "beats": [
             {"type": "chip", "id": "a", "in": 1.0, "out": 2.0}, {"type": "chip", "id": "b", "in": 2.0, "out": 3.0},
-            {"type": "chip", "id": "c", "in": 3.0, "out": 4.0}]})                          # moments 1.9, 2.9, 3.9
+            {"type": "chip", "id": "c", "in": 3.0, "out": 4.0},
+            {"type": "chip", "id": "w", "in": 3.1, "out": 4.5}]})                          # moments 1.9, 2.9, 3.9, 4.0
         stale = os.path.join(P, "public", "snapshots", "frame-00-at-0.35s.png")           # left over from an earlier run
         write(stale, "not this frame")
         bindir = os.path.join(d, "bin"); os.makedirs(bindir)
@@ -48,7 +49,7 @@ class SnapBeats(unittest.TestCase):
                 else: os.environ[k] = v
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         snaps = os.path.join(P, "snaps")
-        for t in ("1.9", "3.9"):
+        for t in ("1.9", "3.9", "4.0"):                                                # 4.0 is saved as frame-00-at-4s.png
             self.assertEqual(md5(os.path.join(snaps, "at-%05.2f.png" % float(t))), md5(os.path.join(record, t + ".png")), t)
         self.assertFalse(os.path.exists(os.path.join(snaps, "at-02.90.png")))         # the failed moment is not faked
         self.assertIn("snapshot failed at 2.9", r.stdout)

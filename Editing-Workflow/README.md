@@ -1031,7 +1031,7 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 | GSAP (optional local copy) | `assets/vendor/gsap.min.js` | ✅ |
 | yt-dlp (optional, Analyst only) | `yt-dlp --version` | ✅ |
 
-3. The tests, from the skill's scripts folder: `python3 -m unittest tests` → 31 tests, `OK`.
+3. The tests, from the skill's scripts folder: `python3 -m unittest tests` → 47 tests, `OK` (and 37 in the Reels skill's scripts folder).
 4. `new` The agent team for your profile. **YouTube long-form:** install the Producer skill, the playbook, the
    templates and the 13 agent files as in [`longform/README.md`](longform/README.md) § 2. **Reels:** the Producer
    skill, the playbook, the scripts, the templates and the 11 agent files as in [`reels/README.md`](reels/README.md) § 2.

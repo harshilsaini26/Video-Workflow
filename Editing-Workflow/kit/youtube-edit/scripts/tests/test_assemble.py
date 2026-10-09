@@ -31,6 +31,7 @@ class Assemble(unittest.TestCase):
     def test_the_default_work_folder_is_removed(self):
         d = scratch(self)
         clip(os.path.join(d, "a.mp4"), 1.5)
+        write(os.path.join(d, "assembly-work", "01-old-segment.mp4"), "left over from a --keep-work run")
         out = os.path.join(d, "deliver", "t.mp4")
         r = run("assemble.py", "--manifest", self.manifest(d, [{"name": "Hook", "file": "a.mp4"}]), "--out", out)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)

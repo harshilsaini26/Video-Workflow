@@ -46,3 +46,24 @@ class PaperCut(unittest.TestCase):
 
     def test_same_breath_flub_is_cut_without_speech_chunks(self):
         self.assert_removed_is_not_kept(self.cut(speech=False))
+
+
+class PaperCutFoldedRestart(unittest.TestCase):
+    """A one-word head before a restart ("And so the, so the thing") is folded into the restart: the run before it must
+    still stop there, or with --speech the struck restart stays in the sound."""
+    WORDS = [("Hello", 0.40), ("there", 0.70), ("my", 1.00), ("friends.", 1.25),
+             ("And", 1.90), ("so", 2.10), ("the,", 2.30), ("so", 2.70), ("the", 2.90), ("thing", 3.10), ("is", 3.40), ("great.", 3.60)]
+
+    def test_restart_in_the_same_breath_is_cut(self):
+        d = scratch(self)
+        t = write(os.path.join(d, "t.json"), {"words": [{"text": w, "start": s, "end": round(s + 0.2, 3)} for w, s in self.WORDS]})
+        sp = write(os.path.join(d, "speech.v1"), {"version": "1", "timebase": "30/1", "source": "x",
+                                                  "chunks": [[0, 9, 99999], [9, 140, 1], [140, 150, 99999]]})
+        r = run("paper-cut.py", "--transcript", t, "--speech", sp, "--duration", "6.0", "--out-dir", d)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        cl = load(os.path.join(d, "cut-list.json"))
+        self.assertIn("restart", [x["reason"] for x in cl["removed"]])
+        for seg in cl["kept"]:   # nothing of "And so the," (spoken 1.90 to 2.50) is heard
+            self.assertFalse(seg["start"] < 2.50 and seg["end"] > 1.90, "kept %r overlaps the restart" % seg)
+        self.assertTrue(any(s["start"] <= 0.40 and s["end"] >= 1.45 for s in cl["kept"]), cl["kept"])
+        self.assertTrue(any(s["start"] <= 2.70 and s["end"] >= 3.80 for s in cl["kept"]), cl["kept"])

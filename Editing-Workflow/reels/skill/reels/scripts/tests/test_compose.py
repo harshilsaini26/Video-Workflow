@@ -121,7 +121,7 @@ class ComposeReel(unittest.TestCase):
         r, _, _ = self.build(dict(ALL, beats=[pills]))
         self.assertNotEqual(r.returncode, 0, r.stdout)
         self.assertIn("inside the caption slot", r.stderr)
-        # a number never wraps: $1,000,000 at 150 px is ~828 px, wider than the narrow 780 px column a low block gets
+        # a number never wraps: $1,000,000 at 150 px is ~840 px (828 measured), wider than the narrow 780 px column a low block gets
         stat = {"type": "stat", "id": "sn", "value": 1000000, "prefix": "$", "label": "saved", "pos": "low", "in": 0.2, "out": 2.0, "anchor": "-"}
         r, _, _ = self.build(dict(ALL, beats=[stat], captions=False), transcript=None)
         self.assertNotEqual(r.returncode, 0, r.stdout)
@@ -131,8 +131,15 @@ class ComposeReel(unittest.TestCase):
         r, _, _ = self.build(dict(ALL, beats=[long_pill], captions=False), transcript=None)
         self.assertNotEqual(r.returncode, 0, r.stdout)
         self.assertIn("wider than the 780 px column", r.stderr)
+        # nor does a single word: a point is one big word ("Unbelievable" at 180 px is ~1210 px)
+        point = {"type": "point", "id": "pt", "text": "Unbelievable", "size": 180, "pos": "mid", "in": 0.2, "out": 2.0, "anchor": "-"}
+        r, _, _ = self.build(dict(ALL, beats=[point], captions=False), transcript=None)
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("'Unbelievable' is about 1209 px wide", r.stderr)
         # and what fits still builds
         r, _, _ = self.build(dict(ALL, beats=[dict(stat, value=1000, pos="mid")], captions=False), transcript=None)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        r, _, _ = self.build(dict(ALL, beats=[dict(point, text="Transcribe", size=132)], captions=False), transcript=None)
         self.assertEqual(r.returncode, 0, r.stderr)
 
     def test_composition_id_is_escaped_for_each_context(self):

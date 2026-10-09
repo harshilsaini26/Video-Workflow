@@ -325,6 +325,11 @@ for b in S.get("beats", []):
     elif t == "point":
         size = int(b.get("size", 132))
         left, top, width = place(bid, b.get("pos", "mid"), lambda w: h_point(b["text"], size, b.get("sub"), w))
+        for text, fs in ((b["text"], size), (b.get("sub") or "", 52)):   # lines break between words, never inside one
+            for word in text.split():
+                if text_width(word, fs) > width:
+                    fail("%s: %r is about %d px wide at %d px, wider than the %d px column; use a smaller size or a shorter word"
+                         % (bid, word, text_width(word, fs), fs, width))
         col = b.get("color", "white")
         sub = '<div class="pt-sub shadow" id="%s-sub">%s</div>' % (bid, esc(b["sub"])) if b.get("sub") else ""
         inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx"><div class="pt-main shadow %s" id="%s-main" style="font-size:%dpx">%s</div>%s</div>' % (
@@ -574,7 +579,7 @@ page = """<!doctype html>
 </html>
 """ % (CSS, esc(S["id"]), D, FPS, esc(S.get("video", "input-video.mp4")), D, "".join(html_parts), cap_html, S.get("raw_html", ""),
        "".join(audio_parts), GSAP_SRC, HELPERS, "\n        ".join(cam), "\n        ".join(js_parts), "\n        ".join(cap_js),
-       S.get("raw_js", ""), D, json.dumps(str(S["id"])).replace("</", "<\\/"))   # a JS string: the browser decodes the attribute, not script text
+       S.get("raw_js", ""), D, json.dumps(str(S["id"])).replace("<", "\\u003c"))   # a JS string: the browser decodes the attribute, not script text
 open(os.path.join(OUT, "index.html"), "w").write(page)
 open(os.path.join(OUT, "hyperframes.json"), "w").write(json.dumps({
     "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
