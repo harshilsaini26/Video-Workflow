@@ -40,7 +40,7 @@ storyboard.json:
 Every beat has type, id, in, out and anchor (the spoken words, or "-" for a deliberate unanchored beat). Items carry
 their own time and anchor. Exit codes: 0 built, 1 a rule broke (the message names it).
 """
-import argparse, glob, html, json, math, os, shutil, sys
+import argparse, glob, html, json, math, os, re, shutil, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import reels_lib as L
@@ -102,15 +102,26 @@ if args.shared:
 WIDE_L, WIDE_W = L.SAFE["left"], L.SAFE["right"] - L.SAFE["left"]          # 65, 950
 NAR_L, NAR_W = L.NARROW["left"], L.NARROW["right"] - L.NARROW["left"]       # 150, 780
 
+placed = []   # (id, top, bottom) of every block, for the caption-slot check after the captions are built
+
 def place(bid, pos, height):
-    """(left, top, width) for a block of `height` px at slot `pos`; narrow when it reaches the action column band."""
+    """(left, top, width) for a block at slot `pos`; narrow when it reaches the action column band.
+
+    `height` is px, or a function of the width for text that wraps: the narrow column fits fewer characters a line,
+    so the height is measured again at the width the block actually gets."""
     if pos not in L.SLOTS:
         fail("%s: unknown pos %r (one of: %s)" % (bid, pos, ", ".join(L.SLOTS)))
+    h_at = height if callable(height) else (lambda w: height)
     top = L.SLOTS[pos]
-    left, width = (WIDE_L, WIDE_W) if top + height <= L.RIGHT_COL_TOP else (NAR_L, NAR_W)
-    if not L.inside_safe(left, top, width, height):
+    left, width = WIDE_L, WIDE_W
+    h = h_at(width)
+    if top + h > L.RIGHT_COL_TOP:
+        left, width = NAR_L, NAR_W
+        h = h_at(width)
+    if not L.inside_safe(left, top, width, h):
         fail("%s: a %d px tall block at pos %r ends at y %d, past the safe zone (bottom %d). Use a higher pos or less text"
-             % (bid, height, pos, top + height, L.SAFE["bottom"]))
+             % (bid, h, pos, top + h, L.SAFE["bottom"]))
+    placed.append((bid, top, top + h))
     return left, top, width
 
 def text_lines(text, size, width):
@@ -249,15 +260,18 @@ def norm_item(it):
 
 # ---- beats -------------------------------------------------------------------------------------------------------
 KNOWN = ("hook", "headline", "point", "steps", "pills", "logo", "chip", "stat", "clip", "image")
-seen_ids = set()
+seen_ids, beat_times = set(), {}
 for b in S.get("beats", []):
     t, bid = b.get("type"), b.get("id")
     if t not in KNOWN:
         fail("unknown beat type %r (one of: %s)" % (t, ", ".join(KNOWN)))
     if not bid or bid in seen_ids:
         fail("every beat needs a unique id (%r)" % bid)
+    if not re.match(r"^[A-Za-z][A-Za-z0-9_-]*$", str(bid)):
+        fail("%s: an id starts with a letter and holds only letters, digits, - and _ (it becomes an HTML id and a selector)" % bid)
     seen_ids.add(bid)
     t_in, t_out = float(b["in"]), float(b["out"])
+    beat_times[bid] = (t_in, t_out)
     if not (0 <= t_in < t_out <= D + 1e-6):
         fail("%s: in %.2f / out %.2f must satisfy 0 <= in < out <= duration %.2f" % (bid, t_in, t_out, D))
     if "anchor" not in b:
@@ -272,10 +286,11 @@ for b in S.get("beats", []):
         if not 72 <= size <= 112:
             fail("%s: size %d is outside 72 to 112 px" % (bid, size))
         pos = b.get("pos", "top")
-        lines = text_lines(text, size, WIDE_W - 60)
+        pad = 36 if b.get("box") else 0
+        left, top, width = place(bid, pos, lambda w: int(text_lines(text, size, w - 60) * size * 1.08 + pad))
+        lines = text_lines(text, size, width - 60)
         if lines > 3:
-            fail("%s: %r needs %d lines at %d px; three at most" % (bid, text, lines, size))
-        left, top, width = place(bid, pos, int(lines * size * 1.08 + (36 if b.get("box") else 0)))
+            fail("%s: %r needs %d lines at %d px in a %d px column; three at most" % (bid, text, lines, size, width))
         cls = "hl shadow" + (" amber" if b.get("color") == "amber" else "") + (" boxed" if b.get("box") else "")
         inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx"><div class="%s" id="%s" style="font-size:%dpx">%s</div></div>' % (
             left, top, width, cls, bid, size, words_spans(text, b.get("em")).replace('class="w', 'style="font-size:%dpx" class="w' % size).replace('class="sp"', 'class="sp" style="font-size:%dpx"' % size))
@@ -391,8 +406,8 @@ for b in S.get("beats", []):
             js("tl.fromTo('#%s', { scale: 1.0 }, { scale: 1.04, duration: %.3f, ease: 'none', immediateRender: false }, %.3f);" % (bid, t_out - t_in, t_in))
         if b.get("label"):
             size = 84
-            lines = text_lines(b["label"], size, WIDE_W - 60)
-            left, top, width = place(bid, "top", int(lines * size * 1.08))
+            label = b["label"]
+            left, top, width = place(bid, "top", lambda w: int(text_lines(label, size, w - 60) * size * 1.08))
             inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx"><div class="hl shadow" id="%s-label">%s</div></div>' % (
                 left, top, width, bid, words_spans(b["label"], b.get("label_em")).replace('class="w', 'style="font-size:%dpx" class="w' % size).replace('class="sp"', 'class="sp" style="font-size:%dpx"' % size))
             html_parts.append(host(bid + "-over", t_in, t_out, inner, "-", " cut-over"))
@@ -406,6 +421,11 @@ for b in S.get("beats", []):
 # ---- captions ----------------------------------------------------------------------------------------------------
 cap_html, cap_js, n_chunks = "", [], 0
 C = S.get("captions", {})
+if C is True or C is None:
+    C = {}
+if C is not False and not isinstance(C, dict):
+    fail("\"captions\" is an object of settings, true, or false (got %r)" % (C,))
+shown = []   # (start, end) of every caption on screen
 if C is not False:
     tpath = C.get("transcript", "transcript.json")
     tpath = tpath if os.path.isabs(tpath) else os.path.join(SPEC_DIR, tpath)
@@ -436,6 +456,7 @@ if C is not False:
         for a, z in off:                 # a chunk never runs into an "off" range
             if ch["start"] < a < end:
                 end = a
+        shown.append((ch["start"], end))
         spans = []
         for j, w in enumerate(ch["words"]):
             k = L.norm(w["text"])
@@ -450,6 +471,16 @@ if C is not False:
         cap_js.append("tl.fromTo('#cap%d', { y: 10, opacity: 0.6 }, { y: 0, opacity: 1, duration: 0.12, ease: 'power2.out', immediateRender: false }, %.3f);" % (i, ch["start"]))
         cap_js.append("tl.set('#cap%d', { visibility: 'hidden' }, %.3f);" % (i, end))
     n_chunks = len(chunks)
+    # a block reaching into the caption slot while captions show would sit under (or over) them (PLAYBOOK §R14)
+    for bid, top, bottom in placed:
+        if bottom <= L.CAPTION_TOP:
+            continue
+        b_in, b_out = beat_times[bid]
+        hit = next((st for st, en in shown if st < b_out and en > b_in), None)
+        if hit is not None:
+            fail("%s: the block ends at y %d, inside the caption slot (from y %d), while captions show at %.2f s. "
+                 "Use a higher pos or less text, or switch captions off for this beat (\"off\": [[%.2f, %.2f]])"
+                 % (bid, bottom, L.CAPTION_TOP, hit, b_in, b_out))
     cap_html = ('    <div class="clip cap-layer" id="captions" data-start="0" data-duration="%.3f" data-track-index="2">\n%s    </div>\n'
                 % (D, "".join(parts)))
 

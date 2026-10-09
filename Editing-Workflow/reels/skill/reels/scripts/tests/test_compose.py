@@ -92,6 +92,35 @@ class ComposeReel(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("past the safe zone", r.stderr)
 
+    def test_wrapped_text_is_measured_at_the_column_it_gets(self):
+        # 3 lines at the wide width, 4 in the narrow column it moves to below y 960: it must not slip past the safe bottom
+        long = {"type": "headline", "id": "hd", "text": "x" * 40, "size": 112, "pos": "low", "in": 0.2, "out": 2.0, "anchor": "-"}
+        r, _, _ = self.build(dict(ALL, beats=[long], captions=False), transcript=None)
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("past the safe zone", r.stderr)
+        fits = dict(long, text="Two short lines here", size=84)
+        r, page, _ = self.build(dict(ALL, beats=[fits], captions=False), transcript=None)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('class="box" style="left:150px;top:820px;width:780px"', page)
+
+    def test_a_block_in_the_caption_slot_fails_while_captions_show(self):
+        chip = {"type": "chip", "id": "ch", "text": "and that is the whole point of this video", "in": 3.3, "out": 6.0, "anchor": "-"}
+        r, _, _ = self.build(dict(ALL, beats=[chip]))
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("inside the caption slot", r.stderr)
+        r, _, _ = self.build(dict(ALL, beats=[chip], captions={"transcript": "transcript.json", "off": [[3.3, 6.0]]}))
+        self.assertEqual(r.returncode, 0, r.stderr)     # captions switched off over the beat: no clash
+        r, _, _ = self.build(dict(ALL, beats=[dict(chip, text="it's free")]))
+        self.assertEqual(r.returncode, 0, r.stderr)     # a short chip stays above the slot
+
+    def test_captions_true_means_the_defaults(self):
+        r, page, _ = self.build(dict(ALL, captions=True))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('id="captions"', page)
+        r, _, _ = self.build(dict(ALL, captions="yes"))
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn('"captions" is an object of settings', r.stderr)
+
     def test_guards(self):
         cases = [
             ({"type": "hook", "id": "h", "text": "x" * 61, "in": 0, "out": 1, "anchor": "-"}, "keep it under 60"),
@@ -99,6 +128,8 @@ class ComposeReel(unittest.TestCase):
             ({"type": "chip", "id": "c", "text": "hi", "in": 0, "out": 1}, "every beat needs an anchor"),
             ({"type": "chip", "id": "c", "text": "hi", "in": 2, "out": 1, "anchor": "-"}, "must satisfy"),
             ({"type": "point", "id": "p", "text": "x", "in": 0, "out": 1, "anchor": "-", "pos": "side"}, "unknown pos 'side'"),
+            ({"type": "chip", "id": "1h", "text": "hi", "in": 0, "out": 1, "anchor": "-"}, "starts with a letter"),
+            ({"type": "chip", "id": 'a"b', "text": "hi", "in": 0, "out": 1, "anchor": "-"}, "starts with a letter"),
         ]
         for beat, msg in cases:
             r, _, _ = self.build(dict(ALL, beats=[beat], captions=False), transcript=None)
