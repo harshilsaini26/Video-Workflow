@@ -987,7 +987,7 @@ scripts in [`reels/skill/reels/scripts/`](reels/README.md#5-the-scripts-and-how-
 | 4 Cut | the kit's cut stage at 60 fps (`apply-cut.py --fps 60`), dead air under 0.30 s, the strongest line moved first |
 | 5 Plan | the Reels PLAYBOOK (§R0 to §R14): hook, safe zone, captions, pacing, loop |
 | 6 Assets | free sources only; `reels-conform.py` makes any clip vertical at 60 fps |
-| 7 Compose | `reels-compose.py`: 1080x1920, 60 fps, 10 formats, burned-in captions, the safe zone enforced by construction; the kit's beat-check and gap-scan run on it unchanged |
+| 7 Compose | `reels-compose.py`: 1080x1920, 60 fps, 10 formats, burned-in captions, the safe zone enforced by construction; the kit's beat-check and gap-scan run on it (gap-scan leaves the caption layer out of its coverage) |
 | 8 Render | `npx hyperframes render --resolution portrait --fps 60 --video-bitrate 20M` |
 | 9 Verify | the kit's `verify-render.py --res 1080x1920`, plus five reel checks (first frame, length, bitrate ceiling, loop, captions) |
 | 10 Package | audio levelled with the picture copied; cover, SRT, post caption, checklist (no assembly: one file) |

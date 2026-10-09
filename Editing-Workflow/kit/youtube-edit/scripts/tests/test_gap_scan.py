@@ -36,6 +36,15 @@ class GapScan(unittest.TestCase):
         self.assertIn("0 camera move(s)", r.stdout)
         self.assertRegex(r.stdout, r"5\.00 -   60\.00   55\.0s  <-- over the 30s ceiling")
 
+    def test_a_caption_layer_is_not_an_overlay(self):
+        # burned-in captions (the Reels caption layer) run the whole length; they must not hide a static stretch
+        d = scratch(self)
+        page = PAGE.replace('<script>', '<div class="clip cap-layer" id="captions" data-start="0" data-duration="60.000" data-track-index="2"></div>\n<script>', 1)
+        r = run("gap-scan.py", "--index", write(os.path.join(d, "public", "index.html"), page % ""))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("1 overlay(s)", r.stdout)
+        self.assertRegex(r.stdout, r"5\.00 -   60\.00   55\.0s  <-- over the 30s ceiling")
+
 
 if __name__ == "__main__":
     unittest.main()

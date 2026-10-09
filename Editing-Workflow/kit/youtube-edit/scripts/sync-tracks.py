@@ -48,13 +48,14 @@ corr = np.fft.irfft(np.fft.rfft(a, n) * np.conj(np.fft.rfft(b, n)), n)
 corr = np.concatenate([corr[-(len(b) - 1):], corr[:len(a)]])   # lags from -(len(b)-1) .. len(a)-1
 lags = np.arange(-(len(b) - 1), len(a))
 k = int(np.argmax(np.abs(corr)))
-lag = lags[k]                       # samples: positive means B starts AFTER A (B is late), i.e. a[t] ~ b[t - lag]
+lag = lags[k]                       # samples: positive means B starts AFTER A (B is late), i.e. b[t] ~ a[t + lag]
 peak = np.abs(corr[k]); rest = np.abs(corr); rest[max(0, k - args.rate // 10):k + args.rate // 10] = 0
 confidence = float(peak / (rest.max() + 1e-9))
 offset = lag / args.rate
 
-# a[t] = b[t - lag]  ->  b starts `offset` seconds later than a when lag > 0 (b's sample i is a's sample i+lag)
-res = {"a": args.a, "b": args.b, "offset_b_after_a": round(-offset, 4), "confidence": round(confidence, 2),
+# corr[lag] = sum a[t + lag] * b[t]: it peaks where b[t] = a[t + lag], i.e. b's sample t is a's sample t + lag, so b
+# started `offset` seconds after a when lag > 0 (and before it when lag < 0)
+res = {"a": args.a, "b": args.b, "offset_b_after_a": round(offset, 4), "confidence": round(confidence, 2),
        "note": "trim the file that started EARLIER by |offset| so both begin on the same instant"}
 print(json.dumps(res, indent=1))
 if confidence < 3:
