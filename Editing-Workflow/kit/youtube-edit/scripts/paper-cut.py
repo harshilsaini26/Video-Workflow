@@ -163,6 +163,13 @@ for s in S:
             run = []
         run.append(k)
     if run: runs.append({"idx": run, "clamp": None})
+# A run followed by a word that was dropped (a removed sentence: a flub, a "cut that" marker, an earlier take) also stops
+# before that word, so a removal spoken in the same breath (the same speech chunk) is cut out of the sound as well.
+kept_idx = {i for s in S if not s["remove"] for i in s["idx"]}
+for r in runs:
+    nxt = r["idx"][-1] + 1
+    if r["clamp"] is None and nxt < len(words) and nxt not in kept_idx:
+        r["clamp"] = words[nxt]["start"]
 segments = []
 if args.speech and kept_words:
     d = json.load(open(args.speech)); num, den = [int(x) for x in str(d.get("timebase", "30/1")).split("/")]; fps = num / den

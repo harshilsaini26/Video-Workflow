@@ -6,7 +6,7 @@ bullets beat again 0.6 s after its last item, plus any --at extras. A snapshot i
 Usage: python3 snap-beats.py --project videos/<p> [--at 12.3 --at 20.0]
 Writes videos/<p>/snaps/at-<t>.png and videos/<p>/snaps/sheet.png (tiled, 640 px wide each).
 """
-import argparse, json, os, subprocess, shutil, glob, math
+import argparse, json, os, re, subprocess, shutil, glob, math, time
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--project", required=True)
@@ -39,13 +39,22 @@ snapdir = os.path.join(P, "snaps"); os.makedirs(snapdir, exist_ok=True)
 pub = os.path.join(P, "public")
 env = dict(os.environ, PRODUCER_BROWSER_GPU_MODE="hardware")
 outs = []
+def shot_time(path):
+    m = re.search(r"-at-([\d.]+?)s?\.png$", os.path.basename(path))
+    return float(m.group(1)) if m else None
+
 for t in moments:
-    subprocess.run(["npx", "hyperframes", "snapshot", pub, "--at", str(t)], env=env, capture_output=True)
-    cands = sorted(glob.glob(os.path.join(pub, "snapshots", "frame-00-at-*.png")))
+    started = time.time()
+    r = subprocess.run(["npx", "hyperframes", "snapshot", pub, "--at", str(t)], env=env, capture_output=True, text=True)
+    if r.returncode != 0:
+        print("snapshot failed at %s: %s" % (t, (r.stderr.strip().splitlines() or ["exit %d" % r.returncode])[-1])); continue
+    # only a frame of THIS moment written by THIS run: public/snapshots can hold frames from earlier moments and runs
+    cands = [f for f in glob.glob(os.path.join(pub, "snapshots", "frame-*-at-*.png"))
+             if shot_time(f) is not None and abs(shot_time(f) - t) < 0.006 and os.path.getmtime(f) >= started - 1]
     if not cands:
         print("no snapshot at", t); continue
     dst = os.path.join(snapdir, "at-%05.2f.png" % t)
-    shutil.copy(cands[0], dst); outs.append(dst)
+    shutil.copy(max(cands, key=os.path.getmtime), dst); outs.append(dst)
     print("snap", t)
 if outs:
     cols = 3; rows = math.ceil(len(outs) / cols)

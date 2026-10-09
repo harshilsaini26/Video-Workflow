@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """gap-scan.py: coverage scan of a composition for long-form pacing.
 
-Lists every timed overlay (card-host, cutaway) and every camera move in public/index.html by start time and
-reports the stretches where nothing changes: no overlay on screen and no camera move. A camera move is a GSAP
+Lists every timed overlay (card-host, cutaway; not a burned-in caption layer) and every camera move in
+public/index.html by start time and reports the stretches where nothing changes: no overlay on screen and no camera move. A camera move is a GSAP
 tl.to / tl.fromTo on '#video-zoom' or '#video-wrap' with a literal time; a tl.set (the snap back at a jump cut)
 is not a move. The test is whether any 15-20 second stretch feels static, so the defaults are: first 90 s
 flag > 15 s, main body flag > 20 s, hard ceiling 30 s. Also prints the density: overlays and camera moves per
@@ -34,6 +34,8 @@ for m in re.finditer(r"<(div|video|audio)\b([^>]*)>", html):
         continue
     if "data-composition-id" in attrs:      # the root stage is not an overlay
         continue
+    if re.search(r'class="[^"]*\bcap-layer\b', attrs):   # burned-in captions (Reels) run the whole length: they are
+        continue                                           # not an overlay and must not hide a static stretch
     gid = re.search(r'\bid="([^"]+)"', attrs)
     gid = gid.group(1) if gid else "?"
     if gid in ("bg-video", "fg-matte"):

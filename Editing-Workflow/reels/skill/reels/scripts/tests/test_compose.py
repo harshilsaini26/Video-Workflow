@@ -113,6 +113,35 @@ class ComposeReel(unittest.TestCase):
         r, _, _ = self.build(dict(ALL, beats=[dict(chip, text="it's free")]))
         self.assertEqual(r.returncode, 0, r.stderr)     # a short chip stays above the slot
 
+    def test_block_heights_match_what_the_browser_draws(self):
+        # heights measured in Chromium: a pill is 121 px (it was counted as 100), so four pills at mid reach y 1124 and
+        # sit in the caption slot (from y 1050) while captions show
+        pills = {"type": "pills", "id": "pl", "pos": "mid", "in": 1.9, "out": 3.2, "anchor": "-",
+                 "items": [["One", 2.0], ["Two", 2.2], ["Three", 2.4], ["Four", 2.6]]}
+        r, _, _ = self.build(dict(ALL, beats=[pills]))
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("inside the caption slot", r.stderr)
+        # a number never wraps: $1,000,000 at 150 px is ~828 px, wider than the narrow 780 px column a low block gets
+        stat = {"type": "stat", "id": "sn", "value": 1000000, "prefix": "$", "label": "saved", "pos": "low", "in": 0.2, "out": 2.0, "anchor": "-"}
+        r, _, _ = self.build(dict(ALL, beats=[stat], captions=False), transcript=None)
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("wider than the 780 px column", r.stderr)
+        # a pill never wraps either
+        long_pill = dict(pills, pos="low", items=[["A really long pill label here", 2.0], ["Two", 2.2]])
+        r, _, _ = self.build(dict(ALL, beats=[long_pill], captions=False), transcript=None)
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("wider than the 780 px column", r.stderr)
+        # and what fits still builds
+        r, _, _ = self.build(dict(ALL, beats=[dict(stat, value=1000, pos="mid")], captions=False), transcript=None)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_composition_id_is_escaped_for_each_context(self):
+        # the browser decodes the attribute ("Q&amp;A" -> "Q&A") but not script text: the timeline key must be the decoded id
+        r, page, _ = self.build(dict(ALL, id='Q&A "reel"', captions=False), transcript=None)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('data-composition-id="Q&amp;A &quot;reel&quot;"', page)
+        self.assertIn('window.__timelines["Q&A \\"reel\\""] = tl;', page)
+
     def test_captions_true_means_the_defaults(self):
         r, page, _ = self.build(dict(ALL, captions=True))
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -160,6 +189,16 @@ class ComposeReel(unittest.TestCase):
         gs = run_kit("gap-scan.py", "--index", os.path.join(d, "public", "index.html"), "--early", "6", "--body", "6", "--max", "8")
         self.assertIn("camera move(s)", gs.stdout)
         self.assertNotIn("Traceback", gs.stderr)
+
+    @needs_kit
+    def test_kit_gap_scan_sees_a_static_captioned_reel(self):
+        # captions on for 12 s and one 1 s chip: the caption layer must not count as covering the reel (gate G9)
+        spec = dict(ALL, beats=[{"type": "chip", "id": "ch", "text": "hi", "in": 0.2, "out": 1.2, "anchor": "-"}], camera=[], sounds=[])
+        r, _, d = self.build(spec)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        gs = run_kit("gap-scan.py", "--index", os.path.join(d, "public", "index.html"), "--early", "4", "--body", "6", "--max", "8")
+        self.assertEqual(gs.returncode, 1, gs.stdout)
+        self.assertIn("1 overlay(s)", gs.stdout)
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ a 9 Mbit/s Tella export, a 720p cutaway) come out as one clean file with no leve
 Usage:
   python3 assemble.py --manifest videos/<project>/assembly.json --out "$HOME/Movies/YouTube Renders/<project>/<project>-full-4k.mp4" [--gpu] [--keep-work]
 """
-import argparse, hashlib, json, os, shutil, subprocess, sys, tempfile
+import argparse, hashlib, json, math, os, shutil, subprocess, sys, tempfile
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--manifest", required=True)
@@ -43,7 +43,9 @@ M = json.load(open(args.manifest))
 W, H, FPS = int(M.get("width", 3840)), int(M.get("height", 2160)), int(M.get("fps", 30))
 LUFS = M.get("loudness", -14)
 work = args.work or os.path.join(mdir, "assembly-work")
-os.makedirs(work, exist_ok=True)
+work_is_ours = not os.path.exists(work)   # only a folder this run created is deleted at the end; in one you already had,
+os.makedirs(work, exist_ok=True)          # only the files this run wrote are
+written = []
 
 def resolve(p):
     p = os.path.expanduser(p)
@@ -82,6 +84,9 @@ for n, seg in enumerate(M["segments"]):
     if p["audio"] and LUFS is not None:
         m = measure_loudness(src, ss, to)
         lin = float(m["input_i"]); lout = LUFS
+    if lin is not None and not all(math.isfinite(float(m[k])) for k in ("input_i", "input_tp", "input_lra", "input_thresh")):
+        lin = "silent"   # a silent track measures -inf, which loudnorm refuses as measured_I: leave its level alone
+    elif lin is not None:
         af_parts.append("loudnorm=I=%s:TP=-1.5:LRA=11:measured_I=%s:measured_TP=%s:measured_LRA=%s:measured_thresh=%s:offset=%s:linear=true:print_format=summary"
                         % (LUFS, m["input_i"], m["input_tp"], m["input_lra"], m["input_thresh"], m["target_offset"]))
     af_parts.append("aresample=48000,aformat=channel_layouts=stereo")
@@ -99,15 +104,17 @@ for n, seg in enumerate(M["segments"]):
             "-af", ",".join(af_parts), "-c:a", "aac", "-b:a", "256k", "-ar", "48000", "-ac", "2",
             "-video_track_timescale", "90000", "-movflags", "+faststart", dst]
     print("conform %d/%d  %s  (%sx%s %s, %.1fs%s)" % (n + 1, len(M["segments"]), seg["name"], p["w"], p["h"], p["fps"], p["dur"],
-          "" if lin is None else ", %.1f LUFS -> %s" % (lin, LUFS)))
+          "" if lin is None else ", silent: level left alone" if lin == "silent" else ", %.1f LUFS -> %s" % (lin, LUFS)))
+    written.append(dst)
     subprocess.run(cmd, check=True)
     d = probe(dst)["dur"]
     rows.append({"name": seg["name"], "start": t, "dur": d, "src": src, "lufs_in": lin, "chapter": seg.get("chapter", True)})
     conformed.append(dst); t += d
 
 lst = os.path.join(work, "concat.txt")
-open(lst, "w").write("".join("file '%s'\n" % c.replace("'", "'\\''") for c in conformed))
 joined = os.path.join(work, "joined.mp4")
+written += [lst, joined]
+open(lst, "w").write("".join("file '%s'\n" % c.replace("'", "'\\''") for c in conformed))
 subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", "-movflags", "+faststart", joined], check=True)
 
 final_src = joined
@@ -115,6 +122,7 @@ music = M.get("music")
 if music and music.get("file"):
     mp = resolve(music["file"]); gain = float(music.get("db", -26)); fade = float(music.get("fade", 2.0))
     mixed = os.path.join(work, "joined-music.mp4")
+    written.append(mixed)
     fc = ("[1:a]aloop=loop=-1:size=2e9,atrim=0:%.3f,volume=%sdB,afade=t=out:st=%.3f:d=%.3f[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[a]"
           % (t, gain, max(0.0, t - fade), fade))
     subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", joined, "-i", mp, "-filter_complex", fc, "-map", "0:v:0", "-map", "[a]",
@@ -124,7 +132,11 @@ if music and music.get("file"):
 os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
 subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", final_src, "-c", "copy", "-color_primaries", "bt709", "-color_trc", "bt709",
                 "-colorspace", "bt709", "-color_range", "tv", "-movflags", "+write_colr+faststart", args.out], check=True)
-md5 = hashlib.md5(open(args.out, "rb").read()).hexdigest()
+h = hashlib.md5()
+with open(args.out, "rb") as f:            # in 1 MB pieces: a long 4K master is several GB
+    for block in iter(lambda: f.read(1 << 20), b""):
+        h.update(block)
+md5 = h.hexdigest()
 fp = probe(args.out)
 
 def ts(s):
@@ -136,12 +148,17 @@ lines = ["# Assembly: %s" % M.get("project", os.path.basename(mdir)), "",
          "| # | Start | Length | Segment | Source | Loudness in |", "|---|---|---|---|---|---|"]
 for i, r in enumerate(rows):
     lines.append("| %d | %s | %.1f s | %s | %s | %s |" % (i + 1, ts(r["start"]), r["dur"], r["name"], os.path.basename(r["src"]),
-                 "" if r["lufs_in"] is None else "%.1f LUFS" % r["lufs_in"]))
+                 "" if r["lufs_in"] is None else "silent" if r["lufs_in"] == "silent" else "%.1f LUFS" % r["lufs_in"]))
 lines += ["", "Loudness target per segment: %s LUFS (true peak -1.5 dBTP)." % LUFS,
           "Music: %s" % ("%s at %s dB" % (os.path.basename(resolve(music["file"])), music.get("db", -26)) if music and music.get("file") else "none (silence by default)"),
           "", "## YouTube chapters", ""] + ["%s %s" % c for c in chapters]
 open(os.path.join(os.path.dirname(os.path.abspath(args.out)), "ASSEMBLY.md"), "w").write("\n".join(lines) + "\n")
 open(os.path.join(os.path.dirname(os.path.abspath(args.out)), "chapters.txt"), "w").write("".join("%s %s\n" % c for c in chapters))
-if not args.keep_work: shutil.rmtree(work, ignore_errors=True)
+if not args.keep_work:
+    if work_is_ours:
+        shutil.rmtree(work, ignore_errors=True)
+    else:
+        for f in written:
+            if os.path.exists(f): os.remove(f)
 print("-> %s (%.1f s, %d segments, md5 %s)" % (args.out, fp["dur"], len(rows), md5))
 for c in chapters: print("   %s %s" % c)

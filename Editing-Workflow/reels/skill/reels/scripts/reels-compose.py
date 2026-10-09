@@ -127,6 +127,29 @@ def place(bid, pos, height):
 def text_lines(text, size, width):
     return max(1, math.ceil(len(text) * size * 0.56 / width))   # DM Sans 700 averages about 0.56 em per character
 
+def text_width(text, size):
+    return len(text) * size * 0.56
+
+# Box heights, measured in Chromium with DM Sans 700 (the CSS below): "normal" line height is about 1.31 em, the glass
+# border 3 px a side. Each takes the column width it is given, so wrapped text is counted at the width the block gets.
+def h_steps(title, items, w):
+    inner = w - 86                                             # 40 px padding + 3 px border, each side
+    t = (22 + 63 * text_lines(title, 48, inner)) if title else 0          # title: 48 px, line 63, margin 22
+    rows = sum(max(64, 63 * text_lines(it, 60, inner - 86)) + 22 for it in items)   # 64 px number + 22 gap; text 60 px, line 63
+    return 6 + 30 + 18 + t + rows
+
+def h_pills(n):
+    return 121 * n                                             # 16 + 63 + 16 padding, 6 border, 20 margin each
+
+def h_point(text, size, sub, w):
+    return size * text_lines(text, size, w) + ((14 + 58 * text_lines(sub, 52, w)) if sub else 0)
+
+def h_stat(label, w):
+    return 150 + ((16 + 68 * text_lines(label, 52, w)) if label else 0)
+
+def h_chip(text, w):
+    return 78 * text_lines(text, 72, w - 68) + 40
+
 origin = S.get("origin", "50% 28%")
 vpos = S.get("video_position", "50% 50%")
 GLASS = S.get("glass_bg", "rgba(255,255,255,0.18)")
@@ -301,8 +324,7 @@ for b in S.get("beats", []):
 
     elif t == "point":
         size = int(b.get("size", 132))
-        h = int(size + (66 if b.get("sub") else 0))
-        left, top, width = place(bid, b.get("pos", "mid"), h)
+        left, top, width = place(bid, b.get("pos", "mid"), lambda w: h_point(b["text"], size, b.get("sub"), w))
         col = b.get("color", "white")
         sub = '<div class="pt-sub shadow" id="%s-sub">%s</div>' % (bid, esc(b["sub"])) if b.get("sub") else ""
         inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx"><div class="pt-main shadow %s" id="%s-main" style="font-size:%dpx">%s</div>%s</div>' % (
@@ -320,8 +342,7 @@ for b in S.get("beats", []):
         for it in items:
             if len(it["text"]) > 22:
                 fail("%s: step %r is over 22 characters" % (bid, it["text"]))
-        h = 30 + (70 if b.get("title") else 0) + 86 * len(items) + 18
-        left, top, width = place(bid, b.get("pos", "top"), h)
+        left, top, width = place(bid, b.get("pos", "top"), lambda w: h_steps(b.get("title"), [it["text"] for it in items], w))
         rows = "".join('<div class="it" id="%s-i%d"%s><div class="n">%d</div><div class="t">%s</div></div>' % (
             bid, i, item_attrs(it["text"], it["at"], it["anchor"]), i + 1, esc(it["text"])) for i, it in enumerate(items))
         ttl = '<div class="ttl">%s</div>' % esc(b["title"]) if b.get("title") else ""
@@ -340,8 +361,10 @@ for b in S.get("beats", []):
         items = [norm_item(it) for it in b["items"]]
         if not 1 <= len(items) <= 5:
             fail("%s: pills take 1 to 5 items" % bid)
-        h = 100 * len(items)
-        left, top, width = place(bid, b.get("pos", "top"), h)
+        left, top, width = place(bid, b.get("pos", "top"), h_pills(len(items)))
+        for it in items:   # a pill never wraps (white-space: nowrap), so a long one would run past the column
+            if text_width(it["text"], 48) + 74 > width:
+                fail("%s: pill %r is about %d px wide, wider than the %d px column; shorten it" % (bid, it["text"], text_width(it["text"], 48) + 74, width))
         pl = "".join('<div class="glass pls %s" id="%s-p%d"%s><div class="inner" id="%s-pi%d"><span class="t">%s</span></div></div>' % (
             it["tone"], bid, i, item_attrs(it["text"], it["at"], it["anchor"]), bid, i, esc(it["text"])) for i, it in enumerate(items))
         inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx">%s</div>' % (left, top, width, pl)
@@ -369,8 +392,7 @@ for b in S.get("beats", []):
             audio_track += 1
 
     elif t == "chip":
-        lines = text_lines(b["text"], 72, NAR_W - 68)
-        left, top, width = place(bid, b.get("pos", "low"), int(lines * 78 + 40))
+        left, top, width = place(bid, b.get("pos", "low"), lambda w: h_chip(b["text"], w))
         em = set(b.get("em", []))
         spans = " ".join('<span class="em">%s</span>' % esc(w) if i in em else esc(w) for i, w in enumerate(b["text"].split(" ")))
         inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx"><div class="chip" id="%s-chip"><div class="inner" id="%s-inner">%s</div></div></div>' % (
@@ -382,10 +404,13 @@ for b in S.get("beats", []):
         js("tl.to('#%s-chip', { backgroundColor: 'rgba(17,17,17,0)', duration: 0.3, ease: 'power2.in' }, %.3f);" % (bid, t_out - 0.32))
 
     elif t == "stat":
-        left, top, width = place(bid, b.get("pos", "mid"), 150 + (68 if b.get("label") else 0))
+        left, top, width = place(bid, b.get("pos", "mid"), lambda w: h_stat(b.get("label"), w))
         col = b.get("color", "white")
         dec = int(b.get("decimals", 0))
         final = L.full_digits(float(b["value"]), b.get("prefix", ""), b.get("suffix", ""), dec)
+        if text_width(final, 150) > width:   # a number never wraps: it would run past the column
+            fail("%s: %r is about %d px wide at 150 px, wider than the %d px column; use a shorter number or a headline"
+                 % (bid, final, text_width(final, 150), width))
         lab = '<div class="sn-l shadow" id="%s-l">%s</div>' % (bid, esc(b["label"])) if b.get("label") else ""
         inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx"><div class="sn-v shadow %s" id="%s-v">%s</div>%s</div>' % (
             left, top, width, col, bid, esc(final), lab)
@@ -541,7 +566,7 @@ page = """<!doctype html>
 %s
         tl.to({}, { duration: %.3f }, 0);
         window.__timelines = window.__timelines || {};
-        window.__timelines["%s"] = tl;
+        window.__timelines[%s] = tl;
       })();
     </script>
   </div>
@@ -549,7 +574,7 @@ page = """<!doctype html>
 </html>
 """ % (CSS, esc(S["id"]), D, FPS, esc(S.get("video", "input-video.mp4")), D, "".join(html_parts), cap_html, S.get("raw_html", ""),
        "".join(audio_parts), GSAP_SRC, HELPERS, "\n        ".join(cam), "\n        ".join(js_parts), "\n        ".join(cap_js),
-       S.get("raw_js", ""), D, esc(S["id"]))
+       S.get("raw_js", ""), D, json.dumps(str(S["id"])).replace("</", "<\\/"))   # a JS string: the browser decodes the attribute, not script text
 open(os.path.join(OUT, "index.html"), "w").write(page)
 open(os.path.join(OUT, "hyperframes.json"), "w").write(json.dumps({
     "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",

@@ -66,7 +66,8 @@ three, Meta's published box (the strictest):
 - `reels-compose.py` places every format inside this box **by construction** and fails the build when a block would
   cross it (`reels_lib.SAFE`). Wrapping text is measured at the column it actually gets (the narrow 780 px one below
   y 960), and a block that reaches into the caption slot while captions show fails too: move it up, shorten it, or
-  switch captions off over that beat (§R5).
+  switch captions off over that beat (§R5). Every format's height matches what Chromium draws (measured), and a pill
+  or a count-up number, which never wrap, fails when it is wider than its column.
 - `reels-safezone.py` draws the zone on every snapshot (red: covered, orange: the action-column band, cyan: the caption
   slot). The Animator and QA look at the guided sheet, not the bare stills.
 - **The face** sits in the upper middle (roughly y 350 to 950): set `video_position` (the crop) and `origin` (the

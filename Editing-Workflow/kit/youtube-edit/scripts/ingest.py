@@ -10,8 +10,10 @@ Usage:
 
 Order: --order if given, else filename order (Sony C0xxx numbers are sequential), else recording time.
 Concat: ffmpeg concat demuxer with stream copy when every clip shares codec, size, fps and audio layout
-(no quality loss); any odd clip is re-encoded to match first. Writes ingest.json with the offsets so a
-timestamp in source.mp4 can always be mapped back to (clip, time).
+(no quality loss). Otherwise ONE encode joins them all (one lossy pass, no intermediate files): each clip is
+scaled and padded to the first clip's size and frame rate, its audio made 48 kHz stereo, and a clip without audio
+gets silence of its own length, so the sound stays in line with the picture. Writes ingest.json with the offsets
+so a timestamp in source.mp4 can always be mapped back to (clip, time).
 Screen recordings and other non-talking-head files can live in the same raw/ folder: pass --only to
 pick the camera clips, or they are skipped automatically when their resolution differs.
 """
@@ -40,7 +42,7 @@ def probe(path):
     return {
         "file": os.path.basename(path), "path": os.path.abspath(path),
         "duration": float(j["format"]["duration"]), "size": int(j["format"]["size"]),
-        "width": v["width"], "height": v["height"], "fps": round(int(num) / int(den), 3),
+        "width": v["width"], "height": v["height"], "fps": round(int(num) / int(den), 3), "fps_exact": "%s/%s" % (num, den),
         "vcodec": v["codec_name"], "pix_fmt": v.get("pix_fmt"),
         "acodec": a["codec_name"] if a else None, "sample_rate": int(a["sample_rate"]) if a else None,
         "channels": a["channels"] if a else 0,
@@ -90,24 +92,32 @@ if args.concat and clips:
     same = all((c["vcodec"], c["width"], c["height"], c["fps"], c["acodec"], c["sample_rate"], c["channels"]) ==
                (ref["vcodec"], ref["width"], ref["height"], ref["fps"], ref["acodec"], ref["sample_rate"], ref["channels"])
                for c in clips)
-    parts = []
-    for c in clips:
-        p = c["path"]
-        if not same:
-            fixed = os.path.join(args.out, "raw-normalised-%s.mp4" % stem(c))
-            if not os.path.exists(fixed):
-                subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", p, "-vf", "scale=%d:%d" % (ref["width"], ref["height"]),
-                                "-r", str(ref["fps"]), "-c:v", "libx264", "-crf", "16", "-preset", "fast", "-pix_fmt", "yuv420p",
-                                "-c:a", "aac", "-b:a", "256k", "-ar", "48000", fixed], check=True)
-            p = fixed
-        parts.append(p)
-    listfile = os.path.join(args.out, "concat-list.txt")
-    with open(listfile, "w") as fh:
-        for p in parts:
-            fh.write("file '%s'\n" % p.replace("'", "'\\''"))
     out = os.path.join(args.out, args.name)
-    cmd = ["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", listfile]
-    cmd += ["-c", "copy"] if same else ["-c:v", "libx264", "-crf", "16", "-preset", "fast", "-c:a", "aac", "-b:a", "256k"]
+    if same:
+        listfile = os.path.join(args.out, "concat-list.txt")
+        with open(listfile, "w") as fh:
+            for c in clips:
+                fh.write("file '%s'\n" % c["path"].replace("'", "'\\''"))
+        cmd = ["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", listfile, "-c", "copy"]
+    else:
+        W, H, FPS = ref["width"], ref["height"], ref["fps_exact"]   # 30000/1001, not 29.97: no drift on long clips
+        cmd, chains, ins = ["ffmpeg", "-y", "-v", "error"], [], []
+        for c in clips:
+            cmd += ["-i", c["path"]]
+        silent = 0
+        for i, c in enumerate(clips):
+            chains.append("[%d:v]scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,fps=%s,format=yuv420p,setsar=1[v%d]"
+                          % (i, W, H, W, H, FPS, i))
+            if c["acodec"]:
+                chains.append("[%d:a]aresample=48000,aformat=sample_rates=48000:channel_layouts=stereo[a%d]" % (i, i))
+            else:   # no audio track: silence of the clip's own length keeps everything after it in line
+                cmd += ["-f", "lavfi", "-t", "%.3f" % c["duration"], "-i", "anullsrc=r=48000:cl=stereo"]
+                chains.append("[%d:a]anull[a%d]" % (len(clips) + silent, i)); silent += 1
+            ins.append("[v%d][a%d]" % (i, i))
+        chains.append("%sconcat=n=%d:v=1:a=1[v][a]" % ("".join(ins), len(clips)))
+        cmd += ["-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
+                "-c:v", "libx264", "-crf", "16", "-preset", "fast", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-b:a", "256k", "-ar", "48000", "-ac", "2"]
     cmd += ["-movflags", "+faststart", out]
     subprocess.run(cmd, check=True)
     ingest["concat"] = {"file": out, "stream_copy": same}
