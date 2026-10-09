@@ -48,7 +48,9 @@ def words(v):
                 return words(v[k])
         return ""
     if isinstance(v, (list, tuple)):
-        # the first string that isn't a media path ([text, t], [text, t, "anchor"], the dock's [src, label, t])
+        # the first string that isn't a media path ([text, t], [text, t, "anchor"], the dock's [src, label, t]);
+        # "-" (no anchor) and "em" (an equation term's emphasis flag) are markers, not words. A label that is itself
+        # a file name ("demo.mp4") is skipped for the next string: none of compose.py's item shapes put one first.
         for x in v:
             if isinstance(x, str) and x not in ("-", "em") and not x.lower().endswith(MEDIA):
                 return x

@@ -51,7 +51,7 @@ folder and the kit's `youtube-edit` skill already installed (`.claude/skills/you
 ```bash
 mkdir -p .claude/skills .claude/agents
 cp -R Editing-Workflow/longform/skill/youtube-longform .claude/skills/
-cp -R Editing-Workflow/templates .claude/skills/youtube-longform/templates
+mkdir -p .claude/skills/youtube-longform/templates && cp -R Editing-Workflow/templates/. .claude/skills/youtube-longform/templates/
 cp Editing-Workflow/longform/agents/longform-*.md .claude/agents/
 ```
 
