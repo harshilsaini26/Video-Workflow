@@ -24,6 +24,10 @@ Where each rule comes from is in `RESEARCH.md` (R1, R2...). Numbers marked *defa
 - **Composed per section, joined at assembly** (SKILL › Long-form doctrine): each section is its own composition with
   its own storyboard, render and QA, so a note costs one section's render, and no composition exceeds the
   heavy-overlay budget.
+- **Free tools only:** free software and free licences, nothing else. Never Tella, Epidemic Sound, paid stock or
+  music, AI-generated footage (the kit's AI B-roll route), paid AI video services such as Motion (motion.so), or a paid
+  trial. When something can only be had by paying, the beat changes: a screen recording, a real page, free stock or a
+  diagram built with the kit.
 - Section folders: `videos/<project>/<NN-slug>/` (e.g. `00-hook/`, `01-the-problem/`). The project folder keeps the
   raw files, the full cut, `STATUS.md`, `NOTES.md` and `assembly.json`.
 
@@ -142,7 +146,7 @@ The shape (R15), with the kit's numbers as the floor (SKILL › Long-form doctri
 - **B-roll illustrates; it never decorates** (R16): every cutaway shows what the sentence says. If a viewer couldn't
   say in three words what a shot shows and why it is there, it goes.
 - **Proof over illustration:** your own screen recordings and real pages first, then archive, then stock. Stock never
-  stands in for proof. AI shots never show proof (SKILL › AI B-roll route).
+  stands in for proof.
 - **A person or job you name gets 2.5 to 3.5 s of footage of that person**, right after you describe them.
 - **An app you name gets a designed window; a website you name gets the real page** (SKILL › Long-form doctrine).
 - **Explainers are found, not requested** (SKILL › Finding explainers): enumeration, "the way this works is", chained
@@ -217,8 +221,8 @@ All of SKILL › Camera applies. Long-form specifics:
   after the hook and the first section's opening, at a natural break (a convention, not a rule; the creator decides).
 - **Disclosure:** the Producer reminds you to declare the paid promotion / branded content in YouTube Studio for any
   video with a sponsor, a product placement or an endorsement (R35); the wording in Studio may have changed.
-- **AI shots:** realistic synthetic footage of a person, place or event needs YouTube's altered or synthetic content
-  label (R36); the AI B-roll route already requires it (SKILL › AI B-roll route).
+- **No AI shots** (§L0): the team never generates footage. If the creator supplies realistic synthetic footage of a
+  person, place or event themselves, it needs YouTube's altered or synthetic content label (R36).
 - **Claims:** every on-screen number, quote or headline comes from a real source recorded in ASSET-REQUESTS.md; client
   messages are real (with permission) or labelled as an example.
 
