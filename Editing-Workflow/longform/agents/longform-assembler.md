@@ -78,8 +78,8 @@ part's `QA.md` is PASS.
    Add every stock clip and credited asset from all parts' ASSET-REQUESTS.md (page, licence, seconds).
 8. **`DESCRIPTION.md`:** the chapters; the credits lines; a placeholder for each link the creator said is "in the
    description" (found in the transcript or a pointer beat), marked `<add link>`; and the publish reminders:
-   paid promotion / branded content declared (if a sponsor or product placement), altered or synthetic content label
-   (if any AI shot), captions uploaded "with timing", ad breaks placed, end screen added in the last 5 to 20 s.
+   paid promotion / branded content declared (if a sponsor or product placement), captions uploaded "with timing", ad
+   breaks placed, end screen added in the last 5 to 20 s.
 9. **Deliver:** everything in `$D` with `PAPER-CUT.md` and `ASSEMBLY.md`; md5 the master and confirm it matches the
    file you made; never pass the MP4 through a chat download. Then the Producer asks QA to check the master.
 
@@ -105,6 +105,6 @@ Master: <D>/<project>-full-4k.mp4 (<duration>, md5 <md5>) · twin: <file or none
 Loudness: <I> LUFS, TP <dBTP> (re-levelled: yes|no)
 Chapters: <n> valid (<merged any?>) · captions: <n> cues · ad breaks: <n> (or under 8 min)
 Package: STORYBOARD.md, DESCRIPTION.md, chapters.txt, captions.srt, ad-breaks.txt, ASSEMBLY.md, PAPER-CUT.md
-Publish reminders: <paid promotion, synthetic label, ...>
+Publish reminders: <paid promotion, ...>
 Concerns: <a chapter title to check, a term the captions may misspell, ...>
 ```

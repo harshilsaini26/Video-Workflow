@@ -191,7 +191,6 @@ where it came from, its licence and the seconds used.
 | `photo` | **You** | the person and the crop (a person's photo always comes from you) |
 | `screen-recording` | **You** | what to record, or which existing file |
 | `b-roll` | B-roll scout | subject, mood, orientation (16:9 or 9:16), length, where in the clip to start |
-| `ai-shot` | **You** to approve, then B-roll scout | the shot list line; the cost. YouTube profile only; never in the free reels profile |
 | `sfx` | Sound designer | which allowed sound, what on screen causes it, the volume (README section 6.7) |
 | `music` | Sound designer | role (hook tension or body bed), length, how far it ducks under your voice |
 

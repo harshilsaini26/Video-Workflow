@@ -172,8 +172,9 @@ What `reels-compose.py` builds (JSON shapes in its docstring). Every one has an 
 | Music | none in the file (add in-app), Pixabay Music, Freesound CC0 |
 | Fonts | DM Sans (SIL Open Font License, in the kit) |
 
-**Excluded:** Tella, Epidemic Sound, paid stock, AI image or video generation, anything with a free trial that turns
-paid. Claude itself is the one paid tool (the creator's plan).
+**Excluded:** Tella, Epidemic Sound, paid stock, AI image or video generation (including AI motion-design services
+such as Motion, motion.so), anything with a free trial that turns paid. Claude itself is the one paid tool (the
+creator's plan).
 
 ## §R11 Camera
 
