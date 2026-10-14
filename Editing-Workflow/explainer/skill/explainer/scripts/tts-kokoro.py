@@ -25,18 +25,8 @@ LOUD = "loudnorm=I=-16:TP=-1:LRA=11"
 TOLERANCE = 0.10
 
 
-def load_lexicon(path):
-    if not path or not os.path.exists(path):
-        return {}
-    with open(path) as f:
-        return json.load(f)
-
-
-def apply_lexicon(text, lex):
-    """Whole-word, case-sensitive replacements: "WACC" -> "wack", but "WACCs" and "wacc" stay."""
-    for k in sorted(lex, key=len, reverse=True):
-        text = re.sub(r"(?<!\w)%s(?!\w)" % re.escape(k), lambda m, v=lex[k]: v, text)
-    return text
+sys.path.insert(0, HERE)
+from explainer_lib import apply_lexicon, load_lexicon
 
 
 def write_wav(path, samples):

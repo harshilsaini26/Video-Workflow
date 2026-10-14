@@ -41,7 +41,7 @@ def entrance_times(html, sel_prefix):
 
 class ListCards(SceneCase):
     def items(self, n):
-        return [{"label": "Card %d" % i, "at": "word:%d" % (6 + 3 * i)} for i in range(n)]
+        return [{"label": "Card " + "ABCDE"[i], "at": "word:%d" % (6 + 3 * i)} for i in range(n)]
 
     def test_two_to_four_items(self):
         self.fails({"type": "list-cards", "items": self.items(1)}, "2 to 4")
@@ -122,7 +122,7 @@ class Duration(SceneCase):
 
 class QAStack(SceneCase):
     def items(self, n):
-        return [{"text": "Is the NPV positive?" if i == 0 else "Question %d about IRR and NPV" % i, "em": ["NPV"], "at": "word:%d" % (5 + 2 * i)}
+        return [{"text": "Is the NPV positive?" if i == 0 else "Question " + "ABCDEF"[i] + " about IRR and NPV", "em": ["NPV"], "at": "word:%d" % (5 + 2 * i)}
                 for i in range(n)]
 
     def test_at_most_five(self):
@@ -140,3 +140,9 @@ class Shared(SceneCase):
     def test_item_at_outside_scene_fails(self):
         self.fails({"type": "list-cards", "items": [{"label": "a", "at": "word:2"}, {"label": "b", "at": "word:8"}]}, "sc: ")
         self.fails({"type": "list-cards", "items": [{"label": "a", "at": "word:2"}, {"label": "b", "at": "word:8"}]}, "outside the scene")
+
+
+class DurationDecimals(SceneCase):
+    def test_fractional_value_keeps_its_decimal(self):
+        html = self.ok({"type": "duration", "value": 1.5, "unit": "hours", "source": "s1"})
+        self.assertRegex(html, r"countUp\('#sc-v', 0, 1\.5, [\d.]+, [\d.]+, '', '', 1\);")

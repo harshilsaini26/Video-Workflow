@@ -14,6 +14,10 @@ written either way, so the failure can be looked at.
 """
 import argparse, difflib, json, os, re, sys
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from explainer_lib import apply_lexicon, load_lexicon
+
 MIN_RATIO = 0.98
 MAX_GAP = 1.2
 FUZZY = 0.8   # "whack" for "wack": a near-miss single word still counts as heard
@@ -53,24 +57,88 @@ def map_show(show, say):
     return cover
 
 
+_ONES = {w: i for i, w in enumerate("zero one two three four five six seven eight nine ten eleven twelve thirteen "
+                                      "fourteen fifteen sixteen seventeen eighteen nineteen".split())}
+_TENS = {w: 10 * i for i, w in enumerate("_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()) if w != "_"}
+_SCALES = {"hundred": 100, "thousand": 1000, "million": 10 ** 6, "billion": 10 ** 9}
+_UNITS = {"%": ("percent",), "$": ("dollar", "dollars"), "€": ("euro", "euros"), "£": ("pound", "pounds"),
+          "₹": ("rupee", "rupees")}
+
+
+def _parts(word):
+    return [p for p in re.split(r"[-\s]+", re.sub(r"[^a-z\-]", "", word.lower())) if p]
+
+
+def is_number_word(word):
+    ps = _parts(word)
+    return bool(ps) and all(p in _ONES or p in _TENS or p in _SCALES or p in ("and", "point") for p in ps)
+
+
+def number_values(words):
+    """The values a run of number words can mean: "one thousand" 1000, "twenty twenty-four" 2024 (a year) or 44,
+    "two point five" 2.5. Empty when the run is not a number."""
+    ps = [p for w in words for p in _parts(w)]
+    if not ps or not all(is_number_word(w) for w in words) or ps[0] in ("and", "point") or ps[-1] in ("and", "point"):
+        return set()
+    if "point" in ps:
+        i = ps.index("point")
+        whole, frac = number_values([" ".join(ps[:i])]), ps[i + 1:]
+        if not whole or not frac or any(p not in _ONES or _ONES[p] > 9 for p in frac):
+            return set()
+        return {w + float("0." + "".join(str(_ONES[p]) for p in frac)) for w in whole}
+    total, cur = 0, 0
+    for p in ps:
+        if p == "and":
+            continue
+        if p in _ONES:
+            cur += _ONES[p]
+        elif p in _TENS:
+            cur += _TENS[p]
+        elif p == "hundred":
+            cur = (cur or 1) * 100
+        else:
+            total, cur = total + (cur or 1) * _SCALES[p], 0
+    out = {total + cur}
+    if len(words) == 2:                                        # a year read in two halves: "nineteen ninety", "twenty twenty-four"
+        halves = [number_values([w]) for w in words]
+        if all(len(v) == 1 for v in halves):
+            a, b = (next(iter(v)) for v in halves)
+            if 10 <= a <= 99 and 0 <= b <= 99:
+                out.add(a * 100 + b)
+    return out
+
+
+def heard_number(text):
+    """The number a recogniser wrote as digits ("1,000", "$1,000", "10%", "2.5"), or None."""
+    t = str(text).strip().rstrip(".,;:!?")
+    if not re.search(r"\d", t) or not re.fullmatch(r"[$€£₹]?\d[\d,]*(\.\d+)?%?", t):
+        return None
+    return float(re.sub(r"[^\d.]", "", t))
+
+
 def _ratio(a, b):
     return difflib.SequenceMatcher(None, a, b, autojunk=False).ratio()
 
 
-def align(lines, asr):
-    """Display words [{"text","start","end","line"}] and stats {"say_words","matched","ratio","max_gap","gap_line"}."""
-    say, groups = [], []   # say: flat [{"norm","line"}]; groups: flat show words {"text","line","say":[flat idx]}
+def align(lines, asr, lexicon=None):
+    """Display words [{"text","start","end","line"}] and stats {"say_words","matched","ratio","max_gap","gap_line"}.
+
+    The spoken words are `say` after the lexicon (what Kokoro actually read); a token that is only punctuation (a dash)
+    is not a word on either side."""
+    say, groups = [], []   # say: flat [{"norm","line","raw"}]; groups: flat show words {"text","line","say":[flat idx]}
     for ln in lines:
-        s_words, d_words = str(ln.get("say") or ln["show"]).split(), str(ln["show"]).split()
+        spoken = apply_lexicon(str(ln.get("say") or ln["show"]), lexicon or {})
+        s_words = [w for w in spoken.split() if norm(w)]
+        d_words = [w for w in str(ln["show"]).split() if norm(w)]
         base = len(say)
-        say += [{"norm": norm(w), "line": ln["id"]} for w in s_words]
+        say += [{"norm": norm(w), "line": ln["id"], "raw": w} for w in s_words]
         for text, cov in zip(d_words, map_show(d_words, s_words)):
             groups.append({"text": text, "line": ln["id"], "say": [base + j for j in cov]})
     owner = {}
     for gi, g in enumerate(groups):
         for j in g["say"]:
             owner.setdefault(j, gi)
-    heard = [w for w in asr if str(w.get("text", "")).strip()]
+    heard = [w for w in asr if norm(w.get("text", ""))]
     hnorm = [norm(w["text"]) for w in heard]
 
     match = [None] * len(say)   # say index -> (start, end)
@@ -94,7 +162,30 @@ def align(lines, asr):
                             take(i, h)
                         used.add(h)
                         break
-            # 2. the rest pair in order when they are near-misses
+            # 2. digits heard for number words: "1,000" for "one thousand" (and "dollars" when it heard "$1,000")
+            for h in range(b0, b1):
+                val = heard_number(heard[h]["text"])
+                if h in used or val is None:
+                    continue
+                best = None
+                for i in range(a0, a1):
+                    for j in range(a1, i, -1):
+                        run = list(range(i, j))
+                        if any(match[k] is not None for k in run) or not any(abs(v - val) < 1e-9 for v in number_values([say[k]["raw"] for k in run])):
+                            continue
+                        if best is None or len(run) > len(best):
+                            best = run
+                        break
+                if best:
+                    raw = str(heard[h]["text"])
+                    unit = next((u for sym, u in _UNITS.items() if sym in raw), ())
+                    nxt = best[-1] + 1
+                    if unit and nxt < a1 and match[nxt] is None and say[nxt]["norm"] in unit:
+                        best.append(nxt)
+                    for k in best:
+                        take(k, h)
+                    used.add(h)
+            # 3. the rest pair in order when they are near-misses
             h = b0
             for i in range(a0, a1):
                 if match[i] is not None:
@@ -182,12 +273,14 @@ def main():
     ap.add_argument("--asr", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--report")
+    ap.add_argument("--lexicon", default=os.path.join(HERE, "..", "lexicon.json"),
+                    help="the pronunciations tts-kokoro.py applied (default: the skill's lexicon.json)")
     a = ap.parse_args()
     with open(a.script) as f:
         lines = json.load(f)["lines"]
     with open(a.asr) as f:
         d = json.load(f)
-    words, st = align(lines, d["words"] if isinstance(d, dict) else d)
+    words, st = align(lines, d["words"] if isinstance(d, dict) else d, load_lexicon(a.lexicon))
     spans = [{"id": ln["id"], "start": ws[0]["start"], "end": ws[-1]["end"]}
              for ln in lines for ws in [[w for w in words if w["line"] == ln["id"]]] if ws]
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)

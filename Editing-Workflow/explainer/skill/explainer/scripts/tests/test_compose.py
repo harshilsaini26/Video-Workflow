@@ -7,10 +7,10 @@ TOK = E.load_tokens()
 STEP, T0 = 0.4, 0.5
 
 
-def words30():
+def words30(t0=T0):
     texts = ["word%d" % i for i in range(30)]
     texts[3], texts[17] = "NPV,", "npv"
-    return [{"text": t, "start": round(T0 + i * STEP, 3), "end": round(T0 + i * STEP + 0.3, 3)} for i, t in enumerate(texts)]
+    return [{"text": t, "start": round(t0 + i * STEP, 3), "end": round(t0 + i * STEP + 0.3, 3)} for i, t in enumerate(texts)]
 
 
 def t_word(i):
@@ -43,12 +43,14 @@ BOARD = {
 
 
 class Compose(unittest.TestCase):
-    def build(self, edit=None):
+    def build(self, edit=None, script=None, t0=T0):
         d = scratch(self)
         board = copy.deepcopy(BOARD)
         if edit:
             edit(board)
-        write(os.path.join(d, "transcript.json"), {"words": words30()})
+        if script is not None:
+            write(os.path.join(d, "script.json"), script)
+        write(os.path.join(d, "transcript.json"), {"words": words30(t0)})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
         sp = write(os.path.join(d, "storyboard.json"), board)
         out = os.path.join(d, "public")
@@ -56,8 +58,8 @@ class Compose(unittest.TestCase):
         page = os.path.join(out, "index.html")
         return r, (read(page) if r.returncode == 0 else ""), page, os.path.join(d, "transcript.json")
 
-    def ok(self, edit=None):
-        r, html, page, tp = self.build(edit)
+    def ok(self, edit=None, **kw):
+        r, html, page, tp = self.build(edit, **kw)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         return html, page, tp
 
@@ -205,3 +207,34 @@ class Compose(unittest.TestCase):
         self.assertNotRegex(html, r"stagger: [\d.]")
         for amount in re.findall(r"stagger: \{ amount: ([\d.]+)", html):
             self.assertLessEqual(float(amount), m["stagger_total_max"])
+
+    def test_any_number_on_screen_needs_a_source(self):
+        def edit(b):
+            b["scenes"][0]["text"] = "Save $1,000 a year"
+        self.fails(edit, "hook: ")
+
+        def sourced(b):
+            b["scenes"][0]["text"] = "Save $1,000 a year"
+            b["scenes"][0]["source"] = "s1"
+        self.ok(sourced)
+
+    def test_source_keys_checked_against_the_script(self):
+        def edit(b):
+            b["scenes"][2]["source"] = "zzz"
+        r, _, _, _ = self.build(edit, script={"sources": {"s1": "a page"}})
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("zzz", r.stdout + r.stderr)
+        r, _, _, _ = self.build(None, script={"sources": {"s1": "a page"}})
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_item_on_the_first_word_with_an_early_voice(self):
+        def edit(b):
+            b["scenes"][0] = {"type": "qa-stack", "id": "hook", "bg": "black", "in": "word:0", "out": "word:8",
+                              "items": [{"text": "Is it cheap?", "at": "word:0"}]}
+        self.ok(edit, t0=0.1)
+
+    def test_reserved_and_hyphenated_ids_fail(self):
+        for bad in ("stage", "captions", "voice", "bg1", "cap2", "a-v"):
+            def edit(b, bad=bad):
+                b["scenes"][1]["id"] = bad
+            self.fails(edit, bad)

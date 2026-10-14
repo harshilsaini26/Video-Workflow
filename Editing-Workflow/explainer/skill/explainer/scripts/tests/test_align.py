@@ -15,12 +15,13 @@ def asr_from(words, t0=0.5, step=0.35, dur=0.3, holes=None):
 
 
 class Align(unittest.TestCase):
-    def align(self, lines, asr):
+    def align(self, lines, asr, lexicon=None):
         d = scratch(self)
         sp = write(os.path.join(d, "script.json"), {"title": "t", "lines": lines, "payoff": lines[-1]["id"], "cta": lines[-1]["id"], "sources": {}})
         ap = write(os.path.join(d, "asr.json"), asr)
         out = os.path.join(d, "transcript.json")
-        r = run("align-script.py", "--script", sp, "--asr", ap, "--out", out, "--report", os.path.join(d, "VOICE.md"))
+        extra = ["--lexicon", write(os.path.join(d, "lexicon.json"), lexicon)] if lexicon is not None else []
+        r = run("align-script.py", "--script", sp, "--asr", ap, "--out", out, "--report", os.path.join(d, "VOICE.md"), *extra)
         return r, (load(out) if os.path.exists(out) else None)
 
     def test_exact_match_gives_asr_times(self):
@@ -86,3 +87,26 @@ class Align(unittest.TestCase):
         r, t = self.align(lines, asr_from(["Hello", "there."]))
         out = write(os.path.join(d, "t.json"), t)
         self.assertEqual([w["text"] for w in E.L.load_words(out)], ["Hello", "there."])
+
+    def test_lexicon_respelling_is_what_was_spoken(self):
+        lex = {"WACC": "wack", "NPV": "N P V"}
+        lines = [{"id": "l0", "say": "the WACC and the NPV are high", "show": "the WACC and the NPV are high"}]
+        r, t = self.align(lines, asr_from(["the", "whack", "and", "the", "N", "P", "V", "are", "high"]), lexicon=lex)
+        self.assertIn("100.0% aligned", r.stdout, r.stdout + r.stderr)
+        self.assertEqual([w["text"] for w in t["words"]], ["the", "WACC", "and", "the", "NPV", "are", "high"])
+
+    def test_digits_heard_for_number_words(self):
+        cases = [("it costs one thousand dollars today", ["it", "costs", "1,000", "dollars", "today"]),
+                 ("up ten percent", ["up", "10%"]),
+                 ("up ten percent", ["up", "10", "percent"]),
+                 ("we found three", ["we", "found", "3"]),
+                 ("back in twenty twenty-four", ["back", "in", "2024"]),
+                 ("two point five times", ["2.5", "times"])]
+        for say, heard in cases:
+            r, _ = self.align([{"id": "l0", "say": say, "show": say}], asr_from(heard), lexicon={})
+            self.assertIn("100.0% aligned", r.stdout, (say, heard, r.stdout + r.stderr))
+
+    def test_punctuation_only_tokens_are_not_words(self):
+        lines = [{"id": "l0", "say": "cheap — or not", "show": "cheap — or not"}]
+        r, t = self.align(lines, asr_from(["cheap", "or", "not"]), lexicon={})
+        self.assertIn("100.0% aligned", r.stdout, r.stdout + r.stderr)

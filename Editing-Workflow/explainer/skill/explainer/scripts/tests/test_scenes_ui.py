@@ -56,12 +56,12 @@ class Sheet(UICase):
     rows = [["Year", "Cash"], ["1", "$100"], ["2", "$120"], ["3", "$150"]]
 
     def test_at_most_eight_rows(self):
-        self.fails({"type": "sheet", "rows": [["a", "b"]] * 9}, "8 rows")
+        self.fails({"type": "sheet", "rows": [["a", "b"]] * 9, "source": "s1"}, "8 rows")
 
     def test_highlight_must_exist(self):
-        self.fails({"type": "sheet", "rows": self.rows, "highlight": {"row": 7, "at": "word:8"}}, "row 7")
-        self.fails({"type": "sheet", "rows": self.rows, "highlight": {"cell": [1, 5], "at": "word:8"}}, "cell")
-        html, _ = self.ok({"type": "sheet", "rows": self.rows, "highlight": {"cell": [2, 1], "at": "word:8"}, "formula": "=B2*1.2"})
+        self.fails({"type": "sheet", "source": "s1", "rows": self.rows, "highlight": {"row": 7, "at": "word:8"}}, "row 7")
+        self.fails({"type": "sheet", "source": "s1", "rows": self.rows, "highlight": {"cell": [1, 5], "at": "word:8"}}, "cell")
+        html, _ = self.ok({"type": "sheet", "source": "s1", "rows": self.rows, "highlight": {"cell": [2, 1], "at": "word:8"}, "formula": "=B2*1.2"})
         self.assertRegex(html, r'class="sh-fx"[^>]*><b>fx</b>=B2\*1\.2')
         self.assertRegex(html, r"tl\.\w+\('#sc-hl'.*%.3f\);" % (t_word(8) - E.LEAD))
 

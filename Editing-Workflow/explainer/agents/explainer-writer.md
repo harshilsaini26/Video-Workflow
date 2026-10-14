@@ -34,7 +34,7 @@ they are said, and for a rewrite the notes to act on (ids and verbatim words).
    {"title": "...", "target_seconds": 75, "voice": "<from the Brief>",
     "lines": [{"id": "l0", "say": "...", "show": "...", "break": "comma|sentence|section",
                "emphasis": ["NPV"], "source": "s1", "fact": false}],
-    "payoff": "l7", "cta": "l9", "sources": {"s1": "Publisher, Title, date, link"}}
+    "payoff": "l7", "cta": "l9", "sources": {"s1": {"title": "Publisher, Title, date", "url": "https://...", "note": "what it supports"}}}
    ```
    - line `l0` is the hook, at most 12 words (§E1);
    - `say` is what the voice reads (numbers and symbols in words, acronyms the way they are said), `show` what the

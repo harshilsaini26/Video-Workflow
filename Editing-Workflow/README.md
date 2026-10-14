@@ -1025,7 +1025,7 @@ flowchart LR
 | Script | `explainer-writer`; `script-check.py` (gate E1: 160 to 240 words, a hook of 12 words at most, every number sourced) |
 | Voice | `explainer-voice`; `tts-kokoro.py` line by line, -16 LUFS; Parakeet + `align-script.py` (gate E2: 98% of words heard) |
 | Plan | `explainer-director`: `storyboard.json`, every scene and item anchored to a word |
-| Compose | `explainer-animator`; `explainer-compose.py` (gate E3: fits by construction, no holes, sources), then the kit's beat-check and gap-scan (E4) |
+| Compose | `explainer-animator`; `explainer-compose.py` (gate E3: fits by construction, no holes, sources), then the kit's beat-check and `pace-check.py` (E4: something changes at least every 6 s) |
 | Render, verify, package, learn | `reels-renderer`, `reels-qa`, `reels-packager`, `reels-librarian`, `reels-analyst` |
 
 ---

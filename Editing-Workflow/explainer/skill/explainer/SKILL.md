@@ -63,7 +63,7 @@ version v1, the **Voice** row), log "project created".
 | A | **Checkpoint A** | you, with the creator (script, sources, length; voice samples on the first project) | approval | 3 |
 | 3 | Voice | `explainer-voice` · voice | E2 | 4 |
 | 4 | Storyboard | `explainer-director` · plan | its self-check | 5 |
-| 5 | Compose | `explainer-animator` · build | E3 E4 | B |
+| 5 | Compose | `explainer-animator` · build | E3, E4 (beat-check, pace-check) | B |
 | B | **Checkpoint B** | you, with the creator (a still of every scene, the voiceover) | approval | 6 |
 | 6 | Render | `reels-renderer` | file exists | 7 |
 | 7 | Verify | `reels-qa` · render | its gates | 8 |
@@ -76,12 +76,19 @@ Start agents with the Agent tool (`subagent_type` = the agent's name); update ST
 
 **Briefing the reused Reels agents** (they were written for footage, so say what differs):
 - `reels-renderer`: as usual, from `$W/public`.
-- `reels-qa`: the clipped-word check compares the render's transcript with `$W/voice/asr.json` (what Parakeet heard in
-  `voice.wav`, spoken words), not with `transcript.json` (shown words: "$1,000" against "one thousand dollars").
-  Skip the face and footage checks; the safe zone, captions, loudness, frame rate and the first frame apply.
-- `reels-packager`: `captions.srt` from `$W/voice/asr.json` with the brief's terms; skip `STORYBOARD.md` (the Reels
-  script reads Reels beats) and attach the Animator's `snaps/SCENES.md` instead; the posting checklist gets the AI-voice
-  line (§E3).
+- `reels-qa`, with these explainer differences:
+  - **clipped words:** compare the render's transcript with `$W/voice/asr.json` (what Parakeet heard in `voice.wav`,
+    spoken words), not with `transcript.json` (shown words: "$1,000" against "one thousand dollars");
+  - **caption text** (its captions row): the burned-in captions show the shown words of `$W/transcript.json` at their
+    times, so compare frames with that file, not with the spoken transcript;
+  - **caption slot:** explainer captions sit in the band at y 330 to 470; the guide's cyan caption slot (y 1050 to
+    1248) is the Reels place, so ignore it and check the band instead;
+  - **first frame:** frame 0 shows the background and the first scene fading in (§E1.1); the check is that the hook
+    is fully on screen by 1.0 s, not 0.35 s;
+  - skip the face and footage checks; the safe zone, loudness, frame rate and bitrate apply unchanged.
+- `reels-packager`: `captions.srt` from `$W/transcript.json` (the shown words, matching the burned-in captions) with
+  the brief's terms; skip `STORYBOARD.md` (the Reels script reads Reels beats) and attach the Animator's
+  `snaps/SCENES.md` instead; the posting checklist gets the AI-voice line (§E3).
 - `reels-librarian`: also keeps `$ES/lexicon.json` (new pronunciations) and promotes custom scenes the creator liked
   into `$ES/scripts/scenes/` with a test (§E6).
 - `reels-analyst`: unchanged.

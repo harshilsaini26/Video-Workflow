@@ -40,15 +40,18 @@ re-plan the notes to act on.
      is `"end"`;
    - the first scene starts on `word:0`; items (`list-cards`, `bars`, `qa-stack`, `icon-row`, chart reveals, sheet
      highlights, formula parts) land on the word that names them, inside their scene;
-   - a scene showing a number or a claim carries the line's `source` (§E7);
+   - ids are letters, digits and `_` only (§E4.2);
+   - a scene whose text shows a number (a digit, `%`, a currency sign) or a claim carries the line's `source`, a key in
+     `script.json`'s sources (§E7);
    - `captions.emphasis`: the script's emphasis words, at most one a line (§E5).
 4. **Custom scenes** (only when no library scene can show it): `{"type": "custom", "id": "<id>", "box": {"x", "y",
    "w", "h"}, "html": "custom/<id>.html", "build": "build<Id>", ...}` with the box inside the scene area (x 65 to
    1015, y 520 to 1248; x 150 to 930 below y 960), plus a written spec in `$W/custom/<id>.md` for the Animator: what
    it shows, what moves on which word, and the colours from `$ES/tokens.json`.
 5. **Dry run:** `python3 "$ES/scripts/explainer-compose.py" --spec "$W/storyboard.json" --out "$W/plan/dry"`. It
-   names any scene that does not fit, any hole or overlap in the timing, any anchor out of order. Fix until it
-   passes (custom scenes may fail here until the Animator writes their files).
+   names any scene that does not fit, any hole or overlap in the timing, any anchor out of order, any number without
+   a source. Then `python3 "$ES/scripts/pace-check.py" --index "$W/plan/dry/index.html"`: no still stretch over 6 s.
+   Fix until both pass (custom scenes may fail here until the Animator writes their files).
 6. **Asset requests** only for a logo or screenshot the creator must supply: `$W/ASSET-REQUESTS.md` (copy
    `$ES/templates/ASSET-REQUESTS.md` first), one row a file.
 

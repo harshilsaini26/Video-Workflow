@@ -23,12 +23,14 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 ## §E1 Hook and structure
 
 1. **The hook is line 0, at most 12 words**, and it promises something specific: a number, a mistake, a secret, a
-   result ("3 certificates finance bros gatekeep"). It is on screen in the first 0.3 s.
+   result ("3 certificates finance bros gatekeep"). The first scene starts entering at frame 0 and is fully on screen
+   by 1.0 s (QA checks this instead of Reels' 0.35 s: every scene fades in).
 2. **One idea per reel.** If the script needs "and also", it is two reels.
 3. **The shape:** hook (0 to 3 s) → why it matters (one line) → the steps or the evidence (most of the time) → the
    payoff (the promise kept, named in `payoff`) → the call to action (`cta`), in the last 5 s.
 4. **Every 2 to 4 s something changes:** a new scene, a new item, a count, a highlight. A scene that holds longer than
-   about 6 s needs an item arriving inside it.
+   about 6 s needs an item arriving inside it: `pace-check.py` (gate E4) fails a still stretch over 6 s and warns over
+   4 s. The kit's gap-scan cannot see this here, since scenes always cover the voice.
 5. **The ending is the payoff or the CTA**, never a fade, a logo sting or "thanks for watching".
 
 ## §E2 Script rules
@@ -80,13 +82,15 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | give a formula | `formula` | `tex`, `parts[{tex, at}]` (KaTeX) |
    | need something the library can't show | `custom` | `box{x, y, w, h}`, `html`, `build` (§E6.5) |
 
-2. **Anchors, not seconds:** every `in`, `out` and item `at` is `word:N`, the Nth display word in `transcript.json`.
+2. **Ids** are letters, digits and `_` (the page builds `<id>-...` ids from them), never `stage`, `captions`, `voice`,
+   `bg<n>` or `cap<n>`.
+3. **Anchors, not seconds:** every `in`, `out` and item `at` is `word:N`, the Nth display word in `transcript.json`.
    An entrance lands 0.2 s before its word; the kit's beat-check holds it to 0.15 to 0.25 s.
-3. **No dead air:** scenes cover the whole voice; more than 0.3 s with no scene fails the build. Scenes hand over with
+4. **No dead air:** scenes cover the whole voice; more than 0.3 s with no scene fails the build. Scenes hand over with
    the old one exiting while the new one enters (at most 0.3 s of overlap). The last scene runs to `"end"`.
-4. **One hero element per scene**; never the same scene type three times in a row.
-5. **Backgrounds** mark sections: change `bg` where the script's `section` breaks are, not on every scene.
-6. **Fit by construction:** each scene knows its height; the composer centres it, narrows it below y 960, and fails a
+5. **One hero element per scene**; never the same scene type three times in a row.
+6. **Backgrounds** mark sections: change `bg` where the script's `section` breaks are, not on every scene.
+7. **Fit by construction:** each scene knows its height; the composer centres it, narrows it below y 960, and fails a
    word wider than its column. Shorten the words, never shrink the type below the scene's minimum.
 
 ## §E5 Captions
@@ -116,8 +120,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 ## §E7 Sources and claims
 
 1. **Every number, name or claim on screen has a source**: a line whose `show` has a digit, `%` or `$` (or
-   `"fact": true`) carries `source`, a key in `SOURCES.md` (gate E1); `count-up`, `line-chart`, `bars` and `duration`
-   scenes carry `source` too (gate E3).
+   `"fact": true`) carries `source`, a key in `SOURCES.md` (gate E1). In the storyboard, a scene whose text shows a
+   digit, `%` or a currency sign, and every `count-up`, `line-chart`, `bars` and `duration` scene, carries `source`
+   too, and the key must be one of `script.json`'s sources (gate E3; formula TeX aside).
 2. **A source is a page someone can open:** the publisher, the title, the date and the link. "Common knowledge" is not
    a source for a number.
 3. **Round honestly:** a shown number matches its source to the precision shown.
@@ -127,7 +132,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 
 | Pattern | Cause | Fix (owner) |
 |---|---|---|
-| E2 fails on one line, under 98% | a term Kokoro can't say (an acronym, a name) | `lexicon.json` entry, `--only <id>` (Voice) |
+| E2 fails on one line, under 98% | a term Kokoro can't say (an acronym, a name) | `lexicon.json` entry, `--only <id>`, align again: the aligner listens for the lexicon's spelling (Voice) |
 | a gap inside a line over 1.2 s | a comma read as a long pause, or a stumble | split the line or reword it (Writer), regenerate (Voice) |
 | "no scene from a to b" | a scene's `out` before the next `in` | move the anchor (Director) |
 | "overlap by 0.5 s" | the next scene starts before the old one's `out` | end the old scene on the next scene's `in` word (Director) |

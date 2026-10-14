@@ -66,6 +66,7 @@ class EndToEnd(unittest.TestCase):
         pub = os.path.join(d, "public")
         self.check(run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", pub, "--vendor", VENDOR), "compose")
         self.check(run_kit("beat-check.py", "--index", os.path.join(pub, "index.html"), "--transcript", os.path.join(d, "transcript.json")), "beat-check")
+        self.check(run("pace-check.py", "--index", os.path.join(pub, "index.html")), "pace-check")
         self.check(subprocess.run(["npx", "--no-install", "hyperframes", "check", pub], capture_output=True, text=True, timeout=600), "hyperframes check")
         mp4 = os.path.join(d, "output.mp4")
         self.check(subprocess.run(["npx", "--no-install", "hyperframes", "render", pub, "--fps", "60", "--video-bitrate", "20M",

@@ -39,8 +39,9 @@ writes 10 s of line 0 in `af_heart`, `am_michael` and `bf_emma`. Listen to each;
    `mv "$W/voice/transcript.json" "$W/voice/asr.json"` (the spoken words; QA and the Packager read this file).
 3. **Align (gate E2):**
    `python3 "$ES/scripts/align-script.py" --script "$W/script.json" --asr "$W/voice/asr.json" --out "$W/transcript.json" --report "$W/VOICE.md"`
-   It writes the shown words with their times (what the Director anchors to and the captions show) and fails under
-   98% heard or a gap inside a line over 1.2 s, naming the line.
+   It listens for the spoken words as Kokoro read them (after `lexicon.json`, so "WACC" is heard as "wack"), accepts
+   digits for number words ("1,000" for "one thousand"), writes the shown words with their times (what the Director
+   anchors to and the captions show), and fails under 98% heard or a gap inside a line over 1.2 s, naming the line.
 4. **Listen to `voice.wav` once, start to end.** Rushed lists, a flat reading, a wrong stress: §E8.
 
 ### Job `fix`

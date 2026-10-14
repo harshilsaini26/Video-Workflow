@@ -45,12 +45,12 @@ class Ctx:
     def at(self, ref):
         """An item time: its word minus the lead, inside the scene's [in, out]."""
         try:
-            t = E.resolve(ref, self.words, lead=True)
+            t = max(0.0, E.resolve(ref, self.words, lead=True))   # clamped like the scene's own in
         except ValueError as e:
             self.fail(str(e))
         if not self.t_in - 1e-6 <= t <= self.t_out + 1e-6:
             self.fail("an item at %s (%.2f s) is outside the scene (%.2f to %.2f s)" % (ref, t, self.t_in, self.t_out))
-        return max(0.0, t)
+        return t
 
     def item(self, ref):
         """data-at and data-anchor for an item that lands on a word (the kit's beat-check reads both)."""

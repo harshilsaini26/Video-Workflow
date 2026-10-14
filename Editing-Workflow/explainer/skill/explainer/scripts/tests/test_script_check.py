@@ -84,3 +84,10 @@ class ScriptCheck(unittest.TestCase):
         md = read(out)
         self.assertIn("https://example.com/course", md)
         self.assertIn("1. hook hook", md)
+
+    def test_sources_may_be_plain_strings(self):
+        d = scratch(self)
+        rep = os.path.join(d, "SCRIPT.md")
+        r, _ = self.check(script(200, sources={"s1": "Coursera, Financial Markets, 2026, https://example.com"}), "--report", rep)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("Coursera, Financial Markets", read(rep))

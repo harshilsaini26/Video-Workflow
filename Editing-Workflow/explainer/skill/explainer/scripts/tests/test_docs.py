@@ -83,3 +83,11 @@ class Docs(unittest.TestCase):
     def test_status_has_voice_row(self):
         status = read(os.path.join(PROFILE, "..", "templates", "STATUS.md"))
         self.assertRegex(status, r"\| \*\*Language\*\* \|.*\n\| \*\*Voice\*\* \|")
+
+    def test_reels_qa_briefed_on_explainer_differences(self):
+        text = read(SKILL)
+        brief = text[text.index("- `reels-qa`"):text.index("- `reels-packager`")]
+        for needle in ("first frame", "caption slot", "transcript.json", "asr.json"):
+            self.assertIn(needle, brief)
+        pack = text[text.index("`reels-packager`:"):text.index("`reels-librarian`:")]
+        self.assertIn("captions.srt` from `$W/transcript.json`", pack)

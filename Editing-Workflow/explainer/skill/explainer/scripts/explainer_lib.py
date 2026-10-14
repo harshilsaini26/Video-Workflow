@@ -52,6 +52,23 @@ def anchor_text(ref, words):
     return str(words[int(_ANCHOR.match(str(ref)).group(1))]["text"])
 
 
+def load_lexicon(path=None):
+    """Pronunciations kept across projects (lexicon.json next to scripts/): {"WACC": "wack"}."""
+    path = path or os.path.join(HERE, "..", "lexicon.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path) as f:
+        return json.load(f)
+
+
+def apply_lexicon(text, lex):
+    """Whole-word, case-sensitive replacements: "WACC" -> "wack", but "WACCs" and "wacc" stay. The voice reads the
+    result, and the aligner listens for it."""
+    for k in sorted(lex, key=len, reverse=True):
+        text = re.sub(r"(?<!\w)%s(?!\w)" % re.escape(k), lambda m, v=lex[k]: v, text)
+    return text
+
+
 def load_tokens(path=None):
     """The look: fonts, colours, backgrounds, the highlight box, motion timing (tokens.json next to scripts/)."""
     with open(path or os.path.join(HERE, "..", "tokens.json")) as f:

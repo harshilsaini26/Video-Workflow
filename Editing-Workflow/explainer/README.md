@@ -24,11 +24,12 @@ explainer/
 │       ├── tts-kokoro.py           the voice, line by line, joined with pauses, levelled to -16 LUFS
 │       ├── align-script.py         gate E2: what Parakeet heard → the shown words with times (transcript.json)
 │       ├── explainer-compose.py    gate E3: storyboard.json → a 1080x1920, 60 fps HyperFrames page
+│       ├── pace-check.py           gate E4 (pacing): no still stretch over 6 s on the page
 │       ├── explainer_lib.py        shared: word anchors, the scene area, text measured with real glyph widths
 │       ├── glyphs.json             the fonts' glyph widths, measured in Chromium
 │       ├── scenes/                 one module per scene type (13, custom included)
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
-│       └── tests/                  79 tests (python3 -m unittest discover -s tests -t .)
+│       └── tests/                  92 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
     explainer-writer.md · explainer-voice.md · explainer-director.md · explainer-animator.md
 ```
@@ -42,7 +43,8 @@ explainer/
 | There is no face to hold the first second | the hook is line 0, at most 12 words, on screen by 0.3 s, a specific promise | PLAYBOOK §E1 |
 | The voice must say "one thousand dollars" while the screen shows "$1,000" | every line is kept twice, `say` and `show`; captions show `show`, timed across the whole `say` span | §E2, §E5 |
 | A misread acronym spoils the reel | a pronunciation lexicon shared by every project; a bad line is regenerated alone | §E3 |
-| Graphics drift off their words | every scene and item is anchored to a word (`word:N`), never to seconds; the kit's beat-check holds it to 0.15 to 0.25 s early | §E4 |
+| Graphics drift off their words | every scene and item is anchored to a word (`word:N`), never to seconds; the kit's beat-check checks every entrance against its word | §E4 |
+| A scene that sits still too long | `pace-check.py` fails any stretch over 6 s with nothing changing | §E1 |
 | Text overflowing or under the app's buttons | each scene knows its own height (calibrated in Chromium to within 4 px) and is placed inside the safe zone by construction | §E4 |
 | Nothing on screen for a moment | the composer fails on any gap over 0.3 s with no scene | §E4 |
 | A number with nothing behind it | every number on screen carries a source, checked twice (script and storyboard) | §E7 |
@@ -149,7 +151,7 @@ flowchart TD
     D --> AN["explainer-animator · build<br/>explainer-compose.py"]
     AN --> E3{"E3 compose<br/>fits, no holes, sources, custom contract"}
     E3 -- storyboard --> D
-    E3 -- pass --> E4{"E4 beat-check + gap-scan<br/>hyperframes check, stills"}
+    E3 -- pass --> E4{"E4 beat-check + pace-check<br/>hyperframes check, stills"}
     E4 -- fail --> AN
     E4 -- pass --> CB{"Checkpoint B<br/>stills + voiceover"}
     CB -- notes --> D
@@ -168,19 +170,20 @@ flowchart TD
 
 | Script | What it does | Tests |
 |---|---|---|
-| `script-check.py` | gate E1 on `script.json`; writes `SCRIPT.md` | 7: lengths and target, hook, sources, payoff and call to action, the report |
+| `script-check.py` | gate E1 on `script.json`; writes `SCRIPT.md` | 8: lengths and target, hook, sources (objects or plain strings), payoff and call to action, the report |
 | `tts-kokoro.py` | Kokoro line by line (`--only` one line), pauses by break, high-pass, compression, two-pass loudnorm to -16 LUFS / -1 dBTP; `--samples` for the voice choice; a `fake` engine for tests | 6 (1 needs Kokoro) |
-| `align-script.py` | gate E2: sequence alignment of heard to spoken words (tolerant of spelling, of "$1,000" heard for "one thousand dollars"), shown words timed across their spoken span | 7 |
-| `explainer-compose.py` | gate E3: places every scene by its measured height, background cross-fades, word captions with the highlight box, the voice clip, the kit's markup | 14, plus the kit's beat-check and gap-scan run on its page |
-| `scenes/*.py` | 12 library scenes and the sandboxed custom scene | 21 across the scene suites, 7 for the custom contract |
+| `align-script.py` | gate E2: sequence alignment of heard to spoken words (tolerant of spelling, of the lexicon's respellings, of digits heard for number words: "1,000", "10%", "2024", "2.5"), shown words timed across their spoken span | 10 |
+| `pace-check.py` | gate E4's pacing: every tween, count and item on the page is a moment of change; a still stretch over 6 s fails (the kit's gap-scan can't see it: scenes always cover the voice) | 3, and it runs in the end-to-end test |
+| `explainer-compose.py` | gate E3: places every scene by its measured height, background cross-fades, word captions with the highlight box, the voice clip, the kit's markup | 18, plus the kit's beat-check run on its page |
+| `scenes/*.py` | 12 library scenes and the sandboxed custom scene | 22 across the scene suites, 7 for the custom contract |
 | heights | each scene's predicted height against Chromium, 3 text lengths × 2 column widths × 12 scene types | 2, over 72 measured rows: every one 0 to 4 px over, never under |
 | `explainer_lib.py` | anchors, tokens, glyph-width text measuring | 5 |
-| docs | frontmatter parses, cited scripts exist, § references resolve, links, mermaid fences, the STATUS Voice row | 8 |
+| docs | frontmatter parses, cited scripts exist, § references resolve, links, mermaid fences, the STATUS Voice row, the reused QA and Packager briefs | 9 |
 | end to end | script-check → fake voice → alignment → compose → beat-check → `hyperframes check` → a 60 fps render → the kit's `verify-render.py --res 1080x1920` | 1 (needs FFmpeg, the kit, HyperFrames and a local GSAP), plus 1 with real Kokoro and Parakeet |
 
 **How it was verified** (2026-10-14, on Linux with HyperFrames 0.8.157 and Chromium):
-- the whole suite: 79 tests, all passing; 2 skipped where Kokoro is not installed;
-- the end-to-end run: a 4-line, 30-word script voiced by the fake engine (11.09 s, -15.95 LUFS), aligned 100% with
+- the whole suite: 92 tests, all passing; 2 skipped where Kokoro is not installed;
+- the end-to-end run (pace-check included): a 4-line, 30-word script voiced by the fake engine (11.09 s, -15.95 LUFS), aligned 100% with
   the widest gap inside a line 0.02 s, composed into 4 scenes, 4 backgrounds and 8 caption phrases, rendered at
   1080x1920 and 60 fps (11.6 s, about 20 MB) and passed by `verify-render.py`; the frames were looked at by eye;
 - the scene heights: glyph widths of the bundled fonts and the laid-out height of every scene type, measured in

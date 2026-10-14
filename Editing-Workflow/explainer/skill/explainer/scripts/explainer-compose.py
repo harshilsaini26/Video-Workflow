@@ -40,6 +40,23 @@ def fail(msg):
     sys.exit(1)
 
 
+RESERVED = re.compile(r"^(stage|captions|voice|bg\d+|cap\d+)$")
+NOT_SHOWN = {"type", "id", "bg", "in", "out", "at", "source", "icon", "html", "build", "tex", "style", "unit"}
+
+
+def shows_number(node, key=None):
+    """True when any text the scene puts on screen has a digit, %, or a currency sign (formula TeX aside)."""
+    if key in NOT_SHOWN:
+        return False
+    if isinstance(node, str):
+        return bool(re.search(r"[\d%$€£₹]", node))
+    if isinstance(node, dict):
+        return any(shows_number(v, k) for k, v in node.items())
+    if isinstance(node, list):
+        return any(shows_number(v, key) for v in node)
+    return False
+
+
 def place(sid, mod, scene):
     """(left, top, width, height): centred in the scene area, narrow when it reaches the action column band.
     A scene that brings its own box (custom) is only checked."""
@@ -86,6 +103,11 @@ def main():
     mo = tok["motion"]
 
     tpath, vpath = rel(S.get("transcript", "transcript.json")), rel(S.get("voice", "voice.wav"))
+    spath = rel(S.get("script", "script.json"))
+    source_keys = None
+    if os.path.exists(spath):
+        with open(spath) as f:
+            source_keys = set((json.load(f).get("sources") or {}).keys())
     if not os.path.exists(tpath):
         fail("no transcript at %s: run align-script.py first" % tpath)
     if not os.path.exists(vpath):
@@ -126,8 +148,10 @@ def main():
     bg = None
     for sc in scenes:
         sid = sc.get("id")
-        if not sid or not re.match(r"^[A-Za-z][A-Za-z0-9_-]*$", str(sid)):
-            fail("%r: an id starts with a letter and holds only letters, digits, - and _" % (sid,))
+        if not sid or not re.match(r"^[A-Za-z][A-Za-z0-9_]*$", str(sid)):
+            fail("%r: an id starts with a letter and holds only letters, digits and _ (the page derives <id>-... ids from it)" % (sid,))
+        if RESERVED.match(str(sid)):
+            fail("%s: the id is the page's own (stage, captions, voice, bg<n>, cap<n>); pick another" % sid)
         if sid in seen:
             fail("%s: the id is used twice" % sid)
         seen.add(sid)
@@ -137,8 +161,10 @@ def main():
         bg = sc.get("bg", bg or "blue")
         if bg not in tok["backgrounds"]:
             fail("%s: unknown bg %r (one of: %s)" % (sid, bg, ", ".join(tok["backgrounds"])))
-        if getattr(mod, "NEEDS_SOURCE", False) and not sc.get("source"):
-            fail("%s: a %s scene shows a number and needs a source (a key in SOURCES.md)" % (sid, sc["type"]))
+        if (getattr(mod, "NEEDS_SOURCE", False) or shows_number(sc)) and not sc.get("source"):
+            fail("%s: the %s scene shows a number or a claim and needs a source (a key in SOURCES.md)" % (sid, sc["type"]))
+        if sc.get("source") and source_keys is not None and sc["source"] not in source_keys:
+            fail("%s: source %r is not in script.json's sources (%s)" % (sid, sc["source"], ", ".join(sorted(source_keys)) or "none"))
         errs = mod.validate(sc)
         if errs:
             fail("%s: %s" % (sid, "; ".join(errs)))

@@ -22,6 +22,11 @@ CSS = """
 """ % (FACE, FACE, V_SIZE, V_SIZE, GAP)
 
 
+def decimals(v):
+    """Decimals the number is shown with: 1.5 hours stays 1.5, never rounds to 2."""
+    return 0 if float(v) == int(v) else min(2, len(repr(float(v)).split(".")[1]))
+
+
 def validate(scene):
     errs = need(scene, ["value", "unit"])
     if scene.get("unit") not in UNITS:
@@ -64,5 +69,5 @@ def render(scene, ctx, box):
     html = ('<div class="d-face">%s</div><div class="d-value" style="color:%s"><span id="%s-v">0</span><span class="d-unit">%s</span></div>'
             % (face, ctx.ink, sid, ctx.esc(scene["unit"])))
     js = [ctx.enter("#%s .d-face" % sid, ctx.t_in, {"scale": 0.8}), ctx.enter("#%s .d-value" % sid, ctx.t_in + 0.12, {"y": 24}), sweep,
-          "countUp('#%s-v', 0, %s, %.3f, %.3f, '', '', 0);" % (sid, scene["value"], ctx.t_in + 0.2, SWEEP)]
+          "countUp('#%s-v', 0, %s, %.3f, %.3f, '', '', %d);" % (sid, scene["value"], ctx.t_in + 0.2, SWEEP, decimals(scene["value"]))]
     return html, js

@@ -82,7 +82,10 @@ if a.report:
             out.append("   spoken: \"%s\"" % ln["say"])
     out += ["", "## Sources", ""]
     for k, v in sources.items():
-        out.append("- **%s** %s: %s%s" % (k, v.get("title", ""), v.get("url", ""), (" (%s)" % v["note"]) if v.get("note") else ""))
+        if isinstance(v, dict):
+            out.append("- **%s** %s: %s%s" % (k, v.get("title", ""), v.get("url", ""), (" (%s)" % v["note"]) if v.get("note") else ""))
+        else:   # a plain "Publisher, Title, date, link" string
+            out.append("- **%s** %s" % (k, v))
     if errors:
         out += ["", "## Gate E1: FAIL", ""] + ["- " + e for e in errors]
     with open(a.report, "w") as f:

@@ -1,6 +1,6 @@
 ---
 name: explainer-animator
-description: Animator for an explainer reel. Use when the explainer storyboard.json is final - it writes any custom scenes inside their sandbox, builds the 1080x1920 60 fps HyperFrames page with explainer-compose.py (gate E3), proves it with hyperframes check, the kit's beat-check and gap-scan (gate E4) and guided stills of every scene, and writes SCENES.md for Checkpoint B. Never renders the video.
+description: Animator for an explainer reel. Use when the explainer storyboard.json is final - it writes any custom scenes inside their sandbox, builds the 1080x1920 60 fps HyperFrames page with explainer-compose.py (gate E3), proves it with hyperframes check, the kit's beat-check and pace-check.py (gate E4) and guided stills of every scene, and writes SCENES.md for Checkpoint B. Never renders the video.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: inherit
 ---
@@ -41,8 +41,8 @@ a render takes minutes.
    on the hosts (the kit's structure, harmless); the label font's `SFMono-Regular` fallback has no mapping (harmless).
 5. **Gate E4, beats:** `python3 "$SK/scripts/beat-check.py" --index "$W/public/index.html" --transcript "$W/transcript.json"`
    clean (every entrance 0.15 to 0.25 s before its word).
-6. **Gate E4, pacing:** `python3 "$SK/scripts/gap-scan.py" --index "$W/public/index.html" --early 4 --body 6 --max 8`
-   (the caption layer is not counted).
+6. **Gate E4, pacing:** `python3 "$ES/scripts/pace-check.py" --index "$W/public/index.html"`: no still stretch over
+   6 s (warnings over 4 s go to the Director). The kit's gap-scan finds nothing here (scenes cover the voice).
 7. **Stills with the safe zone:**
    ```bash
    python3 "$SK/scripts/snap-beats.py" --project "$W" --at 0.35 --at <each scene's in + 0.6> --at <duration - 0.1>
@@ -61,7 +61,7 @@ After a note: the storyboard changes only through the Director; custom files are
 
 ## Done when
 
-E3 passes, `hyperframes check` has no errors, beat-check and gap-scan are clean (E4), `snaps/guides/sheet.png` and
+E3 passes, `hyperframes check` has no errors, beat-check and pace-check are clean (E4), `snaps/guides/sheet.png` and
 `SCENES.md` are current, and you have looked at every guided still.
 
 ## Never
@@ -76,7 +76,7 @@ E3 passes, `hyperframes check` has no errors, beat-check and gap-scan are clean 
 REPORT explainer-animator · <project> · job <build|rebuild> · v<n>
 Result: done | needs-you
 Page: <scenes> scenes, <backgrounds> backgrounds, <phrases> caption phrases, <s> s · custom: <ids, or none>
-Gates: E3 <pass|message> · check <clean|findings> · E4 beat-check <clean|...>, gap-scan <clean|gaps>
+Gates: E3 <pass|message> · check <clean|findings> · E4 beat-check <clean|...>, pace-check <pass|stretches>
 Stills: <n> looked at · concerns: <list, or none>
 Files written: public/, custom/*.html, snaps/guides/sheet.png, snaps/SCENES.md
 ```
