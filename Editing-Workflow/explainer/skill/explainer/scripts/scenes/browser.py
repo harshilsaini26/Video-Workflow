@@ -42,9 +42,9 @@ def validate(scene):
 
 def height(scene, width):
     inner = width - 2 * PAD
-    h = BAR + 2 * PAD + line_px(T_SIZE, T_LH) * E.text_lines(scene["title"], T_SIZE, inner)
+    h = BAR + 2 * PAD + line_px(T_SIZE, T_LH) * E.text_lines(scene["title"], T_SIZE, inner, spacing=-0.015)
     if scene.get("subtitle"):
-        h += S_GAP + line_px(S_SIZE, S_LH) * E.text_lines(scene["subtitle"], S_SIZE, inner)
+        h += S_GAP + line_px(S_SIZE, S_LH) * E.text_lines(scene["subtitle"], S_SIZE, inner, "display500")
     if scene.get("badges"):
         rows, x = 1, 0
         for b in scene["badges"]:

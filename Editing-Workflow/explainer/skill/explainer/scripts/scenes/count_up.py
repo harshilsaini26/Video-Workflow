@@ -37,7 +37,7 @@ def validate(scene):
 def height(scene, width):
     h = V_SIZE
     if scene.get("sub"):
-        h += S_GAP + line_px(S_SIZE, S_LH) * E.text_lines(scene["sub"], S_SIZE, width)
+        h += S_GAP + line_px(S_SIZE, S_LH) * E.text_lines(scene["sub"], S_SIZE, width, "display500")
     return h
 
 

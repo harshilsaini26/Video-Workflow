@@ -4,7 +4,7 @@ from .helpers import read, run, scratch, write
 from .test_compose import D, VOICE, silent_wav, t_word, words30
 import explainer_lib as E
 
-SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 2h20"/></svg>\n'
+SVG = '<!-- @license lucide-static v0.454.0 - ISC -->\n<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 2h20"/></svg>\n'
 
 
 def stub_vendor(d, katex=True, icons=("book", "clock")):

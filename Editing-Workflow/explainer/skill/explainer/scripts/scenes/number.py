@@ -23,7 +23,7 @@ def validate(scene):
 def height(scene, width):
     h = BADGE
     if scene.get("name"):
-        h += N_GAP + line_px(N_SIZE, N_LH) * E.text_lines(scene["name"], N_SIZE, width)
+        h += N_GAP + line_px(N_SIZE, N_LH) * E.text_lines(scene["name"], N_SIZE, width, spacing=-0.01)
     return h
 
 

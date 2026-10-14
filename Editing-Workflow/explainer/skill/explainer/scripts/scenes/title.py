@@ -27,7 +27,7 @@ def validate(scene):
 
 
 def height(scene, width):
-    h = line_px(size(scene), LH) * E.text_lines(scene["text"], size(scene), width)
+    h = line_px(size(scene), LH) * E.text_lines(scene["text"], size(scene), width, spacing=-0.015)
     if scene.get("kicker"):
         h += line_px(K_SIZE, K_LH) * mono_lines(scene["kicker"], K_SIZE, width) + K_GAP
     return h

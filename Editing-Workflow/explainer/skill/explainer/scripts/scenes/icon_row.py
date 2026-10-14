@@ -58,7 +58,7 @@ def render(scene, ctx, box):
         if not os.path.exists(os.path.join(ctx.vendor_dir, name)):
             ctx.fail("unknown icon %r: no vendor/%s (browse lucide.dev/icons; get the set with: %s)" % (it["icon"], name, INSTALL))
         with open(os.path.join(ctx.vendor_dir, name)) as f:
-            svg = f.read().strip()
+            svg = re.sub(r"^(\s*<!--.*?-->)*\s*", "", f.read(), flags=re.S).strip()   # Lucide files open with a licence comment
         if not svg.startswith("<svg") or re.search(r"<script|on\w+=", svg, re.I):
             ctx.fail("vendor/%s is not a plain SVG icon" % name)
         t, attrs = ctx.item(it["at"])

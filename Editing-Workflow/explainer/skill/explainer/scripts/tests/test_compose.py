@@ -78,6 +78,11 @@ class Compose(unittest.TestCase):
         self.assertIn('window.__timelines["test-01"]', html)
         self.assertIn('class="clip cap-layer"', html)
 
+    def test_fonts_preloaded(self):
+        html, page, _ = self.ok()   # a hidden scene's text would otherwise load its font only when shown, a frame late
+        for f in sorted(os.listdir(os.path.join(os.path.dirname(page), "fonts"))):
+            self.assertIn('<link rel="preload" href="fonts/%s" as="font" type="font/woff2" crossorigin />' % f, html)
+
     def test_scene_box_inside_scene_area_both_widths(self):
         html, _, _ = self.ok()
         boxes = [tuple(map(int, b)) for b in re.findall(r'class="box"[^>]*style="left:(\d+)px;top:(\d+)px;width:(\d+)px;height:(\d+)px', html)]

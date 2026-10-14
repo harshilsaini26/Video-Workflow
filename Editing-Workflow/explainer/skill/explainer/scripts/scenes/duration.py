@@ -18,7 +18,7 @@ CSS = """
     border-radius:5px; transform-origin:50%% 100%%; }
   .d-value { font-weight:700; font-size:%dpx; line-height:%dpx; margin-top:%dpx; white-space:nowrap; letter-spacing:-.02em;
     font-variant-numeric: tabular-nums; opacity:0; }
-  .d-unit { font-weight:500; margin-left:.25em; font-size:.5em; }
+  .d-unit { font-weight:500; margin-left:.25em; font-size:.5em; line-height:0; }   /* adds nothing to the line box */
 """ % (FACE, FACE, V_SIZE, V_SIZE, GAP)
 
 

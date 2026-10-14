@@ -28,3 +28,11 @@ class Lib(unittest.TestCase):
 
     def test_reels_lib_is_found(self):
         self.assertEqual(E.L.SAFE["bottom"], 1248)
+
+    def test_text_metrics_from_glyphs(self):
+        self.assertAlmostEqual(E.text_width("x", 100), 57.1)                 # DM Sans 700: x is 0.571 em
+        self.assertAlmostEqual(E.text_width("ab", 100, "mono500"), 120.0)    # JetBrains Mono: 0.6 em a character
+        self.assertAlmostEqual(E.text_width("ab", 100, "mono500", 0.1), 140.0)
+        self.assertEqual(E.text_lines("xx xx", 100, 260), 1)                  # 114.2 + 23.5 + 114.2
+        self.assertEqual(E.text_lines("xx xx", 100, 240), 2)
+        self.assertEqual(E.text_lines("xxxxxxxx", 100, 100), 1)              # a word never breaks: min_width catches it

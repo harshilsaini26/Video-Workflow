@@ -17,7 +17,7 @@ has a word wider than its column, an anchor that does not resolve or runs backwa
 number with no source, more than 0.3 s with no scene (at the start, between scenes or at the end), or two scenes
 overlapping by more than 0.3 s.
 """
-import argparse, glob, html, json, os, re, shutil, sys, wave
+import argparse, html, json, os, re, shutil, sys, wave
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -30,6 +30,8 @@ NARROW = (L.NARROW["left"], L.NARROW["right"] - L.NARROW["left"])  # 150, 780
 CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 884
 GAP_MAX = 0.3
 GSAP_CDN = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+FONTS = os.path.join(HERE, "..", "assets", "fonts")
+FONT_FILES = ("DMSans-500.woff2", "DMSans-700.woff2", "JetBrainsMono-500.woff2")
 CAP_SIZE = 64
 
 
@@ -70,8 +72,8 @@ def main():
     ap.add_argument("--spec", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--vendor", default=os.path.join(HERE, "..", "assets", "vendor"),
-                    help="GSAP, KaTeX, Lucide, three.js and the label font (default: the skill's assets/vendor)")
-    ap.add_argument("--kit", default="", help="the kit's youtube-edit folder (DM Sans); found automatically when installed")
+                    help="GSAP, KaTeX, Lucide and three.js (default: the skill's assets/vendor)")
+    ap.add_argument("--kit", default="", help="the kit's youtube-edit folder (for its gsap.min.js); found automatically when installed")
     a = ap.parse_args()
 
     with open(a.spec) as f:
@@ -95,22 +97,19 @@ def main():
     shutil.copy(vpath, os.path.join(out, "voice.wav"))
 
     # ---- fonts and GSAP -------------------------------------------------------------------------------------------
+    # DM Sans 500/700 and JetBrains Mono 500 ship with the skill (OFL, assets/fonts/): the scene heights are measured
+    # with exactly these files (dev/measure-glyphs.mjs), so a different copy would move every line break
+    os.makedirs(os.path.join(out, "fonts"), exist_ok=True)
+    for name in FONT_FILES:
+        src = os.path.join(FONTS, name)
+        if os.path.exists(src):
+            shutil.copy(src, os.path.join(out, "fonts", name))
+        else:
+            print("WARN no %s in %s: text falls back to the system font and scene heights will be off" % (name, FONTS))
     kits = [a.kit] if a.kit else []
     kits += [os.path.join(HERE, "..", "..", "youtube-edit"), os.path.join(os.getcwd(), ".claude", "skills", "youtube-edit"),
              os.path.join(HERE, "..", "..", "..", "..", "kit", "youtube-edit")]
     kit = next((os.path.abspath(k) for k in kits if k and os.path.isdir(k)), None)
-    fonts = sorted(glob.glob(os.path.join(kit, "assets", "fonts", "DMSans-*.woff2"))) if kit else []
-    for f in fonts:
-        os.makedirs(os.path.join(out, "fonts"), exist_ok=True)
-        shutil.copy(f, os.path.join(out, "fonts", os.path.basename(f)))
-    if not fonts:
-        print("WARN no DM Sans .woff2 in the kit (assets/fonts/): text falls back to the system sans")
-    label = os.path.join(a.vendor, tok["fonts"]["label_file"])
-    if os.path.exists(label):
-        os.makedirs(os.path.join(out, "fonts"), exist_ok=True)
-        shutil.copy(label, os.path.join(out, tok["fonts"]["label_file"]))
-    else:
-        print("WARN no label font at %s (%s): labels fall back to the system mono" % (label, tok["fonts"]["label_install"]))
     gsap_src = GSAP_CDN
     for cand in [os.path.join(a.vendor, "gsap.min.js")] + ([os.path.join(kit, "assets", "vendor", "gsap.min.js")] if kit else []):
         if os.path.exists(cand):
@@ -166,7 +165,10 @@ def main():
     if timed[-1][5] < D - GAP_MAX:
         fail("no scene from %.2f to %.2f s: the last scene ends early (out at the end: %.3f)" % (timed[-1][5], D, D))
 
-    css, hosts, js, head = {}, [], [], []
+    # fonts load up front: a scene's text is hidden until its time, and a hidden face would load a frame late
+    head = ['<link rel="preload" href="fonts/%s" as="font" type="font/woff2" crossorigin />' % f
+            for f in sorted(os.listdir(os.path.join(out, "fonts")))] if os.path.isdir(os.path.join(out, "fonts")) else []
+    css, hosts, js = {}, [], []
     for k, (sc, mod, sbg, t_in, t_out, end) in enumerate(timed):
         sid = sc["id"]
         left, top, width, h = place(sid, mod, sc)

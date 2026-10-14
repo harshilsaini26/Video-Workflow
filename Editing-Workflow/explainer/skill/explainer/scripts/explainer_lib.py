@@ -4,7 +4,7 @@ The frame and safe zone are the Reels ones (reels_lib), so one file posts everyw
 captions own the band near the top (SPEC §6.1). Times in a storyboard are word anchors ("word:N", the Nth display word
 of transcript.json), so the picture can never drift from the voice.
 """
-import importlib, json, math, os, re, sys
+import importlib, json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -58,9 +58,38 @@ def load_tokens(path=None):
         return json.load(f)
 
 
-def text_width(text, size):
-    return len(text) * size * 0.56   # DM Sans 700 averages about 0.56 em per character (measured in Chromium)
+_GLYPHS = {}
 
 
-def text_lines(text, size, width):
-    return max(1, math.ceil(text_width(text, size) / width))
+def glyphs():
+    """Advance widths in em, measured in Chromium (dev/measure-glyphs.mjs): display700, display500, mono500."""
+    if not _GLYPHS:
+        with open(os.path.join(HERE, "glyphs.json")) as f:
+            _GLYPHS.update(json.load(f))
+    return _GLYPHS
+
+
+def text_width(text, size, font="display700", spacing=0.0):
+    """Pixels the text takes on one line at `size` px; `spacing` is the CSS letter-spacing in em."""
+    g = glyphs()[font]
+    text = str(text)
+    return (sum(g.get(c, 0.6) for c in text) + spacing * len(text)) * size
+
+
+def text_lines(text, size, width, font="display700", spacing=0.0):
+    """Lines the browser wraps the text into at `width` px: words break between, never inside (a word wider than the
+    width still takes one line; min_width is what catches it)."""
+    words = str(text).split()
+    if not words:
+        return 1
+    space = text_width(" ", size, font, spacing)
+    lines, cur = 1, None
+    for w in words:
+        ww = text_width(w, size, font, spacing)
+        if cur is None:
+            cur = ww
+        elif cur + space + ww <= width + 0.5:
+            cur += space + ww
+        else:
+            lines, cur = lines + 1, ww
+    return lines
