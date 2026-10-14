@@ -25,7 +25,8 @@ class SceneError(Exception):
 class Ctx:
     """What a scene needs from the composer: its times, the word anchors, the look, the vendor folder."""
 
-    def __init__(self, scene, t_in, t_out, words, tokens, vendor_dir, out_dir, bg, head=None):
+    def __init__(self, scene, t_in, t_out, words, tokens, vendor_dir, out_dir, bg, head=None, spec_dir="."):
+        self.spec_dir = spec_dir
         self.scene, self.id = scene, scene["id"]
         self.head = head if head is not None else []   # tags for <head> (stylesheets, library scripts), shared by all scenes
         self.t_in, self.t_out = t_in, t_out
@@ -140,7 +141,7 @@ def need(scene, keys):
 
 
 _MODULES = ["title", "number", "count_up", "list_cards", "line_chart", "bars", "duration", "qa_stack",
-            "browser", "sheet", "formula", "icon_row"]
+            "browser", "sheet", "formula", "icon_row", "custom"]
 REGISTRY = {}
 for _m in _MODULES:
     _mod = importlib.import_module("scenes." + _m)

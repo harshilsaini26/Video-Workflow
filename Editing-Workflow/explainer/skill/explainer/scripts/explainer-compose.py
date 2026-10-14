@@ -39,7 +39,15 @@ def fail(msg):
 
 
 def place(sid, mod, scene):
-    """(left, top, width, height): centred in the scene area, narrow when it reaches the action column band."""
+    """(left, top, width, height): centred in the scene area, narrow when it reaches the action column band.
+    A scene that brings its own box (custom) is only checked."""
+    if hasattr(mod, "place"):
+        left, top, width, h = mod.place(scene)
+        sa = E.SCENE
+        if left < sa["left"] or top < sa["top"] or left + width > sa["right"] or top + h > sa["bottom"] or not L.inside_safe(left, top, width, h):
+            fail("%s: the box %d,%d %dx%d is outside the scene area (x %d to %d, y %d to %d; x %d to %d below y %d)"
+                 % (sid, left, top, width, h, sa["left"], sa["right"], sa["top"], sa["bottom"], L.NARROW["left"], L.NARROW["right"], L.RIGHT_COL_TOP))
+        return left, top, width, h
     left, width = WIDE
     h = mod.height(scene, width)
     if CENTRE + h / 2 > L.RIGHT_COL_TOP:
@@ -162,7 +170,7 @@ def main():
     for k, (sc, mod, sbg, t_in, t_out, end) in enumerate(timed):
         sid = sc["id"]
         left, top, width, h = place(sid, mod, sc)
-        ctx = Ctx(sc, t_in, t_out, words, tok, a.vendor, out, sbg, head)
+        ctx = Ctx(sc, t_in, t_out, words, tok, a.vendor, out, sbg, head, spec_dir)
         try:
             inner, lines = mod.render(sc, ctx, (left, top, width))
         except SceneError as e:
