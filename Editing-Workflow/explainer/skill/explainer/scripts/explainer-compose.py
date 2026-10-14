@@ -158,11 +158,11 @@ def main():
     if timed[-1][5] < D - GAP_MAX:
         fail("no scene from %.2f to %.2f s: the last scene ends early (out at the end: %.3f)" % (timed[-1][5], D, D))
 
-    css, hosts, js = {}, [], []
+    css, hosts, js, head = {}, [], [], []
     for k, (sc, mod, sbg, t_in, t_out, end) in enumerate(timed):
         sid = sc["id"]
         left, top, width, h = place(sid, mod, sc)
-        ctx = Ctx(sc, t_in, t_out, words, tok, a.vendor, out, sbg)
+        ctx = Ctx(sc, t_in, t_out, words, tok, a.vendor, out, sbg, head)
         try:
             inner, lines = mod.render(sc, ctx, (left, top, width))
         except SceneError as e:
@@ -258,7 +258,7 @@ def main():
 <head>
 <meta charset="utf-8" />
 <style>%s</style>
-</head>
+%s</head>
 <body>
   <div id="stage" data-composition-id="%s" data-start="0" data-duration="%.3f" data-fps="60" data-width="1080" data-height="1920">
 %s    <audio id="voice" src="voice.wav" data-start="0" data-duration="%.3f" data-track-index="1" data-volume="1"></audio>
@@ -285,7 +285,7 @@ def main():
   </div>
 </body>
 </html>
-""" % (CSS, html.escape(str(S["id"]), quote=True), D, bg_html, D, "".join(hosts), cap_html, gsap_src, HELPERS,
+""" % (CSS, "".join(h + "\n" for h in head), html.escape(str(S["id"]), quote=True), D, bg_html, D, "".join(hosts), cap_html, gsap_src, HELPERS,
        "\n        ".join(bg_js), "\n        ".join(js), "\n        ".join(cap_js), D, js_str(S["id"]))
     with open(os.path.join(out, "index.html"), "w") as f:
         f.write(page)

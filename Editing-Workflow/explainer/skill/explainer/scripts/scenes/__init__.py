@@ -25,8 +25,9 @@ class SceneError(Exception):
 class Ctx:
     """What a scene needs from the composer: its times, the word anchors, the look, the vendor folder."""
 
-    def __init__(self, scene, t_in, t_out, words, tokens, vendor_dir, out_dir, bg):
+    def __init__(self, scene, t_in, t_out, words, tokens, vendor_dir, out_dir, bg, head=None):
         self.scene, self.id = scene, scene["id"]
+        self.head = head if head is not None else []   # tags for <head> (stylesheets, library scripts), shared by all scenes
         self.t_in, self.t_out = t_in, t_out
         self.words, self.tokens = words, tokens
         self.vendor_dir, self.out_dir = vendor_dir, out_dir
@@ -56,11 +57,11 @@ class Ctx:
         word = E.anchor_text(ref, self.words)
         return t, (' data-at="%.3f" data-unanchored="1"' % t if word == "-" else ' data-at="%.3f" data-anchor="%s"' % (t, self.esc(word)))
 
-    def vendor(self, name):
-        """Stage vendor/<name> next to the page and return its relative path, or fail naming the file."""
+    def vendor(self, name, install=None):
+        """Stage vendor/<name> next to the page and return its relative path, or fail naming the file and its install."""
         src = os.path.join(self.vendor_dir, name)
         if not os.path.exists(src):
-            self.fail("needs vendor/%s (looked in %s)" % (name, self.vendor_dir))
+            self.fail("needs vendor/%s (looked in %s)%s" % (name, self.vendor_dir, "; get it with: %s" % install if install else ""))
         dst = os.path.join(self.out_dir, "vendor", name)
         if os.path.isdir(src):
             if not os.path.exists(dst):
@@ -69,6 +70,10 @@ class Ctx:
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy(src, dst)
         return "vendor/" + name
+
+    def add_head(self, tag):
+        if tag not in self.head:
+            self.head.append(tag)
 
     def enter(self, sel, t, frm=None, to=None, stagger=None, dur=None):
         m = self.tokens["motion"]
@@ -134,7 +139,8 @@ def need(scene, keys):
     return ["missing %r" % k for k in keys if scene.get(k) in (None, "", [])]
 
 
-_MODULES = ["title", "number", "count_up", "list_cards", "line_chart", "bars", "duration", "qa_stack"]
+_MODULES = ["title", "number", "count_up", "list_cards", "line_chart", "bars", "duration", "qa_stack",
+            "browser", "sheet", "formula", "icon_row"]
 REGISTRY = {}
 for _m in _MODULES:
     _mod = importlib.import_module("scenes." + _m)
