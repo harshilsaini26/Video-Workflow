@@ -70,7 +70,7 @@ class Compose(unittest.TestCase):
     def test_builds_vertical_60_with_voice_and_kit_markup(self):
         html, page, _ = self.ok()
         self.assertIn('data-fps="60" data-width="1080" data-height="1920"', html)
-        self.assertRegex(html, r'<audio id="voice" src="voice.wav" data-start="0" data-duration="%.3f" data-track-index="1" data-volume="1"' % D)
+        self.assertRegex(html, r'<audio id="voice" src="voice.wav" data-start="0" data-duration="%.3f" data-track-index="1" data-volume="1"' % VOICE)   # the clip is the voice's length
         self.assertTrue(os.path.exists(os.path.join(os.path.dirname(page), "voice.wav")))
         hosts = re.findall(r'<div class="card-host clip" id="host-([\w-]+)" data-start="([\d.]+)" data-duration="([\d.]+)"[^>]*data-anchor="([^"]*)"', html)
         self.assertEqual([(h[0], h[3]) for h in hosts], [("hook", "word0"), ("n1", "word8"), ("cu", "word18")])
@@ -128,6 +128,17 @@ class Compose(unittest.TestCase):
         def snug(b):
             b["scenes"][0]["out"] = round(n1_in + 0.25 - TOK["motion"]["exit"], 3)
         self.ok(snug)
+
+    def test_last_out_can_be_end(self):
+        def edit(b):
+            b["scenes"][2]["out"] = "end"
+        html, _, _ = self.ok(edit)
+        cu = re.search(r'id="host-cu" data-start="([\d.]+)" data-duration="([\d.]+)"', html)
+        self.assertAlmostEqual(float(cu.group(1)) + float(cu.group(2)), D, places=3)
+
+        def early(b):
+            b["scenes"][1]["out"] = "end"
+        self.fails(early, "n1:")
 
     def test_anchor_order_errors_name_the_scene(self):
         def backwards(b):

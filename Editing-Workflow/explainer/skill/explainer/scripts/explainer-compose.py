@@ -92,7 +92,7 @@ def main():
         fail("no voice at %s: run tts-kokoro.py first" % vpath)
     words = L.load_words(tpath)
     with wave.open(vpath) as w:
-        voice_len = w.getnframes() / float(w.getframerate())
+        voice_len = round(w.getnframes() / float(w.getframerate()), 3)
     D = round(voice_len + E.TAIL, 3)
     shutil.copy(vpath, os.path.join(out, "voice.wav"))
 
@@ -144,7 +144,9 @@ def main():
             fail("%s: %s" % (sid, "; ".join(errs)))
         try:
             t_in = max(0.0, E.resolve(sc["in"], words, lead=True))
-            t_out = min(D, E.resolve(sc["out"], words, lead=True))
+            if sc["out"] == "end" and sc is not scenes[-1]:
+                fail("%s: only the last scene can run to the end" % sid)
+            t_out = D if sc["out"] == "end" else min(D, E.resolve(sc["out"], words, lead=True))
         except KeyError as e:
             fail("%s: missing %s" % (sid, e))
         except ValueError as e:
@@ -295,7 +297,7 @@ def main():
   </div>
 </body>
 </html>
-""" % (CSS, "".join(h + "\n" for h in head), html.escape(str(S["id"]), quote=True), D, bg_html, D, "".join(hosts), cap_html, gsap_src, HELPERS,
+""" % (CSS, "".join(h + "\n" for h in head), html.escape(str(S["id"]), quote=True), D, bg_html, voice_len, "".join(hosts), cap_html, gsap_src, HELPERS,
        "\n        ".join(bg_js), "\n        ".join(js), "\n        ".join(cap_js), D, js_str(S["id"]))
     with open(os.path.join(out, "index.html"), "w") as f:
         f.write(page)

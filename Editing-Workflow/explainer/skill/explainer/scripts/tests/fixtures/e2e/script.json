@@ -1,0 +1,13 @@
+{
+  "title": "What a P/E ratio is",
+  "voice": "af_heart",
+  "lines": [
+    {"id": "l0", "say": "Three numbers decide if a stock is cheap.", "show": "Three numbers decide if a stock is cheap.", "break": "sentence"},
+    {"id": "l1", "say": "The first is the price, one hundred dollars a share.", "show": "The first is the price, $100 a share.", "break": "comma", "source": "s1"},
+    {"id": "l2", "say": "The second is the earnings per share.", "show": "The second is the earnings per share.", "break": "sentence"},
+    {"id": "l3", "say": "Divide them and you get the ratio.", "show": "Divide them and you get the ratio.", "break": "sentence"}
+  ],
+  "payoff": "l2",
+  "cta": "l3",
+  "sources": {"s1": "Example price for the demonstration"}
+}
