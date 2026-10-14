@@ -134,7 +134,7 @@ def need(scene, keys):
     return ["missing %r" % k for k in keys if scene.get(k) in (None, "", [])]
 
 
-_MODULES = ["title", "number", "count_up"]
+_MODULES = ["title", "number", "count_up", "list_cards", "line_chart", "bars", "duration", "qa_stack"]
 REGISTRY = {}
 for _m in _MODULES:
     _mod = importlib.import_module("scenes." + _m)

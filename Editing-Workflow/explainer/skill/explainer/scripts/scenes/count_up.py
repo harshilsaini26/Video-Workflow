@@ -51,12 +51,13 @@ def render(scene, ctx, box):
     col = ctx.ink if ctx.light else c["amber" if money else "cyan"]
     dec = int(scene.get("decimals", 0))
     vid = "%s-v" % ctx.id
-    out = '<div class="c-value" id="%s" style="color:%s">%s</div>' % (vid, col, ctx.esc(final(scene)))
+    zero = E.L.full_digits(0, scene.get("prefix", ""), scene.get("suffix", ""), dec)
+    out = '<div class="c-value" id="%s" style="color:%s">%s</div>' % (vid, col, ctx.esc(zero))
     js = [ctx.enter("#%s" % vid, ctx.t_in, {"y": 30})]
     if scene.get("sub"):
         out += '<div class="c-sub" style="color:%s">%s</div>' % (ctx.ink, ctx.esc(scene["sub"]))
         js.append(ctx.enter("#%s .c-sub" % ctx.id, ctx.t_in + 0.18, {"y": 20}))
     dur = max(0.3, min(COUNT, ctx.t_out - ctx.t_in - 0.4))
-    js.append("countUp('#%s', %s, %.3f, %.3f, %s, %s, %d);" % (vid, json.dumps(float(scene["value"])), ctx.t_in + 0.1, dur,
+    js.append("countUp('#%s', 0, %s, %.3f, %.3f, %s, %s, %d);" % (vid, json.dumps(float(scene["value"])), ctx.t_in + 0.1, dur,
                                                               js_str(scene.get("prefix", "")), js_str(scene.get("suffix", "")), dec))
     return out, js

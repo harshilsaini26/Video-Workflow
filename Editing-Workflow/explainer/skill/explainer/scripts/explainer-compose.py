@@ -245,10 +245,9 @@ def main():
          band_bottom - band_top, CAP_SIZE, hl["handle"], hl["handle_border"], "".join(css.values()))
 
     HELPERS = """
-        const countUp = function (sel, to, t, dur, prefix, suffix, dec) {
-          const el = document.querySelector(sel); const o = { v: 0 };
+        const countUp = function (sel, from, to, t, dur, prefix, suffix, dec) {   // the page starts at fmt(first from)
+          const el = document.querySelector(sel); const o = { v: from };
           const fmt = function (v) { return prefix + v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + suffix; };
-          el.textContent = fmt(0);
           tl.to(o, { v: to, duration: dur, ease: '%s', onUpdate: function () { el.textContent = fmt(dec ? o.v : Math.round(o.v)); } }, t);
         };""" % mo["enter_ease"]
 
