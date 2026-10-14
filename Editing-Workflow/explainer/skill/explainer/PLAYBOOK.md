@@ -57,7 +57,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 5. **Gate E2:** at least 98% of the `say` words are heard back by Parakeet; no gap inside a line over 1.2 s; the
    length within 10% of the target (`align-script.py`, `tts-kokoro.py`). A failure names the line.
 6. **Disclosure:** a realistic AI voice may need the platform's AI label (Meta's "AI info"); the posting checklist
-   reminds the creator, who checks the platform's current rule.
+   reminds the creator, who checks the platform's current rule. The voice never imitates a real person.
 
 ## §E4 Scenes and pacing
 

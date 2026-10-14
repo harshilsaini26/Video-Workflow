@@ -64,3 +64,22 @@ class Docs(unittest.TestCase):
         text = read(SKILL)
         for a in ("reels-renderer", "reels-qa", "reels-packager", "reels-librarian", "reels-analyst"):
             self.assertIn(a, text)
+
+    def test_readme_links_resolve(self):
+        for p in (os.path.join(PROFILE, "README.md"), os.path.join(PROFILE, "RESEARCH.md")):
+            self.assertTrue(os.path.exists(p), p)
+            for link in re.findall(r"\]\(([^)#\s]+)(?:#[^)]*)?\)", read(p)):
+                if not re.match(r"^[a-z]+://", link):
+                    self.assertTrue(os.path.exists(os.path.join(os.path.dirname(p), link)), "%s links %s" % (p, link))
+
+    def test_mermaid_blocks_fenced(self):
+        for p in (os.path.join(PROFILE, "README.md"), os.path.join(PROFILE, "..", "README.md")):
+            text = read(p)
+            fenced = re.findall(r"```mermaid\n(.*?)```", text, re.S)
+            self.assertTrue(fenced, p)
+            bare = re.sub(r"```.*?```", "", text, flags=re.S)
+            self.assertNotRegex(bare, r"(?m)^\s*(flowchart|graph|sequenceDiagram)\b", p)
+
+    def test_status_has_voice_row(self):
+        status = read(os.path.join(PROFILE, "..", "templates", "STATUS.md"))
+        self.assertRegex(status, r"\| \*\*Language\*\* \|.*\n\| \*\*Voice\*\* \|")

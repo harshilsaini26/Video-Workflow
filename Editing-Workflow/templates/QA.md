@@ -25,7 +25,7 @@ Full field definitions: Editing-Workflow/templates/README.md
 | | |
 |---|---|
 | **Project** | {project} |
-| **Profile** | {youtube \| reels} |
+| **Profile** | {youtube \| reels \| explainer} |
 | **Expected** | {3840x2160 \| 1080x1920}, {30 \| 60} fps, BT.709, -14 LUFS |
 | **Latest verdict** | {PASS \| FAIL} ({version} · {part} · attempt {n}) |
 
