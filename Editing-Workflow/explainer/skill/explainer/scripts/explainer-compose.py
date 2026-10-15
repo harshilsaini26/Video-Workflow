@@ -98,7 +98,8 @@ def place(sid, mod, scene):
         fail("%s: the box %d,%d %dx%d is outside the safe zone" % (sid, left, top, width, h))
     need = mod.min_width(scene)
     if need > width:
-        fail("%s: a word in it is about %d px wide, wider than the %d px column; shorten it or use a smaller size" % (sid, need, width))
+        fail("%s: a word or a number in it (at its widest as it counts) is about %d px wide, wider than the %d px column; "
+             "shorten it or use a smaller size" % (sid, need, width))
     return left, top, width, h
 
 

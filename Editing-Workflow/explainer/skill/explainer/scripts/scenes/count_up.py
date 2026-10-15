@@ -11,10 +11,6 @@ COUNT = 1.2                     # seconds the count takes (shorter when the scen
 MONEY = ("$", "€", "£", "₹")
 
 
-def final(scene):
-    return E.L.full_digits(float(scene["value"]), scene.get("prefix", ""), scene.get("suffix", ""), int(scene.get("decimals", 0)))
-
-
 CSS = """
   .c-value { font-weight:700; font-size:%dpx; line-height:%dpx; letter-spacing:-.02em; font-variant-numeric: tabular-nums;
     text-align:center; white-space:nowrap; opacity:0; }
@@ -42,7 +38,9 @@ def height(scene, width):
 
 
 def min_width(scene):
-    return max(int(E.text_width(final(scene), V_SIZE)) + 1, widest([(scene.get("sub"), S_SIZE)]))
+    # the widest value on the way, not only the final one: digits are proportional ($1,111,111 passes $1,000,000)
+    count = E.L.count_width(float(scene["value"]), V_SIZE, scene.get("prefix", ""), scene.get("suffix", ""), int(scene.get("decimals", 0)))
+    return max(int(count) + 1, widest([(scene.get("sub"), S_SIZE)]))
 
 
 def render(scene, ctx, box):

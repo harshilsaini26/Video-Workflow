@@ -60,6 +60,19 @@ class Custom(unittest.TestCase):
         for bad in ("fetch('/data.json');", "const u = 'https://example.com/x.png';", "const v = 'http://example.com';",
                     "import('https://cdn.example.com/m.js');"):
             self.fails("network", html=GOOD.replace("const bars", bad + " const bars"))
+        for bad in ("const w = '//cdn.example.com/x.js';", "root.innerHTML = '<img src=//cdn.example.com/a.png>';"):
+            self.fails("network", html=GOOD.replace("const bars", bad + " const bars"))   # protocol-relative: the web too
+        for bad in ("@import url('https://fonts.example.com/a.css');", "@import '//fonts.example.com/a.css';",
+                    "#yield .bar { background: url(//example.com/a.png); }"):
+            self.fails("network", html=GOOD.replace("<style>", "<style>\n  " + bad))
+        self.assertEqual(self.build(html=GOOD.replace("const bars", "// a comment\n    const bars"))[0].returncode, 0)
+
+    def test_a_module_build_function_must_be_on_window(self):
+        # a module's top-level function is private to the module: window.buildYield stays undefined and the scene empty
+        module = GOOD.replace("<script>", '<script type="module">')
+        self.fails("window.buildYield = buildYield", html=module)
+        r, _ = self.build(html=module.replace("  function buildYield", "  window.buildYield = buildYield;\n  function buildYield"))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
     def test_missing_build_function_fails(self):
         self.fails("buildYield", html=GOOD.replace("function buildYield", "function buildOther"))

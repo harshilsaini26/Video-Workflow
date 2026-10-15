@@ -52,9 +52,11 @@ def height(scene, width):
 
 
 def min_width(scene):
-    longest = max((fmt(scene, p) for p in scene["points"]), key=len)
+    # the readout counts from point to point: its widest moment on the way, not only the points (digits are proportional)
+    count = max(E.L.count_width(p, V_SIZE, scene.get("prefix", ""), scene.get("suffix", ""), int(scene.get("decimals", 0)))
+                for p in scene["points"])
     xs = sum(E.text_width(str(x), X_SIZE) for x in scene["x"]) + 16 * len(scene["x"])
-    return int(max(E.text_width(longest, V_SIZE), xs)) + 1
+    return int(max(count, xs)) + 1
 
 
 def render(scene, ctx, box):

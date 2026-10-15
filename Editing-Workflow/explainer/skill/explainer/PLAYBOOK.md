@@ -114,8 +114,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    `#<id>`, the markup, and a script defining a function named for its scene, `build<Id>(tl, root, t0, t1)` (two
    custom scenes never share a name: the composer refuses it), which adds its tweens to the shared timeline
    between `t0` and `t1` and selects only through `root` or `'#<id> ...'`. The composer refuses `document.body`, a
-   selector outside `#<id>`, any network use (`fetch`, a web address, `import()`), and a missing function. GSAP is
-   always there; KaTeX and three.js come from the local vendor folder. Checkpoint B shows them at in, middle and out;
+   selector outside `#<id>`, any network use (`fetch`, a web address, `//host` included, `import()`, CSS `@import`),
+   and a missing function. A function defined in a `<script type="module">` (three.js) also needs
+   `window.build<Id> = build<Id>;`: a module's names are its own, so the page could not call it. GSAP is always there; KaTeX and three.js come from the local vendor folder. Checkpoint B shows them at in, middle and out;
    one the creator likes is promoted into the library by the Librarian, with a test.
 
 ## §E7 Sources and claims

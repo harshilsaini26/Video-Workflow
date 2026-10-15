@@ -123,6 +123,24 @@ class Duration(SceneCase):
             self.assertIn("countUp('#sc-v', 0, 6", html)
 
 
+
+class CountsFitWhileCounting(SceneCase):
+    """DM Sans digits are proportional (0 is about twice as wide as 1), so a count is measured at its widest moment, not
+    at its final number: on the way to $1,111,111 it shows $1,000,000."""
+
+    def test_count_up(self):
+        self.fails({"type": "count-up", "value": 1111111, "prefix": "$", "source": "s1"}, "wider than the")   # final ~620 px, ~966 counting
+        self.ok({"type": "count-up", "value": 99999, "prefix": "$", "source": "s1"})
+
+    def test_line_chart_readout(self):
+        self.fails({"type": "line-chart", "points": [100, 11111111111], "x": ["Y0", "Y20"], "prefix": "$", "source": "s1"},
+                   "wider than the")
+        self.ok({"type": "line-chart", "points": [100, 2650], "x": ["Y0", "Y20"], "prefix": "$", "source": "s1"})
+
+    def test_duration_in_full_digits(self):
+        self.fails({"type": "duration", "value": 111111111, "unit": "hours", "source": "s1"}, "wider than the")
+        self.ok({"type": "duration", "value": 1000, "unit": "hours", "source": "s1"})
+
 class QAStack(SceneCase):
     def items(self, n):
         return [{"text": "Is the NPV positive?" if i == 0 else "Question " + "ABCDEF"[i] + " about IRR and NPV", "em": ["NPV"], "at": "word:%d" % (5 + 2 * i)}

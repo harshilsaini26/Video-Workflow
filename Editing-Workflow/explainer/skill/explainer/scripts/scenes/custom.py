@@ -17,7 +17,11 @@ THREE_INSTALL = "npm pack three@0.169.0, then copy its build/three.module.min.js
 _IDENT = re.compile(r"^[A-Za-z_$][A-Za-z0-9_$]*$")
 _NETWORK = [(r"\bfetch\s*\(", "fetch("), (r"https?://", "a web address"), (r"\bimport\s*\(", "import()"),
             (r"\bXMLHttpRequest\b", "XMLHttpRequest"), (r"\bWebSocket\b", "WebSocket"), (r"\bsendBeacon\b", "sendBeacon"),
-            (r"<\s*(iframe|object|embed)\b", "an embedded page"), (r"\b(eval|Function)\s*\(", "eval / Function")]
+            (r"<\s*(iframe|object|embed)\b", "an embedded page"), (r"\b(eval|Function)\s*\(", "eval / Function"),
+            (r"@import\b", "CSS @import"),
+            # "//host/x" in a string, url(), or an attribute loads over the web too; a // comment follows a space or a newline
+            (r"[('\"`=]\s*//[\w-]+(\.[\w-]+)+", "a web address (//...)")]
+_MODULE = r"<script\b[^>]*\btype\s*=\s*['\"]?module\b[^>]*>(.*?)</script>"
 _DOC = [(r"\bdocument\s*\.\s*body\b", "document.body"), (r"\bdocument\s*\.\s*documentElement\b", "document.documentElement")]
 _DOC_SELECT = r"\bdocument\s*\.\s*(querySelector(All)?|getElementById|getElementsBy\w+)\s*\("
 _TWEEN_SELECT = r"\b(?:tl|gsap)\s*\.\s*(?:to|from|fromTo|set)\s*\(\s*(['\"`])(.*?)\1"
@@ -74,8 +78,13 @@ def lint(src, sid, build):
                     continue
                 if not re.match(r"^#%s\b" % re.escape(sid), sel):
                     errs.append("styles %r, outside #%s: start every selector with #%s" % (sel, sid, sid))
-    if not re.search(r"\bfunction\s+%s\s*\(|\b%s\s*=\s*(function\b|\()" % (re.escape(build), re.escape(build)), src):
+    defines = r"\bfunction\s+%s\s*\(|\b%s\s*=\s*(function\b|\()" % (re.escape(build), re.escape(build))
+    if not re.search(defines, src):
         errs.append("defines no function %s(tl, root, t0, t1)" % build)
+    elif (any(re.search(defines, m) for m in re.findall(_MODULE, src, re.S | re.I))
+          and not re.search(r"\bwindow\s*\.\s*%s\s*=" % re.escape(build), src)):
+        # a module's top-level names are its own: the page calls window.<build>, which would be undefined
+        errs.append("defines %s inside a module script, where the page cannot call it: add window.%s = %s;" % (build, build, build))
     return errs
 
 

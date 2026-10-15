@@ -44,7 +44,9 @@ def height(scene, width):
 
 
 def min_width(scene):
-    return max(FACE, int(E.text_width(str(scene["value"]), V_SIZE) + E.text_width(" " + scene["unit"], V_SIZE / 2)) + 1)
+    # the number as it counts, in full digits (1,000), at its widest moment on the way up
+    count = E.L.count_width(scene["value"], V_SIZE, decimals=decimals(scene["value"]))
+    return max(FACE, int(count + E.text_width(" " + scene["unit"], V_SIZE / 2)) + 1)
 
 
 def render(scene, ctx, box):
