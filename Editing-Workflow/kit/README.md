@@ -43,6 +43,7 @@ Questions go in the free community, in the post for this video: https://www.skoo
 
 ## Licences
 
-- The font is DM Sans, under the SIL Open Font License (`LICENSES/OFL-DM-Sans.txt`).
+- The font is DM Sans (the real Latin files from Fontsource 5.1.0; the kit first shipped placeholder files that drew in the
+  system font instead), under the SIL Open Font License (`LICENSES/OFL-DM-Sans.txt`).
 - Some of the scripts started from an open-source starter kit under the MIT License. Its notice is in `LICENSES/MIT-starter-kit.txt` and stays with the code.
 - No music, sound effects, footage or logos ship with this kit. Use your own, or ones you have the rights to.

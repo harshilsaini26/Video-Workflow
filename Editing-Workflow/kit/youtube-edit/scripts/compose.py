@@ -120,9 +120,11 @@ def stage(src, dst):
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     if os.path.exists(src) and not os.path.exists(dst):
         shutil.copy(src, dst)
-# THE VIDEO FONT: the three 7 KB DMSans-400/500/700 files in the skill's own assets/fonts, with the stack below. They are
-# glyph subsets, so Chrome draws the text in the system face (San Francisco on a Mac) with these exact metrics, and that
-# is the approved look. The full variable DM Sans reads rounder and wider. Do not "fix" this to the full DM Sans file.
+# THE VIDEO FONT: DM Sans 400/500/700 (SIL Open Font License) in the skill's own assets/fonts, with the stack below.
+# These are the real DM Sans Latin files (Fontsource 5.1.0), so every machine draws the same letters. The kit first
+# shipped 7 KB placeholder subsets that Chrome could not draw from: the text silently fell back to the system face
+# (San Francisco on a Mac, DejaVu on Linux), so a video looked different on every computer. tests/test_fonts.py checks
+# that every printable character comes from DM Sans.
 FONTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "fonts")
 fonts = sorted(glob.glob(os.path.join(FONTS, "*.woff2")))
 if not fonts:

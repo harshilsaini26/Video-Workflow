@@ -20,8 +20,10 @@ reels/
 │       ├── reels-safezone.py       draws the platforms' UI zones over snapshots so problems are visible
 │       ├── reels-captions.py       an SRT caption file for Shorts / TikTok / Facebook
 │       ├── reels-storyboard-md.py  the delivery STORYBOARD.md (beats, captions, loop, assets and licences)
-│       ├── reels_lib.py            shared: the safe zone, caption chunking, SRT
-│       └── tests/                  37 tests (python3 -m unittest tests)
+│       ├── reels_lib.py            shared: the safe zone, caption chunking, SRT, text measured with DM Sans's real glyph widths
+│       ├── glyphs.json             those widths, measured in Chromium (shared with the explainer skill)
+│       ├── dev/                    calibration tools: glyph widths and block heights in Chromium
+│       └── tests/                  42 tests (python3 -m unittest tests)
 └── agents/                         → install to .claude/agents/
     ├── reels-ingest.md        ├── reels-animator.md
     ├── reels-transcriber.md   ├── reels-renderer.md
@@ -179,7 +181,7 @@ reels (gap-scan leaves the burned-in caption layer out: captions changing is not
 | `reels-storyboard-md.py` | the delivery storyboard with assets and licences |
 
 **Verified on 2026-10-08:**
-- **The unit tests pass** (37 as of 2026-10-09). They include the kit's own `beat-check.py` and `gap-scan.py` running on a composed reel.
+- **The unit tests pass** (42 as of 2026-10-15, including every block's predicted height against Chromium with real DM Sans). They include the kit's own `beat-check.py` and `gap-scan.py` running on a composed reel.
 - **A synthetic 12 s reel went through the whole pipeline.** It used every format, a conformed landscape clip, captions and sounds:
   1. composed
   2. `npx hyperframes check` passed (0 errors)

@@ -825,10 +825,13 @@ fades are fine without backdrop-filter (lower lines). Glass that has not arrived
   small word with `::before`); an SVG with `width="1em"` renders 16 px (give explicit width and height).
 
 **Fonts, transcription, snapshots**
-- **The house font look:** the three 7 KB `assets/fonts/DMSans-{400,500,700}.woff2` subsets under the stack `"DM Sans",
-  ui-sans-serif, system-ui, sans-serif`, so Chrome draws in the system face (San Francisco on a Mac) at these metrics.
-  That is the approved look; the full variable DM Sans reads rounder and wider. Body `font-family` lists concrete names,
-  never a CSS variable, and a scene element never sets `"DM Sans"` alone (a whole scene once rendered in Times).
+- **The house font:** DM Sans 400/500/700, the real Latin files in `assets/fonts/DMSans-{400,500,700}.woff2` (SIL Open
+  Font License, `LICENSES/OFL-DM-Sans.txt`), under the stack `"DM Sans", ui-sans-serif, system-ui, sans-serif`. Every
+  printable character draws from DM Sans on every machine (`tests/test_fonts.py`). The kit first shipped 7 KB
+  placeholder files that Chrome could not draw from, so text fell back to the system face (San Francisco on a Mac,
+  DejaVu on Linux); a video made before the change can look slightly narrower than one made after. Body `font-family`
+  lists concrete names, never a CSS variable, and a scene element never sets `"DM Sans"` alone (a whole scene once
+  rendered in Times).
 - **Always pass the engine for the language:** `--engine parakeet` for English and the European languages it covers;
   `--engine whisper --model large-v3 --language <code>` for any other (Hindi: `hi`). With `auto`, a missing Parakeet
   falls back to whisper without a word. Behind a proxy, model downloads need `NODE_USE_ENV_PROXY=1`.

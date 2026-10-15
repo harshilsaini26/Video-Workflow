@@ -1,7 +1,8 @@
 // measure-glyphs.mjs <fonts-dir> > ../glyphs.json
 // Advance widths (em) of printable ASCII and a few symbols in DM Sans 500/700 and JetBrains Mono 500, measured in
-// Chromium. The scene modules wrap text with these, so a box's height is known before the browser sees it.
-// <fonts-dir> holds DMSans-500.woff2, DMSans-700.woff2 and JetBrainsMono-500.woff2. A developer tool: not run per video.
+// Chromium. reels_lib.text_lines wraps text with these (for Reels blocks and explainer scenes), so a box's height is
+// known before the browser sees it. <fonts-dir> holds DMSans-500.woff2, DMSans-700.woff2 and JetBrainsMono-500.woff2
+// (the explainer skill's assets/fonts has all three). A developer tool: not run per video.
 import fs from "node:fs";
 import path from "node:path";
 import { launch } from "./_browser.mjs";

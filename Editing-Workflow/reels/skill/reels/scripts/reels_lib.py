@@ -4,7 +4,7 @@ The frame is 1080x1920. The safe zone is Meta's published box for Reels and Stor
 side), the strictest of Instagram, TikTok and YouTube Shorts, so one file posts everywhere. Below RIGHT_COL_TOP the right
 edge also holds the platforms' action column (like, comment, share), so anything centred down there is narrower.
 """
-import json, re
+import json, os, re
 
 W, H = 1080, 1920
 SAFE_TOP, SAFE_BOTTOM, SAFE_SIDE = 269, 672, 65           # px clear of platform UI (PLAYBOOK §R3)
@@ -114,3 +114,44 @@ def norm(s):
 def full_digits(value, prefix="", suffix="", decimals=0):
     """Numbers are written out in full (PLAYBOOK §R5, STYLE-GUIDE): 1000 -> 1,000, never 1K."""
     return "%s%s%s" % (prefix, ("{:,.%df}" % int(decimals)).format(value), suffix)
+
+
+# ---- text measured with the fonts' real glyph widths ---------------------------------------------------------------
+_GLYPHS = {}
+
+
+def glyphs():
+    """Advance widths in em of DM Sans 700/500 and JetBrains Mono 500 ("display700", "display500", "mono500"), measured
+    in Chromium with the shipped fonts (dev/measure-glyphs.mjs -> glyphs.json)."""
+    if not _GLYPHS:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "glyphs.json")) as f:
+            _GLYPHS.update(json.load(f))
+    return _GLYPHS
+
+
+def text_width(text, size, font="display700", spacing=0.0):
+    """Pixels the text takes on one line at `size` px; `spacing` is the CSS letter-spacing in em."""
+    g = glyphs()[font]
+    text = str(text)
+    return (sum(g.get(c, 0.6) for c in text) + spacing * len(text)) * size
+
+
+def text_lines(text, size, width, font="display700", spacing=0.0, extra=None, space=None):
+    """Lines the browser wraps the text into at `width` px: words break between, never inside (a word wider than the
+    width still takes one line; the callers' width checks catch it). `extra` adds px to words, one entry a word (a
+    highlight box's padding); `space` is a fixed gap between words in em (an inline-block spacer) instead of the space
+    glyph."""
+    words = str(text).split()
+    if not words:
+        return 1
+    gap = space * size if space is not None else text_width(" ", size, font, spacing)
+    lines, cur = 1, None
+    for k, w in enumerate(words):
+        ww = text_width(w, size, font, spacing) + (extra[k] if extra else 0)
+        if cur is None:
+            cur = ww
+        elif cur + gap + ww <= width + 0.5:
+            cur += gap + ww
+        else:
+            lines, cur = lines + 1, ww
+    return lines

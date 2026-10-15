@@ -26,7 +26,6 @@ explainer/
 │       ├── explainer-compose.py    gate E3: storyboard.json → a 1080x1920, 60 fps HyperFrames page
 │       ├── pace-check.py           gate E4 (pacing): no still stretch over 6 s on the page
 │       ├── explainer_lib.py        shared: word anchors, the scene area, text measured with real glyph widths
-│       ├── glyphs.json             the fonts' glyph widths, measured in Chromium
 │       ├── scenes/                 one module per scene type (13, custom included)
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
 │       └── tests/                  101 tests (python3 -m unittest discover -s tests -t .)

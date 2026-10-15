@@ -7,8 +7,9 @@ scene type, or changing the fonts in `../assets/fonts/`.
 They need Node, puppeteer (`npm i puppeteer-core` here, or `PUPPETEER_DIR=<a folder that has it>`) and Chromium
 (`/opt/pw-browsers/chromium`, or `CHROME=<path>`).
 
-1. **Glyph widths:** `node measure-glyphs.mjs ../../assets/fonts > ../glyphs.json`. These are the advance widths of DM Sans
-   500/700 and JetBrains Mono 500. `explainer_lib.text_lines` wraps text with them, word by word.
+1. **Glyph widths** live in the Reels skill, shared by both: `reels/skill/reels/scripts/dev/measure-glyphs.mjs
+   ../../assets/fonts > <reels scripts>/glyphs.json` (DM Sans 500/700 and JetBrains Mono 500). `text_lines` (in
+   `reels_lib`, used through `explainer_lib`) wraps text with them, word by word.
 2. **Scene heights:**
    ```
    python3 make-cases.py /tmp/cases --vendor <vendor folder with katex/ and lucide/>
