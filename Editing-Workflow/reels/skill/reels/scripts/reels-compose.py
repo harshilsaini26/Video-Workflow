@@ -102,6 +102,7 @@ if args.shared:
 WIDE_L, WIDE_W = L.SAFE["left"], L.SAFE["right"] - L.SAFE["left"]          # 65, 950
 NAR_L, NAR_W = L.NARROW["left"], L.NARROW["right"] - L.NARROW["left"]       # 150, 780
 
+layout = []   # every placed block's predicted box, written to layout.json (the height checks read it)
 placed = []   # (id, top, bottom) of every block, for the caption-slot check after the captions are built
 
 def place(bid, pos, height):
@@ -122,16 +123,31 @@ def place(bid, pos, height):
         fail("%s: a %d px tall block at pos %r ends at y %d, past the safe zone (bottom %d). Use a higher pos or less text"
              % (bid, h, pos, top + h, L.SAFE["bottom"]))
     placed.append((bid, top, top + h))
+    layout.append({"id": bid, "left": left, "top": top, "width": width, "height": int(h)})
     return left, top, width
 
-def text_lines(text, size, width):
-    return max(1, math.ceil(len(text) * size * 0.56 / width))   # DM Sans 700 averages about 0.56 em per character
+# Text is measured with DM Sans's real glyph widths (reels_lib.text_lines, from glyphs.json) and wrapped word by word at
+# the width each block actually gets. Box heights follow the CSS below, checked against Chromium (tests/test_heights.py):
+# "normal" line height is about 1.31 em, the glass border 3 px a side.
+text_lines, text_width = L.text_lines, L.text_width
 
-def text_width(text, size):
-    return len(text) * size * 0.56
+def hl_lines(text, size, w, boxed=False):
+    """Lines of a hook / headline: words are inline-blocks .26 em apart, letter-spaced -.015 em, inside 6 px of padding
+    a side (28 px when boxed)."""
+    return text_lines(text, size, w - (56 if boxed else 12), spacing=-0.015, space=0.26)
 
-# Box heights, measured in Chromium with DM Sans 700 (the CSS below): "normal" line height is about 1.31 em, the glass
-# border 3 px a side. Each takes the column width it is given, so wrapped text is counted at the width the block gets.
+def hl_word_check(bid, text, size, w, boxed=False):
+    """A word never breaks: one wider than the column would run off the frame instead of wrapping."""
+    room = w - (56 if boxed else 12)
+    for word in text.split():
+        ww = text_width(word, size, spacing=-0.015)
+        if ww > room:
+            fail("%s: %r is about %d px wide at %d px, wider than the %d px column; use a smaller size or a shorter word"
+                 % (bid, word, ww, size, room))
+
+def hl_height(text, size, w, boxed=False):
+    return math.ceil(hl_lines(text, size, w, boxed) * size * 1.08) + (36 if boxed else 0)
+
 def h_steps(title, items, w):
     inner = w - 86                                             # 40 px padding + 3 px border, each side
     t = (22 + 63 * text_lines(title, 48, inner)) if title else 0          # title: 48 px, line 63, margin 22
@@ -142,7 +158,7 @@ def h_pills(n):
     return 121 * n                                             # 16 + 63 + 16 padding, 6 border, 20 margin each
 
 def h_point(text, size, sub, w):
-    return size * text_lines(text, size, w) + ((14 + 58 * text_lines(sub, 52, w)) if sub else 0)
+    return size * text_lines(text, size, w, spacing=-0.02) + ((14 + 58 * text_lines(sub, 52, w)) if sub else 0)
 
 def h_stat(label, w):
     return 150 + ((16 + 68 * text_lines(label, 52, w)) if label else 0)
@@ -309,9 +325,10 @@ for b in S.get("beats", []):
         if not 72 <= size <= 112:
             fail("%s: size %d is outside 72 to 112 px" % (bid, size))
         pos = b.get("pos", "top")
-        pad = 36 if b.get("box") else 0
-        left, top, width = place(bid, pos, lambda w: int(text_lines(text, size, w - 60) * size * 1.08 + pad))
-        lines = text_lines(text, size, width - 60)
+        boxed = bool(b.get("box"))
+        left, top, width = place(bid, pos, lambda w: hl_height(text, size, w, boxed))
+        hl_word_check(bid, text, size, width, boxed)
+        lines = hl_lines(text, size, width, boxed)
         if lines > 3:
             fail("%s: %r needs %d lines at %d px in a %d px column; three at most" % (bid, text, lines, size, width))
         cls = "hl shadow" + (" amber" if b.get("color") == "amber" else "") + (" boxed" if b.get("box") else "")
@@ -413,9 +430,9 @@ for b in S.get("beats", []):
         col = b.get("color", "white")
         dec = int(b.get("decimals", 0))
         final = L.full_digits(float(b["value"]), b.get("prefix", ""), b.get("suffix", ""), dec)
-        if text_width(final, 150) > width:   # a number never wraps: it would run past the column
+        if text_width(final, 150, spacing=-0.02) > width:   # a number never wraps: it would run past the column
             fail("%s: %r is about %d px wide at 150 px, wider than the %d px column; use a shorter number or a headline"
-                 % (bid, final, text_width(final, 150), width))
+                 % (bid, final, text_width(final, 150, spacing=-0.02), width))
         lab = '<div class="sn-l shadow" id="%s-l">%s</div>' % (bid, esc(b["label"])) if b.get("label") else ""
         inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx"><div class="sn-v shadow %s" id="%s-v">%s</div>%s</div>' % (
             left, top, width, col, bid, esc(final), lab)
@@ -437,7 +454,8 @@ for b in S.get("beats", []):
         if b.get("label"):
             size = 84
             label = b["label"]
-            left, top, width = place(bid, "top", lambda w: int(text_lines(label, size, w - 60) * size * 1.08))
+            left, top, width = place(bid, "top", lambda w: hl_height(label, size, w))
+            hl_word_check(bid, label, size, width)
             inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx"><div class="hl shadow" id="%s-label">%s</div></div>' % (
                 left, top, width, bid, words_spans(b["label"], b.get("label_em")).replace('class="w', 'style="font-size:%dpx" class="w' % size).replace('class="sp"', 'class="sp" style="font-size:%dpx"' % size))
             html_parts.append(host(bid + "-over", t_in, t_out, inner, "-", " cut-over"))
@@ -581,6 +599,7 @@ page = """<!doctype html>
        "".join(audio_parts), GSAP_SRC, HELPERS, "\n        ".join(cam), "\n        ".join(js_parts), "\n        ".join(cap_js),
        S.get("raw_js", ""), D, json.dumps(str(S["id"])).replace("<", "\\u003c"))   # a JS string: the browser decodes the attribute, not script text
 open(os.path.join(OUT, "index.html"), "w").write(page)
+open(os.path.join(OUT, "layout.json"), "w").write(json.dumps(layout, indent=1))
 open(os.path.join(OUT, "hyperframes.json"), "w").write(json.dumps({
     "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
     "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",

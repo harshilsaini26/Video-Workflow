@@ -4,7 +4,7 @@ How a video goes from the camera to a finished, checked file, who does each part
 other.
 
 This system is built on a kit, kept in [`kit/`](kit/README.md): a YouTube creator's Claude Code editing skill, kept as
-it came apart from two fixes (the font folder and `storyboard-md.py`). The kit supplies the rules (`youtube-edit/SKILL.md`), the scripts (`youtube-edit/scripts/`), the look
+it came apart from a few fixes: the font folder, real DM Sans font files (the shipped ones drew in the system font), `storyboard-md.py`, and bugs found in code review. The kit supplies the rules (`youtube-edit/SKILL.md`), the scripts (`youtube-edit/scripts/`), the look
 (`STYLE-GUIDE.md`) and the prompts (`PROMPTS.md`). This folder adds the layer on top: a team of agents with clear
 jobs, a fixed order, file hand-offs, quality gates and a learning loop.
 
@@ -1068,7 +1068,7 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 | GSAP (optional local copy) | `assets/vendor/gsap.min.js` | ✅ |
 | yt-dlp (optional, Analyst only) | `yt-dlp --version` | ✅ |
 
-3. The tests, from the skill's scripts folder: `python3 -m unittest tests` → 47 tests, `OK` (and 37 in the Reels skill's scripts folder).
+3. The tests, from the skill's scripts folder: `python3 -m unittest tests` → 48 tests, `OK` (and 42 in the Reels skill's scripts folder).
 4. `new` The agent team for your profile. **YouTube long-form:** install the Producer skill, the playbook, the
    templates and the 13 agent files as in [`longform/README.md`](longform/README.md) § 2. **Reels:** the Producer
    skill, the playbook, the scripts, the templates and the 11 agent files as in [`reels/README.md`](reels/README.md) § 2.

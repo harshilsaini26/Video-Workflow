@@ -75,39 +75,5 @@ def load_tokens(path=None):
         return json.load(f)
 
 
-_GLYPHS = {}
-
-
-def glyphs():
-    """Advance widths in em, measured in Chromium (dev/measure-glyphs.mjs): display700, display500, mono500."""
-    if not _GLYPHS:
-        with open(os.path.join(HERE, "glyphs.json")) as f:
-            _GLYPHS.update(json.load(f))
-    return _GLYPHS
-
-
-def text_width(text, size, font="display700", spacing=0.0):
-    """Pixels the text takes on one line at `size` px; `spacing` is the CSS letter-spacing in em."""
-    g = glyphs()[font]
-    text = str(text)
-    return (sum(g.get(c, 0.6) for c in text) + spacing * len(text)) * size
-
-
-def text_lines(text, size, width, font="display700", spacing=0.0, extra=None):
-    """Lines the browser wraps the text into at `width` px: words break between, never inside (a word wider than the
-    width still takes one line; min_width is what catches it). `extra` adds px to words, one entry a word (a highlight
-    box's padding)."""
-    words = str(text).split()
-    if not words:
-        return 1
-    space = text_width(" ", size, font, spacing)
-    lines, cur = 1, None
-    for k, w in enumerate(words):
-        ww = text_width(w, size, font, spacing) + (extra[k] if extra else 0)
-        if cur is None:
-            cur = ww
-        elif cur + space + ww <= width + 0.5:
-            cur += space + ww
-        else:
-            lines, cur = lines + 1, ww
-    return lines
+# Text is measured with the fonts' real glyph widths, kept in reels_lib (glyphs.json there) so both skills share them.
+glyphs, text_width, text_lines = L.glyphs, L.text_width, L.text_lines

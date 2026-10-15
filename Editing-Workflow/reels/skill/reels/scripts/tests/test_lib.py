@@ -79,3 +79,16 @@ class SafeZone(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TextMetrics(unittest.TestCase):
+    def test_widths_from_measured_glyphs(self):
+        self.assertAlmostEqual(L.text_width("x", 100), 57.1)                   # DM Sans 700: x is 0.571 em
+        self.assertAlmostEqual(L.text_width("ab", 100, "mono500", 0.1), 140.0)  # JetBrains Mono, letter-spaced
+
+    def test_lines_wrap_between_words(self):
+        self.assertEqual(L.text_lines("xx xx", 100, 260), 1)                    # 114.2 + 23.5 + 114.2
+        self.assertEqual(L.text_lines("xx xx", 100, 240), 2)
+        self.assertEqual(L.text_lines("xxxxxxxx", 100, 100), 1)                 # a word never breaks
+        self.assertEqual(L.text_lines("xx xx", 100, 252, space=0.26), 2)         # a fixed .26 em gap: 254.4
+        self.assertEqual(L.text_lines("xx xx", 100, 255, space=0.26), 1)

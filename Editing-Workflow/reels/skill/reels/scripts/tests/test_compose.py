@@ -94,11 +94,12 @@ class ComposeReel(unittest.TestCase):
 
     def test_wrapped_text_is_measured_at_the_column_it_gets(self):
         # 3 lines at the wide width, 4 in the narrow column it moves to below y 960: it must not slip past the safe bottom
-        long = {"type": "headline", "id": "hd", "text": "x" * 40, "size": 112, "pos": "low", "in": 0.2, "out": 2.0, "anchor": "-"}
+        long = {"type": "headline", "id": "hd", "text": "These are the free tools I use for every reel", "size": 112, "pos": "low",
+                "in": 0.2, "out": 2.0, "anchor": "-"}
         r, _, _ = self.build(dict(ALL, beats=[long], captions=False), transcript=None)
         self.assertNotEqual(r.returncode, 0, r.stdout)
         self.assertIn("past the safe zone", r.stderr)
-        fits = dict(long, text="Two short lines here", size=84)
+        fits = dict(long, text="Two short lines of text right here", size=84)   # two lines: it reaches past y 960
         r, page, _ = self.build(dict(ALL, beats=[fits], captions=False), transcript=None)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn('class="box" style="left:150px;top:820px;width:780px"', page)
@@ -127,7 +128,7 @@ class ComposeReel(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0, r.stdout)
         self.assertIn("wider than the 780 px column", r.stderr)
         # a pill never wraps either
-        long_pill = dict(pills, pos="low", items=[["A really long pill label here", 2.0], ["Two", 2.2]])
+        long_pill = dict(pills, pos="low", items=[["A really long pill label here today", 2.0], ["Two", 2.2]])
         r, _, _ = self.build(dict(ALL, beats=[long_pill], captions=False), transcript=None)
         self.assertNotEqual(r.returncode, 0, r.stdout)
         self.assertIn("wider than the 780 px column", r.stderr)
@@ -135,7 +136,7 @@ class ComposeReel(unittest.TestCase):
         point = {"type": "point", "id": "pt", "text": "Unbelievable", "size": 180, "pos": "mid", "in": 0.2, "out": 2.0, "anchor": "-"}
         r, _, _ = self.build(dict(ALL, beats=[point], captions=False), transcript=None)
         self.assertNotEqual(r.returncode, 0, r.stdout)
-        self.assertIn("'Unbelievable' is about 1209 px wide", r.stderr)
+        self.assertIn("'Unbelievable' is about 1147 px wide", r.stderr)
         # and what fits still builds
         r, _, _ = self.build(dict(ALL, beats=[dict(stat, value=1000, pos="mid")], captions=False), transcript=None)
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -206,6 +207,24 @@ class ComposeReel(unittest.TestCase):
         gs = run_kit("gap-scan.py", "--index", os.path.join(d, "public", "index.html"), "--early", "4", "--body", "6", "--max", "8")
         self.assertEqual(gs.returncode, 1, gs.stdout)
         self.assertIn("1 overlay(s)", gs.stdout)
+
+    def test_layout_records_every_placed_block(self):
+        r, _, d = self.build(ALL)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        import json
+        with open(os.path.join(d, "public", "layout.json")) as f:
+            lay = json.load(f)
+        self.assertEqual(sorted(b["id"] for b in lay), sorted(["h1", "st", "lg", "sn", "ch", "pl", "pt", "c1"]))
+        for b in lay:
+            self.assertEqual(set(b), {"id", "left", "top", "width", "height"})
+            self.assertGreater(b["height"], 0)
+
+    def test_a_headline_word_wider_than_its_column_fails(self):
+        # a word never breaks: "x" * 40 at 112 px is one 2,491 px word that would run off the frame, not four lines
+        long = {"type": "headline", "id": "hd", "text": "x" * 40, "size": 112, "pos": "top", "in": 0.2, "out": 2.0, "anchor": "-"}
+        r, _, _ = self.build(dict(ALL, beats=[long], captions=False), transcript=None)
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("wider than the", r.stderr)
 
 
 if __name__ == "__main__":

@@ -138,7 +138,7 @@ def main():
 
     # ---- fonts and GSAP -------------------------------------------------------------------------------------------
     # DM Sans 500/700 and JetBrains Mono 500 ship with the skill (OFL, assets/fonts/): the scene heights are measured
-    # with exactly these files (dev/measure-glyphs.mjs), so a different copy would move every line break
+    # with exactly these files (the Reels skill's dev/measure-glyphs.mjs), so a different copy would move every line break
     os.makedirs(os.path.join(out, "fonts"), exist_ok=True)
     for name in FONT_FILES:
         src = os.path.join(FONTS, name)
