@@ -54,3 +54,24 @@ class SnapBeats(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(snaps, "at-02.90.png")))         # the failed moment is not faked
         self.assertIn("snapshot failed at 2.9", r.stdout)
         self.assertTrue(os.path.exists(os.path.join(snaps, "sheet.png")))
+
+    def test_every_chapter_tag_in_tags_is_snapped(self):
+        # compose.py takes one "tag" or a "tags" list (one per chapter); each card's entrance is a moment
+        d = scratch(self)
+        P = os.path.join(d, "proj")
+        write(os.path.join(P, "storyboard.json"), {"id": "t", "duration": 6.0, "beats": [], "tags": [
+            {"n": 1, "of": 2, "label": "One", "in": 0.5, "out": 1.6}, {"n": 2, "of": 2, "label": "Two", "in": 3.0, "out": 4.1}]})
+        bindir = os.path.join(d, "bin"); os.makedirs(bindir)
+        npx = write(os.path.join(bindir, "npx"), FAKE_NPX)
+        os.chmod(npx, os.stat(npx).st_mode | stat.S_IEXEC)
+        env = {"PATH": bindir + os.pathsep + os.environ["PATH"], "FAKE_RECORD": os.path.join(d, "record")}
+        old = {k: os.environ.get(k) for k in env}
+        os.environ.update(env)
+        try:
+            r = run("snap-beats.py", "--project", P)
+        finally:
+            for k, v in old.items():
+                if v is None: os.environ.pop(k, None)
+                else: os.environ[k] = v
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(sorted(os.listdir(os.path.join(P, "snaps"))), ["at-01.40.png", "at-03.90.png", "sheet.png"])

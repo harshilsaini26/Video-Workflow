@@ -1,7 +1,7 @@
 """assemble.py: a work folder you already had is never deleted (only what the script wrote), a segment with a silent
 audio track assembles (loudnorm measures it as -inf and is skipped), and the md5 matches the file."""
-import hashlib, os, re, unittest
-from .helpers import ffmpeg, needs_ffmpeg, probe, read, run, scratch, write
+import hashlib, os, re, subprocess, sys, unittest
+from .helpers import SCRIPTS, ffmpeg, needs_ffmpeg, probe, read, run, scratch, write
 
 
 def clip(path, seconds, audio="sine=frequency=440:sample_rate=48000"):
@@ -27,6 +27,16 @@ class Assemble(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertTrue(os.path.exists(precious))                       # the user's file survives
         self.assertEqual(sorted(os.listdir(work)), ["hook-4k.mp4"])    # and only the script's own files are gone
+
+    def test_a_relative_work_folder_assembles(self):
+        # concat.txt names each segment; ffmpeg reads those names relative to concat.txt itself, so a relative --work
+        # would point at <work>/<work>/01-hook.mp4 unless the names are absolute
+        d = scratch(self)
+        clip(os.path.join(d, "a.mp4"), 1.5)
+        r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "assemble.py"), "--manifest", self.manifest(d, [{"name": "Hook", "file": "a.mp4"}]),
+                            "--out", os.path.join(d, "deliver", "t.mp4"), "--work", "renders"], cwd=d, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue(os.path.exists(os.path.join(d, "deliver", "t.mp4")))
 
     def test_the_default_work_folder_is_removed(self):
         d = scratch(self)
