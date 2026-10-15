@@ -28,7 +28,7 @@ Full field definitions: Editing-Workflow/templates/README.md
 | | |
 |---|---|
 | **Project** | {project} |
-| **Profile** | {youtube \| reels} |
+| **Profile** | {youtube \| reels \| explainer} |
 | **Storyboard** | {storyboard.json, or the part: hook/storyboard.json} |
 | **Version** | {v1} |
 | **Gate G6** | {open: N rows left \| clear} |

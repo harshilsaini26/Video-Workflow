@@ -15,6 +15,7 @@ jobs, a fixed order, file hand-offs, quality gates and a learning loop.
 | [`templates/`](templates/README.md) | the four project files: `STATUS.md`, `ASSET-REQUESTS.md`, `QA.md`, `NOTES.md` | ✅ |
 | [`longform/`](longform/README.md) | the agent team for **YouTube long-form** (8 to 25 min, 4K 30 fps, free tools only): the Producer skill, the long-form playbook, 13 agent files, and the research behind them | ✅ |
 | [`reels/`](reels/README.md) | the agent team for **Reels** (9:16, 1080x1920, 60 fps, free tools only): the Producer skill, the Reels playbook, 11 agent files, tested vertical scripts, and the research behind them | ✅ |
+| [`explainer/`](explainer/README.md) | the agent team for **animated explainer reels** with no camera (9:16, 1080x1920, 60 fps, 60 to 90 s, free tools only): a local AI voice (Kokoro), code-animated scenes, word captions; the Producer skill, the playbook, 4 new agents plus 5 reused from Reels, tested scripts, and the research behind them | ✅ |
 
 > **Free tools only.** Every profile uses free tools and free licences, nothing else. The kit's paid routes (Tella,
 > Epidemic Sound, AI B-roll) are never used, nor paid stock or music, AI video generators (Motion by Mosaic, Runway and
@@ -38,7 +39,7 @@ jobs, a fixed order, file hand-offs, quality gates and a learning loop.
 7. [Quality gates](#7-quality-gates)
 8. [When something fails](#8-when-something-fails)
 9. [The learning loop](#9-the-learning-loop)
-10. [Output profiles: YouTube and Reels](#10-output-profiles-youtube-and-reels)
+10. [Output profiles: YouTube, Reels and Explainer](#10-output-profiles-youtube-reels-and-explainer)
 11. [What you type](#11-what-you-type)
 12. [Setup](#12-setup)
 13. [Glossary](#13-glossary)
@@ -959,24 +960,26 @@ flowchart LR
 
 ---
 
-## 10. Output profiles: YouTube and Reels
+## 10. Output profiles: YouTube, Reels and Explainer
 
-The workflow is the same for both. What changes is the size, the frame rate and a few rules.
+The workflow is the same for all three. What changes is the size, the frame rate, where the picture and the voice
+come from, and a few rules.
 
-| | YouTube (kit default) | Reels |
-|---|---|---|
-| Shape | 16:9 | 9:16 |
-| Composition | 1920x1080, rendered at 2x | 1080x1920 |
-| Output | 3840x2160 (4K) | 1080x1920 |
-| Frame rate | 30 fps | 60 fps |
-| Record | 4K, 30 fps | 4K **vertical** (2160x3840), 60 fps |
-| Captions | none burned in; a closed-caption SRT (long form: two or three key words on screen) | burned in, word by word, from the final cut, in the caption slot (y 1050 to 1248) |
-| Hero text | ~100 px | hook 96 px, headline 84 px, max 60 characters for the hook |
-| Cards | sized to the face-safe zone | inside the platforms' safe zone (65 / 269 / 672 px), narrower near the button column |
-| Keep clear | your face | your face, the top 14 %, the bottom 35 %, 6 % each side, the button column |
-| Music | ducked bed on the master | none in the file (added in the app) or a free licensed track, about 18 dB under the voice |
-| Tools | free only: the kit without its Tella, Epidemic Sound and AI B-roll routes | free only: no Tella, no Epidemic Sound, no paid stock, no AI generation |
-| Team | [`longform/`](longform/README.md): Producer + 13 agents | [`reels/`](reels/README.md): Producer + 11 agents |
+| | YouTube (kit default) | Reels | Explainer |
+|---|---|---|---|
+| Shape | 16:9 | 9:16 | 9:16 |
+| Composition | 1920x1080, rendered at 2x | 1080x1920 | 1080x1920 |
+| Output | 3840x2160 (4K) | 1080x1920 | 1080x1920 |
+| Frame rate | 30 fps | 60 fps | 60 fps |
+| Record | 4K, 30 fps | 4K **vertical** (2160x3840), 60 fps | nothing: a script, voiced by Kokoro (free, local) |
+| Length | 8 to 25 min | 15 to 60 s (up to 3 min) | 60 to 90 s (160 to 240 words) |
+| Captions | none burned in; a closed-caption SRT (long form: two or three key words on screen) | burned in, word by word, from the final cut, in the caption slot (y 1050 to 1248) | burned in, word by word, from the aligned script, in the band at y 330 to 470 |
+| Hero text | ~100 px | hook 96 px, headline 84 px, max 60 characters for the hook | a scene library (13 types) sized by construction in the scene area (y 520 to 1248) |
+| Cards | sized to the face-safe zone | inside the platforms' safe zone (65 / 269 / 672 px), narrower near the button column | the same safe zone; one scene at a time, anchored to its words |
+| Keep clear | your face | your face, the top 14 %, the bottom 35 %, 6 % each side, the button column | the top 14 %, the bottom 35 %, 6 % each side, the button column |
+| Music | ducked bed on the master | none in the file (added in the app) or a free licensed track, about 18 dB under the voice | as Reels |
+| Tools | free only: the kit without its Tella, Epidemic Sound and AI B-roll routes | free only: no Tella, no Epidemic Sound, no paid stock, no AI generation | free only: Kokoro (Apache-2.0), KaTeX, Lucide, no paid voice or avatar |
+| Team | [`longform/`](longform/README.md): Producer + 13 agents | [`reels/`](reels/README.md): Producer + 11 agents | [`explainer/`](explainer/README.md): Producer + 4 agents + 5 from Reels |
 
 ### How the Reels profile is built
 
@@ -995,6 +998,36 @@ scripts in [`reels/skill/reels/scripts/`](reels/README.md#5-the-scripts-and-how-
 | 10 Package | audio levelled with the picture copied; cover, SRT, post caption, checklist (no assembly: one file) |
 | 12 Learn | rules go to the Reels PLAYBOOK; repeated mistakes become checks in the Reels scripts, with tests |
 
+### How the Explainer profile is built
+
+No camera: the voice and the picture are both made. A writer turns a topic into a sourced script, Kokoro reads it on
+your computer, and code-drawn scenes land on the words. Rendering, checking and packaging reuse the Reels team.
+
+```mermaid
+flowchart LR
+    A["💡 Your topic,<br/>notes or script"]:::you --> B["✍️ A short script<br/>with sources"]:::team
+    B --> C{"👀 You approve<br/>the script"}:::ask
+    C --> D["🎙️ A free AI voice<br/>reads it, word<br/>timings measured"]:::team
+    D --> E["🎨 Animated scenes<br/>land on the words,<br/>captions on top"]:::team
+    E --> F{"👀 You approve<br/>the stills"}:::ask
+    F --> G["🎬 Rendered, checked,<br/>packaged"]:::team
+    G --> H(["✅ Your reel"]):::done
+    classDef you fill:#FFE7A8,stroke:#C98A00,color:#1a1a1a
+    classDef team fill:#D4F1F4,stroke:#1B8A99,color:#1a1a1a
+    classDef done fill:#D7F0D2,stroke:#3C8D2F,color:#1a1a1a
+    classDef ask fill:#FFFFFF,stroke:#888888,color:#1a1a1a
+```
+
+<sub>🟨 yellow = you · 🟦 blue = the AI team · 🟩 green = finished</sub>
+
+| Stage | Explainer |
+|---|---|
+| Script | `explainer-writer`; `script-check.py` (gate E1: 160 to 240 words, a hook of 12 words at most, every number sourced) |
+| Voice | `explainer-voice`; `tts-kokoro.py` line by line, -16 LUFS; Parakeet + `align-script.py` (gate E2: 98% of words heard) |
+| Plan | `explainer-director`: `storyboard.json`, every scene and item anchored to a word |
+| Compose | `explainer-animator`; `explainer-compose.py` (gate E3: fits by construction, no holes, sources), then the kit's beat-check and `pace-check.py` (E4: something changes at least every 6 s) |
+| Render, verify, package, learn | `reels-renderer`, `reels-qa`, `reels-packager`, `reels-librarian`, `reels-analyst` |
+
 ---
 
 ## 11. What you type
@@ -1009,6 +1042,7 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 | At Checkpoint A | *Keep the earlier take of the studio line.* / *The joke at 1:12 goes.* |
 | At Checkpoint B | *The card at 0:14 covers my face.* / *Make the logo bigger.* |
 | Notes on the draft | *At second 22 you did this. I'd like it to be like that.* / *Around second 14 there's a quick flash. Take it out.* / *This is way too busy.* |
+| To start an explainer reel | *Make an explainer reel about [topic] for [who]. About 75 seconds, ending with [call to action].* |
 | To make it learn | *Can you learn from what we did and add it to the skill?* or *Save this to the skill.* |
 | To change the look | *Here's my style guide. Update the youtube-edit skill to match it.* |
 

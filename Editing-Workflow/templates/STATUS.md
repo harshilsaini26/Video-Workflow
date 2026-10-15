@@ -26,7 +26,7 @@ Full field definitions: Editing-Workflow/templates/README.md
 | | |
 |---|---|
 | **Project** | {project} |
-| **Profile** | {youtube \| reels} |
+| **Profile** | {youtube \| reels \| explainer} |
 | **Parts** | {one part, or the list: hook, intro-01, section-01 ...} |
 | **Version** | {v1} |
 | **Current stage** | {stage number and name} |
@@ -47,6 +47,7 @@ Full field definitions: Editing-Workflow/templates/README.md
 | **Music** | {yes \| no} |
 | **Terms** | {names and words to spell right} |
 | **Language** | {spoken language, e.g. en, hi: it picks the transcriber} |
+| **Voice** | {Kokoro voice id, fixed for the channel; explainer profile only} |
 | **Must include** | {moments, demos, links} |
 
 ## Stages

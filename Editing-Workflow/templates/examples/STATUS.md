@@ -26,6 +26,7 @@
 | **Music** | yes |
 | **Terms** | HyperFrames, Parakeet, FFmpeg |
 | **Language** | en |
+| **Voice** | n/a |
 | **Must include** | the empty timeline shot from the thumbnail |
 
 ## Stages

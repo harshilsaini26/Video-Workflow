@@ -29,7 +29,7 @@ Full field definitions: Editing-Workflow/templates/README.md
 | | |
 |---|---|
 | **Project** | {project} |
-| **Profile** | {youtube \| reels} |
+| **Profile** | {youtube \| reels \| explainer} |
 | **Open notes** | {N} |
 | **Updated** | {YYYY-MM-DD HH:MM} |
 

@@ -1,0 +1,13 @@
+{
+  "id": "e2e-pe", "fps": 60, "voice": "voice.wav", "transcript": "transcript.json",
+  "captions": {"emphasis": ["$100", "earnings"]},
+  "scenes": [
+    {"type": "title", "id": "hook", "bg": "black", "in": "word:0", "out": "word:8",
+     "text": "Three numbers decide if a stock is cheap", "kicker": "VALUATION BASICS"},
+    {"type": "count-up", "id": "price", "bg": "blue", "in": "word:8", "out": "word:16", "value": 100, "prefix": "$",
+     "sub": "a share", "source": "s1"},
+    {"type": "list-cards", "id": "eps", "bg": "light", "in": "word:16", "out": "word:23",
+     "items": [{"label": "Price per share", "at": "word:17"}, {"label": "Earnings per share", "at": "word:20"}]},
+    {"type": "number", "id": "ratio", "bg": "black", "in": "word:23", "out": "end", "n": 1, "name": "The P/E ratio"}
+  ]
+}
