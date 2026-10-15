@@ -151,6 +151,7 @@ def word_check(bid, text, size, room):
         if text_width(word, size) > room:
             fail("%s: %r is about %d px wide at %d px, wider than the %d px column; use a shorter word"
                  % (bid, word, text_width(word, size), size, room))
+
 def hl_height(text, size, w, boxed=False):
     return math.ceil(hl_lines(text, size, w, boxed) * size * 1.08) + (36 if boxed else 0)
 

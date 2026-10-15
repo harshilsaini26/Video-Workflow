@@ -125,7 +125,7 @@ Every profile builds on the kit's `youtube-edit` skill (its scripts, rules and f
 > check everything it needs, install what's missing, and run its tests.
 
 Claude copies the skill, installs FFmpeg, HyperFrames, auto-editor, Parakeet and the Python packages, and runs the
-kit's tests. You should see **48 tests, OK**.
+kit's tests. You should see **51 tests, OK**.
 
 ### 3.4 Install the team for the videos you make
 
@@ -174,9 +174,9 @@ From each installed skill's `scripts` folder:
 
 | Skill | Command | Expect |
 |---|---|---|
-| kit | `cd .claude/skills/youtube-edit/scripts && python3 -m unittest tests` | 48 tests, OK |
-| Reels | `cd .claude/skills/reels/scripts && python3 -m unittest tests` | 42 tests, OK |
-| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 101 tests, OK (a few skip without Kokoro or a local GSAP) |
+| kit | `cd .claude/skills/youtube-edit/scripts && python3 -m unittest tests` | 51 tests, OK |
+| Reels | `cd .claude/skills/reels/scripts && python3 -m unittest tests` | 48 tests, OK |
+| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 105 tests, OK (a few skip without Kokoro or a local GSAP) |
 
 ### 3.6 Open a new conversation
 
