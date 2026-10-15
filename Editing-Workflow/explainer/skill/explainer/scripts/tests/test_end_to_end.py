@@ -74,7 +74,8 @@ class EndToEnd(unittest.TestCase):
         r = run_kit("verify-render.py", "--render", mp4, "--index", os.path.join(pub, "index.html"), "--res", "1080x1920",
                     "--out", os.path.join(d, "VERIFY.md"))
         self.check(r, "verify-render")
-        self.assertIn("PASS", open(os.path.join(d, "VERIFY.md")).read())
+        with open(os.path.join(d, "VERIFY.md")) as f:
+            self.assertIn("PASS", f.read())
 
     @unittest.skipUnless(importlib.util.find_spec("kokoro") and HAS_HF, "needs Kokoro (pip install kokoro) and npx hyperframes with Parakeet")
     def test_real_kokoro_parakeet_alignment(self):

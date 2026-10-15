@@ -37,7 +37,7 @@ def _split(n_items, n_slots):
 def map_show(show, say):
     """For each show word, the say-word indices it covers (in order; [] for a show-only word)."""
     sm = difflib.SequenceMatcher(None, [norm(w) for w in show], [norm(w) for w in say], autojunk=False)
-    cover = [[] for _ in show]
+    cover, extra = [[] for _ in show], []
     for tag, a0, a1, b0, b1 in sm.get_opcodes():
         if tag == "equal":
             for k in range(a1 - a0):
@@ -53,7 +53,9 @@ def map_show(show, say):
         elif tag == "insert":   # say-only words join the show word before them (or after, at the start)
             tgt = a0 - 1 if a0 > 0 else (0 if show else None)
             if tgt is not None:
-                cover[tgt] = sorted(cover[tgt] + list(range(b0, b1)))
+                extra.append((tgt, range(b0, b1)))
+    for tgt, idx in extra:     # after every opcode: the word after a leading insert gets its own cover later
+        cover[tgt] = sorted(cover[tgt] + list(idx))
     return cover
 
 

@@ -22,8 +22,10 @@ GOOD = """<style>
 
 
 class Custom(unittest.TestCase):
-    def build(self, html=GOOD, box=None, second_id="yield2", extra=None):
+    def build(self, html=GOOD, box=None, second_id="yield2", extra=None, files=None):
         d = scratch(self)
+        for name, text in (files or {}).items():
+            write(os.path.join(d, name), text)
         write(os.path.join(d, "transcript.json"), {"words": words30()})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
         write(os.path.join(d, "custom", "yield.html"), html)
@@ -75,3 +77,14 @@ class Custom(unittest.TestCase):
     def test_three_needs_its_vendor_copy(self):
         html = GOOD.replace("<script>", '<script type="module">\n  import * as THREE from "three";\n  window.buildYield = buildYield;')
         self.fails("npm pack three@0.169.0", html=html)
+
+    def test_build_names_must_be_unique(self):
+        def two(scenes):
+            other = dict(scenes[1], id="yield3", html="custom/yield3.html", box=dict(scenes[1]["box"]))
+            other["in"], other["out"] = "word:14", "word:20"
+            scenes[2]["in"] = "word:20"
+            scenes.insert(2, other)
+        r, _ = self.build(extra=two, files={"custom/yield3.html": GOOD.replace("#yield", "#yield3")})
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("buildYield", r.stdout + r.stderr)
+        self.assertIn("used by both", r.stdout + r.stderr)

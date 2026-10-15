@@ -44,13 +44,17 @@ if not lines:
 
 words = sum(len(str(ln.get("show", "")).split()) for ln in lines)
 lo, hi = MIN_WORDS, MAX_WORDS
-if S.get("target_seconds"):
-    t = float(S["target_seconds"]) * WPS
-    lo, hi = max(MIN_WORDS, round(t * 0.85)), min(MAX_WORDS, round(t * 1.15))
-if words < lo:
-    errors.append("%d words: under %d words (about %.0f s)" % (words, lo, lo / WPS))
-if words > hi:
-    errors.append("%d words: over %d words (about %.0f s)" % (words, hi, hi / WPS))
+target = S.get("target_seconds")
+if target and not 60 <= float(target) <= 90:   # a reel is 60 to 90 s; a target outside leaves no length to aim for
+    errors.append("target_seconds %g is outside 60 to 90 s" % float(target))
+else:
+    if target:
+        t = float(target) * WPS
+        lo, hi = max(MIN_WORDS, round(t * 0.85)), min(MAX_WORDS, round(t * 1.15))
+    if words < lo:
+        errors.append("%d words: under %d words (about %.0f s)" % (words, lo, lo / WPS))
+    if words > hi:
+        errors.append("%d words: over %d words (about %.0f s)" % (words, hi, hi / WPS))
 
 if lines:
     hook = len(str(lines[0].get("show", "")).split())

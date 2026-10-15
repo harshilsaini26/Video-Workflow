@@ -29,7 +29,7 @@ explainer/
 │       ├── glyphs.json             the fonts' glyph widths, measured in Chromium
 │       ├── scenes/                 one module per scene type (13, custom included)
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
-│       └── tests/                  92 tests (python3 -m unittest discover -s tests -t .)
+│       └── tests/                  101 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
     explainer-writer.md · explainer-voice.md · explainer-director.md · explainer-animator.md
 ```
@@ -170,19 +170,19 @@ flowchart TD
 
 | Script | What it does | Tests |
 |---|---|---|
-| `script-check.py` | gate E1 on `script.json`; writes `SCRIPT.md` | 8: lengths and target, hook, sources (objects or plain strings), payoff and call to action, the report |
-| `tts-kokoro.py` | Kokoro line by line (`--only` one line), pauses by break, high-pass, compression, two-pass loudnorm to -16 LUFS / -1 dBTP; `--samples` for the voice choice; a `fake` engine for tests | 6 (1 needs Kokoro) |
-| `align-script.py` | gate E2: sequence alignment of heard to spoken words (tolerant of spelling, of the lexicon's respellings, of digits heard for number words: "1,000", "10%", "2024", "2.5"), shown words timed across their spoken span | 10 |
-| `pace-check.py` | gate E4's pacing: every tween, count and item on the page is a moment of change; a still stretch over 6 s fails (the kit's gap-scan can't see it: scenes always cover the voice) | 3, and it runs in the end-to-end test |
-| `explainer-compose.py` | gate E3: places every scene by its measured height, background cross-fades, word captions with the highlight box, the voice clip, the kit's markup | 18, plus the kit's beat-check run on its page |
-| `scenes/*.py` | 12 library scenes and the sandboxed custom scene | 22 across the scene suites, 7 for the custom contract |
+| `script-check.py` | gate E1 on `script.json`; writes `SCRIPT.md` | 9: lengths and target (60 to 90 s), hook, sources (objects or plain strings), payoff and call to action, the report |
+| `tts-kokoro.py` | Kokoro line by line (`--only` one line), pauses by break, high-pass, compression, two-pass loudnorm to -16 LUFS / -1 dBTP (a peak over -1 dBTP fails); `--samples` for the voice choice; a `fake` engine for tests | 7 (1 needs Kokoro) |
+| `align-script.py` | gate E2: sequence alignment of heard to spoken words (tolerant of spelling, of the lexicon's respellings, of digits heard for number words: "1,000", "10%", "2024", "2.5"), shown words timed across their spoken span, spoken-only words at the start included | 11 |
+| `pace-check.py` | gate E4's pacing, from the `moments.json` the composer writes next to the page: every tween, count and item is a moment of change; a still stretch over 6 s fails (the kit's gap-scan can't see it: scenes always cover the voice) | 4, and it runs in the end-to-end test |
+| `explainer-compose.py` | gate E3: places every scene by its measured height, background cross-fades, word captions with the highlight box, the voice clip, the kit's markup | 20, plus the kit's beat-check run on its page; bad storyboard values fail with the scene named |
+| `scenes/*.py` | 12 library scenes and the sandboxed custom scene | 24 across the scene suites, 8 for the custom contract (unique build names included) |
 | heights | each scene's predicted height against Chromium, 3 text lengths × 2 column widths × 12 scene types | 2, over 72 measured rows: every one 0 to 4 px over, never under |
 | `explainer_lib.py` | anchors, tokens, glyph-width text measuring | 5 |
 | docs | frontmatter parses, cited scripts exist, § references resolve, links, mermaid fences, the STATUS Voice row, the reused QA and Packager briefs | 9 |
 | end to end | script-check → fake voice → alignment → compose → beat-check → `hyperframes check` → a 60 fps render → the kit's `verify-render.py --res 1080x1920` | 1 (needs FFmpeg, the kit, HyperFrames and a local GSAP), plus 1 with real Kokoro and Parakeet |
 
-**How it was verified** (2026-10-14, on Linux with HyperFrames 0.8.157 and Chromium):
-- the whole suite: 92 tests, all passing; 2 skipped where Kokoro is not installed;
+**How it was verified** (2026-10-14 and 2026-10-15, on Linux with HyperFrames 0.8.157 and 0.8.159, and Chromium):
+- the whole suite: 101 tests, all passing; 2 skipped where Kokoro is not installed;
 - the end-to-end run (pace-check included): a 4-line, 30-word script voiced by the fake engine (11.09 s, -15.95 LUFS), aligned 100% with
   the widest gap inside a line 0.02 s, composed into 4 scenes, 4 backgrounds and 8 caption phrases, rendered at
   1080x1920 and 60 fps (11.6 s, about 20 MB) and passed by `verify-render.py`; the frames were looked at by eye;

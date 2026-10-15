@@ -34,7 +34,7 @@ writes 10 s of line 0 in `af_heart`, `am_michael` and `bf_emma`. Listen to each;
    `python3 "$ES/scripts/tts-kokoro.py" --script "$W/script.json" --out "$W/voice.wav" --voice <id> [--speed 1.0]`
    Each line goes to `$W/lines/<id>.wav` with the text Kokoro read in `$W/lines/<id>.txt` (after the lexicon). The
    lines are joined with their pauses, cleaned and levelled; it prints `{"duration", "lufs", "peak"}` and fails when
-   the length is more than 10% off the target.
+   the true peak is over -1 dBTP or the length is more than 10% off the target.
 2. **Hear what was said:** `npx hyperframes transcribe "$W/voice.wav" -d "$W/voice" --engine parakeet --json`, then
    `mv "$W/voice/transcript.json" "$W/voice/asr.json"` (the spoken words; QA and the Packager read this file).
 3. **Align (gate E2):**

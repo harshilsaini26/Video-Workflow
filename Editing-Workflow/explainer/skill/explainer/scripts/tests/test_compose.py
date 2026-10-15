@@ -238,3 +238,25 @@ class Compose(unittest.TestCase):
             def edit(b, bad=bad):
                 b["scenes"][1]["id"] = bad
             self.fails(edit, bad)
+
+    def test_json_numbers_on_screen_need_a_source(self):
+        def edit(b):
+            b["scenes"][1] = {"type": "sheet", "id": "n1", "bg": "black", "in": "word:8", "out": "word:18",
+                              "rows": [["Year", "Revenue"], [2023, 1500000]]}
+        self.fails(edit, "n1: ")
+
+        def step(b):
+            b["scenes"][1]["n"] = "1"     # a step number, not a claim
+        self.ok(step)
+
+    def test_bad_values_fail_with_the_scene_named(self):
+        for key, val in (("decimals", "one"), ("value", None)):
+            def edit(b, key=key, val=val):
+                b["scenes"][2][key] = val
+            r = self.fails(edit, "E3 FAIL: cu: ")
+            self.assertNotIn("Traceback", r.stdout + r.stderr)
+
+        def size(b):
+            b["scenes"][0]["size"] = "big"
+        r = self.fails(size, "E3 FAIL: hook: ")
+        self.assertNotIn("Traceback", r.stdout + r.stderr)

@@ -25,8 +25,21 @@ def validate(scene):
     return errs
 
 
+EM_PAD = 0.24 * SIZE           # .q-em's padding, 0.12 em a side
+
+
+def _em_core(word, em):
+    """The emphasised part of a word ("NPV" in "NPV?"), or None."""
+    core = E.L.clean_word(word).rstrip("?!")
+    return core if core and E.L.norm(core) in em else None
+
+
 def height(scene, width):
-    rows = [2 * PAD_Y + line_px(SIZE, LH) * E.text_lines(it["text"], SIZE, width - 2 * PAD_X) for it in scene["items"]]
+    rows = []
+    for it in scene["items"]:
+        em = {E.L.norm(e) for e in it.get("em", [])}
+        extra = [EM_PAD if _em_core(w, em) else 0 for w in it["text"].split()]
+        rows.append(2 * PAD_Y + line_px(SIZE, LH) * E.text_lines(it["text"], SIZE, width - 2 * PAD_X, extra=extra))
     return sum(rows) + GAP * (len(rows) - 1)
 
 
@@ -43,8 +56,8 @@ def render(scene, ctx, box):
         em = {E.L.norm(e) for e in it.get("em", [])}
         words = []
         for w in it["text"].split():
-            core = E.L.clean_word(w).rstrip("?!")
-            if core and E.L.norm(core) in em:
+            core = _em_core(w, em)
+            if core:
                 words.append('<span class="q-em" style="background:%s;color:%s">%s</span>%s'
                              % (hl["fill"], hl["text"], ctx.esc(core), ctx.esc(w[len(core):])))
             else:

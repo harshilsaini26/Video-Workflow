@@ -93,16 +93,17 @@ def text_width(text, size, font="display700", spacing=0.0):
     return (sum(g.get(c, 0.6) for c in text) + spacing * len(text)) * size
 
 
-def text_lines(text, size, width, font="display700", spacing=0.0):
+def text_lines(text, size, width, font="display700", spacing=0.0, extra=None):
     """Lines the browser wraps the text into at `width` px: words break between, never inside (a word wider than the
-    width still takes one line; min_width is what catches it)."""
+    width still takes one line; min_width is what catches it). `extra` adds px to words, one entry a word (a highlight
+    box's padding)."""
     words = str(text).split()
     if not words:
         return 1
     space = text_width(" ", size, font, spacing)
     lines, cur = 1, None
-    for w in words:
-        ww = text_width(w, size, font, spacing)
+    for k, w in enumerate(words):
+        ww = text_width(w, size, font, spacing) + (extra[k] if extra else 0)
         if cur is None:
             cur = ww
         elif cur + space + ww <= width + 0.5:

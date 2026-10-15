@@ -110,3 +110,12 @@ class Align(unittest.TestCase):
         lines = [{"id": "l0", "say": "cheap — or not", "show": "cheap — or not"}]
         r, t = self.align(lines, asr_from(["cheap", "or", "not"]), lexicon={})
         self.assertIn("100.0% aligned", r.stdout, r.stdout + r.stderr)
+
+    def test_spoken_words_before_the_first_shown_word_count(self):
+        lines = [{"id": "l0", "say": "so revenue grew", "show": "Revenue grew"}]
+        asr = asr_from(["so", "revenue", "grew"])
+        r, t = self.align(lines, asr, lexicon={})
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(t["words"][0]["text"], "Revenue")
+        self.assertEqual(t["words"][0]["start"], asr["words"][0]["start"])
+        self.assertEqual(t["lines"][0]["start"], asr["words"][0]["start"])

@@ -54,20 +54,22 @@ def render(scene, ctx, box):
     ring = "rgba(11,12,16,.12)" if ctx.light else "rgba(255,255,255,.16)"
     r = FACE / 2 - 14
     circ = round(2 * 3.14159265 * r, 1)
+    lead = min(0.2, (ctx.t_out - ctx.t_in) / 4)
+    sweep_t = max(0.1, min(SWEEP, ctx.t_out - ctx.t_in - lead - 0.1))   # done before the scene exits, however short
     if scene.get("style", "clock") == "clock":
         ticks = "".join('<line x1="%d" y1="22" x2="%d" y2="44" stroke="%s" stroke-width="6" stroke-linecap="round" transform="rotate(%d %d %d)"/>'
                         % (FACE // 2, FACE // 2, ctx.ink, k * 30, FACE // 2, FACE // 2) for k in range(12))
         face = ('<svg width="%d" height="%d"><circle cx="%d" cy="%d" r="%s" fill="none" stroke="%s" stroke-width="10"/>%s</svg>'
                 '<div class="d-hand" id="%s-hand" style="background:%s"></div>' % (FACE, FACE, FACE // 2, FACE // 2, r, ring, ticks, sid, acc))
-        sweep = "tl.fromTo('#%s-hand', { rotation: 0 }, { rotation: 720, duration: %.3f, ease: 'power2.inOut', immediateRender: false }, %.3f);" % (sid, SWEEP, ctx.t_in + 0.2)
+        sweep = "tl.fromTo('#%s-hand', { rotation: 0 }, { rotation: 720, duration: %.3f, ease: 'power2.inOut', immediateRender: false }, %.3f);" % (sid, sweep_t, ctx.t_in + lead)
     else:
         face = ('<svg width="%d" height="%d"><circle cx="%d" cy="%d" r="%s" fill="none" stroke="%s" stroke-width="22"/>'
                 '<circle id="%s-arc" cx="%d" cy="%d" r="%s" fill="none" stroke="%s" stroke-width="22" stroke-linecap="round"'
                 ' stroke-dasharray="%s" stroke-dashoffset="%s" transform="rotate(-90 %d %d)"/></svg>'
                 % (FACE, FACE, FACE // 2, FACE // 2, r, ring, sid, FACE // 2, FACE // 2, r, acc, circ, circ, FACE // 2, FACE // 2))
-        sweep = "tl.to('#%s-arc', { strokeDashoffset: 0, duration: %.3f, ease: 'power2.inOut' }, %.3f);" % (sid, SWEEP, ctx.t_in + 0.2)
+        sweep = "tl.to('#%s-arc', { strokeDashoffset: 0, duration: %.3f, ease: 'power2.inOut' }, %.3f);" % (sid, sweep_t, ctx.t_in + lead)
     html = ('<div class="d-face">%s</div><div class="d-value" style="color:%s"><span id="%s-v">0</span><span class="d-unit">%s</span></div>'
             % (face, ctx.ink, sid, ctx.esc(scene["unit"])))
     js = [ctx.enter("#%s .d-face" % sid, ctx.t_in, {"scale": 0.8}), ctx.enter("#%s .d-value" % sid, ctx.t_in + 0.12, {"y": 24}), sweep,
-          "countUp('#%s-v', 0, %s, %.3f, %.3f, '', '', %d);" % (sid, scene["value"], ctx.t_in + 0.2, SWEEP, decimals(scene["value"]))]
+          "countUp('#%s-v', 0, %s, %.3f, %.3f, '', '', %d);" % (sid, scene["value"], ctx.t_in + lead, sweep_t, decimals(scene["value"]))]
     return html, js

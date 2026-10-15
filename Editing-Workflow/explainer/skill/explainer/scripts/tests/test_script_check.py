@@ -91,3 +91,10 @@ class ScriptCheck(unittest.TestCase):
         r, _ = self.check(script(200, sources={"s1": "Coursera, Financial Markets, 2026, https://example.com"}), "--report", rep)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("Coursera, Financial Markets", read(rep))
+
+    def test_target_outside_60_to_90_is_named(self):
+        for t in (45, 100):
+            r, _ = self.check(script(200, target=t))
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("target_seconds %d is outside 60 to 90 s" % t, r.stdout)
+            self.assertNotIn("under 160", r.stdout)

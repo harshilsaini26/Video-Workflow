@@ -9,7 +9,8 @@ mispronounced line is fixed in lexicon.json or in `say` and regenerated alone wi
 pause by their `break` (comma 0.15 s, sentence 0.35 s, section 0.6 s), then cleaned: high-pass 80 Hz, gentle
 compression, two-pass loudnorm to -16 LUFS with the true peak at most -1 dBTP, 48 kHz mono.
 
-It prints {"duration", "lufs", "peak"} and exits 1 when the length is more than 10% off `target_seconds` (gate E2).
+It prints {"duration", "lufs", "peak"} and exits 1 when the true peak is over -1 dBTP or the length is more than
+10% off `target_seconds` (gate E2).
 --samples DIR writes 10 s of line 0 in three voices for the creator to choose from (Checkpoint A).
 The fake engine (tests) writes a 220 Hz tone, 0.32 s a word, with no model and no network.
 """
@@ -23,6 +24,7 @@ DEFAULT_VOICE = "af_heart"
 CLEAN = "highpass=f=80,acompressor=threshold=-18dB:ratio=3:attack=10:release=120"
 LOUD = "loudnorm=I=-16:TP=-1:LRA=11"
 TOLERANCE = 0.10
+PEAK_MAX = -1.0
 
 
 sys.path.insert(0, HERE)
@@ -101,6 +103,16 @@ def level(src, out):
     return float(r["input_i"]), float(r["input_tp"])
 
 
+def gate_errors(duration, peak, target=None):
+    """Gate E2's voice checks: the true peak at most -1 dBTP, the length within 10% of the target."""
+    errs = []
+    if peak > PEAK_MAX + 0.05:   # loudnorm's own measurement rounds to 0.01; anything clearly over is a fail
+        errs.append("true peak %.1f dBTP is over %.0f dBTP: regenerate, or lower the level before loudnorm" % (peak, PEAK_MAX))
+    if target and abs(duration - float(target)) > TOLERANCE * float(target):
+        errs.append("%.1f s is off target by %.0f%% (target %s s, allowed 10%%)" % (duration, abs(duration - float(target)) / float(target) * 100, target))
+    return errs
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--script", required=True)
@@ -149,9 +161,9 @@ def main():
     with wave.open(a.out) as w:
         dur = w.getnframes() / w.getframerate()
     print(json.dumps({"duration": round(dur, 3), "lufs": lufs, "peak": peak}))
-    target = S.get("target_seconds")
-    if target and abs(dur - float(target)) > TOLERANCE * float(target):
-        print("E2 FAIL: %.1f s is off target by %.0f%% (target %s s, allowed 10%%)" % (dur, abs(dur - float(target)) / float(target) * 100, target))
+    errs = gate_errors(dur, peak, S.get("target_seconds"))
+    if errs:
+        print("E2 FAIL: " + "; ".join(errs))
         sys.exit(1)
 
 

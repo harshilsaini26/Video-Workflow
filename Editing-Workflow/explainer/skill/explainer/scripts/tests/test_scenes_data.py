@@ -15,7 +15,10 @@ class SceneCase(unittest.TestCase):
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
         lead = {"type": "title", "id": "lead", "bg": "black", "in": "word:0", "out": "word:4", "text": "Lead in"}
         sc = dict({"id": "sc", "bg": "black", "in": "word:4", "out": D}, **scene)
-        sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [lead, sc]})
+        scenes = [lead, sc]
+        if sc["out"] not in (D, "end"):     # a short scene under test: a closing scene covers the rest
+            scenes.append({"type": "title", "id": "tail", "bg": "black", "in": sc["out"], "out": "end", "text": "The end"})
+        sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": scenes})
         out = os.path.join(d, "public")
         r = run("explainer-compose.py", "--spec", sp, "--out", out, "--vendor", os.path.join(d, "vendor"))
         return r, (read(os.path.join(out, "index.html")) if r.returncode == 0 else "")
@@ -146,3 +149,23 @@ class DurationDecimals(SceneCase):
     def test_fractional_value_keeps_its_decimal(self):
         html = self.ok({"type": "duration", "value": 1.5, "unit": "hours", "source": "s1"})
         self.assertRegex(html, r"countUp\('#sc-v', 0, 1\.5, [\d.]+, [\d.]+, '', '', 1\);")
+
+
+class ShortScenes(SceneCase):
+    def test_short_duration_finishes_its_count_before_the_exit(self):
+        html = self.ok({"type": "duration", "value": 6, "unit": "weeks", "source": "s1", "out": "word:7"})
+        t_in, t_out = t_word(4) - E.LEAD, t_word(7) - E.LEAD
+        start, dur = map(float, re.search(r"countUp\('#sc-v', 0, 6, ([\d.]+), ([\d.]+),", html).groups())
+        self.assertLessEqual(start + dur, t_out + 1e-6)
+        sweep = re.search(r"tl\.\w+\('#sc-(hand|arc)'.*duration: ([\d.]+)[^;]*\}, ([\d.]+)\);", html)
+        self.assertLessEqual(float(sweep.group(3)) + float(sweep.group(2)), t_out + 1e-6)
+
+
+class QAHeights(unittest.TestCase):
+    def test_highlight_padding_counts_in_the_height(self):
+        from scenes import qa_stack as Q
+        text = "Is the NPV positive this year"
+        width = int(E.text_width(text, Q.SIZE)) + 2 * Q.PAD_X + 2       # fits one line without the highlight box
+        plain = {"items": [{"text": text, "at": "word:5"}]}
+        em = {"items": [{"text": text, "em": ["NPV"], "at": "word:5"}]}
+        self.assertGreater(Q.height(em, width), Q.height(plain, width))

@@ -36,7 +36,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 ## §E2 Script rules
 
 1. **Length:** 2.7 words a second; 60 to 90 s is **160 to 240 words** (`script-check.py`, gate E1). A target length
-   narrows that to its own ±15%.
+   (60 to 90 s; anything else fails) narrows that to its own ±15%.
 2. **Every line twice:** `say` is what the voice reads ("one thousand dollars", "wack"); `show` is what the screen
    shows ("$1,000", "WACC"). Numbers are shown in full digits (1,000, never 1K).
 3. **Short lines:** one breath, one clause. A line over about 18 words gets split.
@@ -57,7 +57,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 4. **Levels:** `voice.wav` is high-passed at 80 Hz, gently compressed and levelled to -16 LUFS with the true peak at
    most -1 dBTP. The Packager masters the whole reel to -14 LUFS with the music.
 5. **Gate E2:** at least 98% of the `say` words are heard back by Parakeet; no gap inside a line over 1.2 s; the
-   length within 10% of the target (`align-script.py`, `tts-kokoro.py`). A failure names the line.
+   true peak at most -1 dBTP; the length within 10% of the target (`align-script.py`, `tts-kokoro.py`). A failure names the line.
 6. **Disclosure:** a realistic AI voice may need the platform's AI label (Meta's "AI info"); the posting checklist
    reminds the creator, who checks the platform's current rule. The voice never imitates a real person.
 
@@ -111,7 +111,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 4. **Items arrive on their words**, not all at once at the scene's start.
 5. **Custom scenes** (the contract): the storyboard gives a `box` inside the scene area, an `html` file (relative to
    `storyboard.json`) and a `build` function name. The file holds a `<style>` whose every selector starts with
-   `#<id>`, the markup, and a script defining `build(tl, root, t0, t1)`, which adds its tweens to the shared timeline
+   `#<id>`, the markup, and a script defining a function named for its scene, `build<Id>(tl, root, t0, t1)` (two
+   custom scenes never share a name: the composer refuses it), which adds its tweens to the shared timeline
    between `t0` and `t1` and selects only through `root` or `'#<id> ...'`. The composer refuses `document.body`, a
    selector outside `#<id>`, any network use (`fetch`, a web address, `import()`), and a missing function. GSAP is
    always there; KaTeX and three.js come from the local vendor folder. Checkpoint B shows them at in, middle and out;

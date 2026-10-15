@@ -87,3 +87,19 @@ class Voice(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertGreater(duration(out), 0.5)
         self.assertGreater(json.loads(r.stdout.strip().splitlines()[-1])["lufs"], -40)
+
+
+class Gate(unittest.TestCase):
+    def tts(self):
+        import importlib.util
+        from .helpers import SCRIPTS
+        spec = importlib.util.spec_from_file_location("tts_kokoro", os.path.join(SCRIPTS, "tts-kokoro.py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_true_peak_over_minus_1_fails(self):
+        g = self.tts().gate_errors
+        self.assertEqual(g(60.0, -1.2, 60), [])
+        self.assertTrue(any("true peak -0.6 dBTP" in e for e in g(60.0, -0.6, 60)))
+        self.assertTrue(any("off target by" in e for e in g(80.0, -1.2, 60)))

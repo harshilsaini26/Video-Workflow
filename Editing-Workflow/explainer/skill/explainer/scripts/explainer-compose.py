@@ -41,7 +41,9 @@ def fail(msg):
 
 
 RESERVED = re.compile(r"^(stage|captions|voice|bg\d+|cap\d+)$")
-NOT_SHOWN = {"type", "id", "bg", "in", "out", "at", "source", "icon", "html", "build", "tex", "style", "unit"}
+NOT_SHOWN = {"type", "id", "bg", "in", "out", "at", "source", "icon", "html", "build", "tex", "style", "unit",
+             "n", "size", "decimals", "point", "row", "cell", "box", "hi", "value", "points"}   # settings and step numbers
+BAD_DATA = (TypeError, ValueError, KeyError, AttributeError, IndexError)
 
 
 def shows_number(node, key=None):
@@ -50,11 +52,27 @@ def shows_number(node, key=None):
         return False
     if isinstance(node, str):
         return bool(re.search(r"[\d%$€£₹]", node))
+    if isinstance(node, (int, float)) and not isinstance(node, bool):   # 1500000 in a sheet is on screen too
+        return True
     if isinstance(node, dict):
         return any(shows_number(v, k) for k, v in node.items())
     if isinstance(node, list):
         return any(shows_number(v, key) for v in node)
     return False
+
+
+def line_span(line):
+    """(start, end) of the change one of the composer's own timeline lines makes, or None (a comment, a katex call)."""
+    m = re.match(r"countUp\('[^']*', [^,]+, [^,]+, ([\d.]+), ([\d.]+),", line)
+    if m:
+        return float(m.group(1)), float(m.group(1)) + float(m.group(2))
+    m = re.match(r"tl\.(?:fromTo|to|set)\(.*, ([\d.]+)\);$", line)
+    if m:
+        t = float(m.group(1))
+        d = re.findall(r"duration: ([\d.]+)", line)
+        amount = re.findall(r"amount: ([\d.]+)", line)
+        return t, t + (float(d[-1]) if d else 0.0) + (float(amount[-1]) if amount else 0.0)
+    return None
 
 
 def place(sid, mod, scene):
@@ -144,7 +162,7 @@ def main():
 
     # ---- scenes ---------------------------------------------------------------------------------------------------
     scenes = S.get("scenes") or fail("the storyboard has no scenes")
-    seen, timed = set(), []
+    seen, timed, builds = set(), [], {}
     bg = None
     for sc in scenes:
         sid = sc.get("id")
@@ -165,7 +183,15 @@ def main():
             fail("%s: the %s scene shows a number or a claim and needs a source (a key in SOURCES.md)" % (sid, sc["type"]))
         if sc.get("source") and source_keys is not None and sc["source"] not in source_keys:
             fail("%s: source %r is not in script.json's sources (%s)" % (sid, sc["source"], ", ".join(sorted(source_keys)) or "none"))
-        errs = mod.validate(sc)
+        try:
+            errs = mod.validate(sc)
+        except BAD_DATA as e:
+            fail("%s: bad data in the %s scene (%s: %s)" % (sid, sc["type"], type(e).__name__, e))
+        if sc["type"] == "custom":
+            if sc.get("build") in builds:
+                fail("%s: the build function %r is used by both %s and %s; give each custom scene its own (build<Id>)"
+                     % (sid, sc["build"], builds[sc["build"]], sid))
+            builds[sc.get("build")] = sid
         if errs:
             fail("%s: %s" % (sid, "; ".join(errs)))
         try:
@@ -197,14 +223,20 @@ def main():
     head = ['<link rel="preload" href="fonts/%s" as="font" type="font/woff2" crossorigin />' % f
             for f in sorted(os.listdir(os.path.join(out, "fonts")))] if os.path.isdir(os.path.join(out, "fonts")) else []
     css, hosts, js = {}, [], []
+    moments = {"duration": D, "scenes": [], "spans": []}   # every change on screen, for pace-check.py (gate E4)
     for k, (sc, mod, sbg, t_in, t_out, end) in enumerate(timed):
         sid = sc["id"]
-        left, top, width, h = place(sid, mod, sc)
         ctx = Ctx(sc, t_in, t_out, words, tok, a.vendor, out, sbg, head, spec_dir)
         try:
+            left, top, width, h = place(sid, mod, sc)
             inner, lines = mod.render(sc, ctx, (left, top, width))
         except SceneError as e:
             fail("%s: %s" % (sid, e))
+        except BAD_DATA as e:
+            fail("%s: bad data in the %s scene (%s: %s)" % (sid, sc["type"], type(e).__name__, e))
+        moments["scenes"].append({"id": sid, "type": mod.TYPE, "in": round(t_in, 3), "out": round(t_out, 3)})
+        if mod.TYPE == "custom":   # it animates itself between in and out
+            moments["spans"].append([round(t_in, 3), round(t_out, 3)])
         css[mod.TYPE] = mod.CSS
         word = E.anchor_text(sc["in"], words)
         anchor = ' data-unanchored="1"' if word == "-" else ' data-anchor="%s"' % html.escape(word, quote=True)
@@ -215,7 +247,9 @@ def main():
         js.append("// %s (%s) %.2f to %.2f s" % (sid, mod.TYPE, t_in, t_out))
         js.extend(lines)
         if t_out < D - 1e-6:
-            js.append("tl.to('#%s', %s, %.3f);" % (sid, js_obj({"opacity": 0, "y": -24, "duration": mo["exit"], "ease": mo["exit_ease"]}), t_out))
+            lines = lines + ["tl.to('#%s', %s, %.3f);" % (sid, js_obj({"opacity": 0, "y": -24, "duration": mo["exit"], "ease": mo["exit_ease"]}), t_out)]
+            js.append(lines[-1])
+        moments["spans"] += [[round(a_, 3), round(b_, 3)] for a_, b_ in filter(None, map(line_span, lines))]
 
     # ---- backgrounds ----------------------------------------------------------------------------------------------
     bgs, bg_js = [], []
@@ -327,6 +361,9 @@ def main():
        "\n        ".join(bg_js), "\n        ".join(js), "\n        ".join(cap_js), D, js_str(S["id"]))
     with open(os.path.join(out, "index.html"), "w") as f:
         f.write(page)
+    moments["spans"].sort()
+    with open(os.path.join(out, "moments.json"), "w") as f:
+        json.dump(moments, f, indent=1)
     with open(os.path.join(out, "hyperframes.json"), "w") as f:
         json.dump({"$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
                    "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",
