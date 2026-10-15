@@ -174,7 +174,7 @@ reels (gap-scan leaves the burned-in caption layer out: captions changing is not
 
 | Script | Does |
 |---|---|
-| `reels-compose.py` | 10 formats (hook, headline, point, steps, pills, logo, chip, stat, clip, image), burned-in captions, camera, sounds; fails the build on a block past the safe zone or into the caption slot while captions show (heights measured in Chromium), a pill or number too wide for its column, a hook over 60 characters, a beat without an anchor, a zoom over 1.6; warns on the same device twice in a row and on an empty first 0.5 s |
+| `reels-compose.py` | 10 formats (hook, headline, point, steps, pills, logo, chip, stat, clip, image), burned-in captions, camera, sounds; fails the build on a block past the safe zone or into the caption slot while captions show (heights measured in Chromium), a caption past the safe zone, a word, pill or number (as it counts) too wide for its column, an item timed outside its beat, a hook over 60 characters, a beat without an anchor, a zoom over 1.6; warns on the same device twice in a row and on an empty first 0.5 s |
 | `reels-conform.py` | any source → 1080x1920 (or 2160x3840) at 60 fps, no audio, dense keyframes, BT.709; `--fit cover --focus`, `blur` (screen recordings), `contain`; stills become a push; a 3-frame sheet |
 | `reels-safezone.py` | red: covered by the app; orange: the button-column band; cyan: the caption slot; on any 9:16 snapshot, plus a sheet |
 | `reels-captions.py` | an SRT from the final transcript, names spelled right |

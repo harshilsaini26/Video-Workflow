@@ -77,9 +77,6 @@ class SafeZone(unittest.TestCase):
         self.assertEqual(L.full_digits(12.5, "", "%", 1), "12.5%")
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class TextMetrics(unittest.TestCase):
     def test_widths_from_measured_glyphs(self):
@@ -92,3 +89,16 @@ class TextMetrics(unittest.TestCase):
         self.assertEqual(L.text_lines("xxxxxxxx", 100, 100), 1)                 # a word never breaks
         self.assertEqual(L.text_lines("xx xx", 100, 252, space=0.26), 2)         # a fixed .26 em gap: 254.4
         self.assertEqual(L.text_lines("xx xx", 100, 255, space=0.26), 1)
+
+    def test_a_count_is_measured_at_its_widest_moment(self):
+        # DM Sans digits are proportional (0 is about twice as wide as 1), so on the way to $11,111,111 the count shows
+        # $10,000,000, far wider than the final number; every value from 0 up must fit
+        self.assertAlmostEqual(L.count_width(11111111, 150, "$", spacing=-0.02), L.text_width("$10,000,000", 150, spacing=-0.02))
+        for value, dec in ((12345, 0), (987, 0), (40.5, 1)):
+            widest = max(L.text_width(L.full_digits(k / 10 ** dec, "$", "%", dec), 100) for k in range(int(value * 10 ** dec) + 1))
+            self.assertGreaterEqual(L.count_width(value, 100, "$", "%", dec) + 1e-9, widest, value)
+        self.assertGreater(L.count_width(-250, 100), L.text_width("250", 100))   # a negative count shows its minus
+
+
+if __name__ == "__main__":
+    unittest.main()

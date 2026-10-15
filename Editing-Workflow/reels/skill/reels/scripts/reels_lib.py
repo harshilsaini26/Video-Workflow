@@ -4,7 +4,7 @@ The frame is 1080x1920. The safe zone is Meta's published box for Reels and Stor
 side), the strictest of Instagram, TikTok and YouTube Shorts, so one file posts everywhere. Below RIGHT_COL_TOP the right
 edge also holds the platforms' action column (like, comment, share), so anything centred down there is narrower.
 """
-import json, os, re
+import json, math, os, re
 
 W, H = 1080, 1920
 SAFE_TOP, SAFE_BOTTOM, SAFE_SIDE = 269, 672, 65           # px clear of platform UI (PLAYBOOK §R3)
@@ -136,6 +136,29 @@ def text_width(text, size, font="display700", spacing=0.0):
     return (sum(g.get(c, 0.6) for c in text) + spacing * len(text)) * size
 
 
+def count_width(value, size, prefix="", suffix="", decimals=0, font="display700", spacing=0.0):
+    """Pixels of the widest text a count from 0 to `value` shows on its way (full digits, as countUp formats them).
+    Digits are proportional (in DM Sans 0 is about twice as wide as 1), so the final number is not always the widest:
+    a count to 11,111,111 passes 10,000,000. Every whole part up to the value is a candidate, with the widest digits in
+    the decimal places."""
+    g = glyphs()[font]
+    w = lambda c: g.get(c, 0.6)
+    top = int(round(abs(float(value)))) if not decimals else int(abs(float(value)))
+    sign = "-" if float(value) < 0 else ""
+    best_digit = max("0123456789", key=w)
+    best_lead = max("123456789", key=w)
+    s = str(top)
+    cands = [top]
+    for n in range(1, len(s)):   # every shorter number: the widest leading digit, then the widest digits
+        cands.append(int((best_digit if n == 1 else best_lead) + best_digit * (n - 1)))
+    for i, d in enumerate(s):    # the same length: the value's digits up to i, a smaller one at i, the widest after
+        lower = [c for c in "0123456789" if c < d and not (i == 0 and c == "0" and len(s) > 1)]
+        if lower:
+            cands.append(int(s[:i] + max(lower, key=w) + best_digit * (len(s) - i - 1)))
+    frac = ("." + best_digit * int(decimals)) if decimals else ""
+    return max(text_width("%s%s%s%s%s" % (sign, prefix, "{:,}".format(c), frac, suffix), size, font, spacing) for c in cands)
+
+
 def text_lines(text, size, width, font="display700", spacing=0.0, extra=None, space=None):
     """Lines the browser wraps the text into at `width` px: words break between, never inside (a word wider than the
     width still takes one line; the callers' width checks catch it). `extra` adds px to words, one entry a word (a
@@ -155,3 +178,10 @@ def text_lines(text, size, width, font="display700", spacing=0.0, extra=None, sp
         else:
             lines, cur = lines + 1, ww
     return lines
+
+
+def caption_height(text, size, width=NARROW["right"] - NARROW["left"]):
+    """Height of one caption chunk in the reels-compose CSS: each word an inline-block with .12 em of margin a side and
+    no space between them, letter-spaced -.01 em, line height 1.1."""
+    n = len(str(text).split())
+    return math.ceil(text_lines(text, size, width, spacing=-0.01, extra=[0.24 * size] * n, space=0) * size * 1.1)

@@ -66,8 +66,9 @@ three, Meta's published box (the strictest):
 - `reels-compose.py` places every format inside this box **by construction** and fails the build when a block would
   cross it (`reels_lib.SAFE`). Wrapping text is measured at the column it actually gets (the narrow 780 px one below
   y 960), and a block that reaches into the caption slot while captions show fails too: move it up, shorten it, or
-  switch captions off over that beat (§R5). Every format's height matches what Chromium draws (measured), and a pill
-  or a count-up number, which never wrap, fails when it is wider than its column.
+  switch captions off over that beat (§R5). Every format's height matches what Chromium draws (measured). A pill, a
+  word in a hook, headline, point, step or chip, or a count-up number (at its widest as it counts: $1,111,111 passes
+  $1,000,000) fails when it is wider than its column, and an item, a count or a pop timed outside its beat fails too.
 - `reels-safezone.py` draws the zone on every snapshot (red: covered, orange: the action-column band, cyan: the caption
   slot). The Animator and QA look at the guided sheet, not the bare stills.
 - **The face** sits in the upper middle (roughly y 350 to 950): set `video_position` (the crop) and `origin` (the
@@ -91,7 +92,8 @@ three, Meta's published box (the strictest):
 ## §R5 Captions and text
 
 - **Burned-in captions always** (S18, S19), built by `reels-compose.py` from the transcript of the **final cut**:
-  1 to 3 words at a time (`max_words`), at most 18 characters (`max_chars`), 84 px *default* (64 to 100), the word
+  1 to 3 words at a time (`max_words`), at most 18 characters (`max_chars`), 84 px *default* (64 to 100; a caption
+  that wraps past the safe zone fails, as two lines at 100 px do), the word
   being said turns **cyan**, money in **amber** (`money`), key words in cyan (`em`). Trailing commas and full stops go;
   ? ! $ % stay. **Names spelled right on screen:** `terms` (the brief's names and products) and `replace` (a word
   Parakeet misheard) fix the displayed words; the timing stays Parakeet's.
