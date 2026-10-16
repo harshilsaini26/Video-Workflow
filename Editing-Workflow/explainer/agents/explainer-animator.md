@@ -50,7 +50,12 @@ a render takes minutes.
    **The sound bed:** the composer writes `public/bed.wav` (the pad or the creator's music, ducked under the voice,
    with a whoosh on each moving transition and a pop as items land); listen to the start, a scene change and the end
    once. No FFmpeg means no bed: the composer warns.
-7. **Stills with the safe zone:**
+7. **Gate E5, a clean picture:** `python3 "$ES/scripts/layout-check.py" --index "$W/public/index.html"`: no text
+   over text, nothing crossing a label, nothing out of its card or outside the safe area, no text under 28 px, no
+   clipped text, every colour pair at WCAG AA. It runs in Chromium on this machine (HyperFrames' own puppeteer and
+   Chrome) and costs no tokens. A failure names the scene and the text: shorten the words in the storyboard (the
+   Director's) or fix a custom file (yours), compose again, and re-run until it prints E5 PASS.
+8. **Stills with the safe zone:**
    ```bash
    python3 "$SK/scripts/snap-beats.py" --project "$W" --at 0.35 --at <each scene's in + 0.6> --at <duration - 0.1>
    python3 "$RS/scripts/reels-safezone.py" --dir "$W/snaps" --out "$W/snaps/guides" --sheet
@@ -63,7 +68,7 @@ a render takes minutes.
    final values by the next scene; no half-faded scene where a full one should be. Then **judge them as a design
    director** (MOTION.md §5), full size and at 200 px wide: the hero big and clear, nothing small in empty space, no
    on-screen sentence repeating the voice. A still that fails goes back to its owner before any render.
-8. **`$W/snaps/SCENES.md`:** one row a scene: id, type, from and to (s), the words it covers, what is on screen, its
+9. **`$W/snaps/SCENES.md`:** one row a scene: id, type, from and to (s), the words it covers, what is on screen, its
    source. The Producer shows it at Checkpoint B and the Packager attaches it.
 
 ### Job `rebuild`

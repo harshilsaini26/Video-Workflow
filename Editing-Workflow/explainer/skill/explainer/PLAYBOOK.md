@@ -17,8 +17,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
   (MIT), Lucide icons (ISC), simple-icons for brand marks (CC0 data; each mark is its owner's trademark, shown only to
   name the brand), Chrome on the creator's machine for page screenshots, DM Sans and JetBrains Mono (OFL, bundled in
   `assets/fonts/`), and a music pad and sound effects the composer generates. No paid voice, stock, AI video or avatar.
-- **The layers:** a background (a bright royal blue lighter at the top, near-black, or light) with its own soft glows
-  (lilac and periwinkle on blue, a big blue glow on black, faint cool ones on light) that travel with each cut, one
+- **The layers:** a Catppuccin Latte background (`mantle` #e6e9ef, or `base` #eff1f5 for a new section) with two or
+  three faint lavender and sky glows that travel with each cut, one
   scene at a time scaled up to fill the scene area (x 65 to 1015, y 520 to 1420, Instagram's clear line; 780 px wide
   below y 960), a transition layer, and captions in the band at y 330 to 470. Under the voice, a sound bed (§E3.7). Nothing else goes on screen.
 - **The look** lives in `$ES/tokens.json`: change it once and every scene follows.
@@ -83,6 +83,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 
    | The words... | Scene | Data |
    |---|---|---|
+   | open the reel (the hook) | `kinetic` | `big{text, at}` (a number or capitals, 4 characters), `words[{text, at}]` (1 or 2), `line{text, at}`, `strike{word, at}` (a word of the line), `punch{text, at}` (1 or 2 words) |
    | make a claim or name the topic | `title` | `text`, `kicker`, `size` (72 to 132, default 104) |
    | count steps ("the first", "number two") | `number` | `n` (1 or 2 characters), `name` |
    | land one number | `count-up` | `value`, `prefix`, `suffix`, `decimals`, `sub` |
@@ -102,7 +103,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | name the parts of one idea | `hub` | `center` (one short word), `items[{label, at}]` (2 to 6) |
    | walk through a table or a calculation | `sheet` | `rows[[...]]` (at most 8), `highlight{row or cell, at}`, `formula` |
    | give a formula | `formula` | `tex`, `parts[{tex, at}]` (KaTeX) |
-   | need something the library can't show | `custom` | `box{x, y, w, h}`, `html`, `build` (§E6.5) |
+   | need something the library can't show (only when the creator asks) | `custom` | `box{x, y, w, h}`, `html`, `build` (§E6.5) |
 
 2. **Ids** are letters, digits and `_` (the page builds `<id>-...` ids from them), never `stage`, `captions`, `voice`,
    `bg<n>` or `cap<n>`.
@@ -112,21 +113,28 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    the old one exiting while the new one enters (at most 0.3 s of overlap). The last scene runs to `"end"`.
 5. **One hero element per scene**; never the same scene type three times in a row.
 6. **Backgrounds** mark sections: change `bg` where the script's `section` breaks are, not on every scene.
-7. **Fit by construction:** each scene knows its height; the composer centres it, narrows it below y 960, and fails a
-   word wider than its column. Shorten the words, never shrink the type below the scene's minimum.
+7. **Fit by construction:** each scene knows its height; the composer scales it to fill the scene area, narrows it
+   below y 960, and fails a word wider than its column. Shorten the words, never shrink the type below the scene's
+   minimum. The hub works out its own geometry (every node clears the middle and every other node), a formula shrinks
+   itself to its row, and the kinetic hook sizes each row to the width it is given.
 8. **Start from the planner:** `plan-storyboard.py` writes the draft storyboard from the script's `viz` hints (§E2.7)
    and the aligned words: each hint's items on the words that say them, money and percent figures as count-ups,
    numbered steps as numbers, known brands as logo cards, the rest as draft titles. The Director edits the draft
-   (replacing every draft title with a picture) rather than writing scenes and anchors by hand. Custom scenes: at most
-   one a reel.
+   (replacing every draft title with a picture) rather than writing scenes and anchors by hand. The hook is a
+   `kinetic` scene from the script's hint; custom scenes only when the creator asks for one.
 9. **Never a bare stage:** something shows on a scene's first word. The build-up scenes and list-cards show every
    piece dimmed from the start and light each one on its word; any other scene whose first change comes over 0.8 s
    after it starts gets a WARN from the composer (start the scene later, or put an item on its first word).
+10. **Gate E5, a clean picture:** `layout-check.py --index public/index.html` opens every scene in Chromium on the
+   creator's machine at the moment it is fully built and fails on text over text, text covered by or crossing a shape
+   that is not its card, text spilling out of its card, anything outside the safe area, and text under 28 px;
+   `hyperframes check` at the same moments adds clipped text and WCAG contrast. No tokens; every failure names the
+   scene and the text. Run after every compose, before any still goes to the creator.
 
 ## §E5 Captions
 
 1. **Phrases of up to 4 words and 24 characters**, in the band at y 330 to 470, cleared at a pause of 0.35 s or more.
-2. **The word being spoken turns from dim to full colour**; on the light background the colours invert.
+2. **The word being spoken turns from muted (`overlay2`, 3.3:1 or more) to ink (`text`, 6.6:1 or more).**
 3. **Emphasis words get the highlight box** (an accent fill with corner handles), matched without punctuation or case,
    every time they are said.
 4. **Captions show `show`, timed across `say`:** "$1,000" stays on screen for all of "one thousand dollars".
@@ -164,8 +172,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 8. **Fill the frame:** the composer lays each library scene out narrower and scales it up (to 1.8x; a title to
    150 px, a number to 1.3x) to fill the scene area; `moments.json` records each scene's box and scale. Two scenes in
    a row with the same layout get a WARN: change the picture, or merge them into one build.
-9. **Bespoke where it counts:** the hook, and the payoff when the library can't make it land, are custom scenes
-   (§E6.5) briefed in MOTION.md §4's five parts. The library carries the middle.
+9. **The hook is kinetic type from data** (`kinetic`, §E4.1): a big accent token, stacked words, a claim struck
+   through and a punch, each on its word. No code to write, so a reel costs no tokens beyond its script. Custom scenes
+   (§E6.5) are opt-in, only when the creator asks for a moment the library cannot make.
 
 ## §E7 Sources and claims
 

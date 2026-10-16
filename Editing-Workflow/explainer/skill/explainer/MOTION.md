@@ -1,7 +1,9 @@
 # MOTION.md: how an explainer reel moves
 
-Read this before you plan a storyboard (Director) or write a custom scene (Animator). The scripts enforce what can be
-checked; the rest is your eye. The bar is the one in motion-graphics-skills: **stunning, or it is not done.**
+Read this before you plan a storyboard (Director) or build a reel (Animator). The scripts enforce what can be checked
+(the composer, gate E5's layout-check in Chromium, the contrast pass), on the creator's machine and at no token cost; the
+rest is your eye. The bar is the one in motion-graphics-skills: **stunning, or it is not done.** The look follows Apple's
+Human Interface Guidelines (clarity, deference, one colour meaning one thing) in Catppuccin Latte.
 
 Distilled from three free, open sources, read as references (none of their code runs here):
 - [charlie947/motion-graphics-skills](https://github.com/charlie947/motion-graphics-skills): the eight-part brief
@@ -19,8 +21,10 @@ Distilled from three free, open sources, read as references (none of their code 
    to 1420 (780 px wide below y 960, clear of Instagram's buttons). A title grows to 150 px; numbers to 1.3x.
 2. **Type is the picture.** A hero word is 120 px or more; a label is 34 px or more after the scale; at most about 5
    words of on-screen text at once, and never the narration's sentence (the captions already say it).
-3. **One accent at a time.** Cyan on dark, magenta on light; amber for a second series only. No gradient text, no
-   glow on type, no purple-to-blue wash as a background.
+3. **One accent, one meaning.** Catppuccin Latte, light only (tokens.json): ink `text`, secondary `subtext0`, unsaid
+   caption words `overlay2`, rules `surface1`, cards `base` with a hairline, and **blue is the accent: "what the voice
+   is talking about now"**. Green, red and peach are signals, always beside a label (never colour alone). Every role
+   pair meets WCAG on both backgrounds (test_theme). No gradient text, no glow on type or shapes.
 4. **Real things.** A real logo (simple-icons), a real page (snap-page.py), a real number with a source. No stock
    icons standing in for a product the voice names.
 5. **No two beats look the same.** The composer WARNs when two scenes in a row share a layout: change the picture,
@@ -50,11 +54,13 @@ short blur carries the speed (HyperFrames' cut catalogue). The composer picks th
 - **whip (push):** out 260 px up with a 12 px blur; in from 300 px below out of a 10 px blur;
 - **wipe:** a new background opens as a circle; **burst:** a spray for the hook or a reveal; **cut:** a hard cut.
 
-## 4. Bespoke where it counts
+## 4. The hook, and bespoke moments
 
-The library carries the middle of a reel. **The hook (0 to 3 s) and the payoff are written for this reel** as custom
-scenes (PLAYBOOK §E6.5): kinetic type, a chart that morphs, a real page that zooms to its line. Brief yourself the
-motion-graphics-skills way before you write one:
+**The hook (0 to 3 s) is kinetic type from data** (`kinetic`): a big accent token, one or two words, a claim line, a
+strike and a punch, each rising out of its mask on its word. The writer hints it in script.json
+(`{"type": "kinetic", "big": "3", "words": ["STEP", "TRICK"], "line": "AI INVENTS", "strike": "INVENTS", "punch": "LESS"}`)
+and the planner lands every piece on its word: no code, no tokens beyond the script. **Custom scenes are opt-in**: only
+when the creator asks for a moment the library cannot make. Brief one the motion-graphics-skills way:
 1. **The bar:** what would make a designer stop scrolling?
 2. **The one rule:** what is the hero, and what is its one satisfying change?
 3. **Look:** sizes (hero 120 px+), the accent, what sits in each of the three depth layers.
@@ -63,6 +69,8 @@ motion-graphics-skills way before you write one:
 
 ## 5. Before you call it done
 
-Look at a still every second (`npx hyperframes snapshot public --at ...`) as a design director would, and again at
-200 px wide (a thumbnail in a feed). Ask of each: is the hero big and clear? Does anything sit small in empty space?
-Is any text the narration repeated? Would this frame make someone stop? Fix, re-snapshot, then render.
+**Gate E5 first** (`layout-check.py`): every scene in Chromium at the moment it is fully built, failing on text over
+text, text covered by or crossing a shape, text out of its card, anything outside the safe area, text under 28 px,
+clipped text and WCAG contrast. It costs nothing and catches what an eye skimming stills misses. Then look at the stills
+the composer names (a contact sheet is one image) as a design director would, full size and at 200 px wide: is the hero
+big and clear, does anything sit small in empty space, is any text the narration repeated? Fix, re-run, then render.

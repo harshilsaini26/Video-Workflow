@@ -42,6 +42,8 @@ def key_word(text):
 
 
 def matches(said, key):
+    if "-" in str(said):     # "3-step" says both "3" and "step"
+        return any(matches(part, key) for part in str(said).split("-") if part) or matches(str(said).replace("-", ""), key)
     a = norm(said)
     if not a or not key:
         return False
@@ -51,8 +53,9 @@ def matches(said, key):
     return short >= 4 and (a.startswith(key) or key.startswith(a))
 
 
-def anchor_list(entries, field, idx, words):
-    """Give every entry an "at" on the line's words (idx): matched in order, the rest spread between their neighbours."""
+def anchor_list(entries, field, idx, words, same=False):
+    """Give every entry an "at" on the line's words (idx): matched in order, the rest spread between their neighbours.
+    With same, two entries may land on one word (a kinetic hook's "3" and "STEP" are both said by "3-step")."""
     pos, cursor = [], 0
     for e in entries:
         if isinstance(e.get("at"), str) and e["at"].startswith("word:"):
@@ -62,7 +65,7 @@ def anchor_list(entries, field, idx, words):
         hit = next((j for j in range(cursor, len(idx)) if matches(words[idx[j]]["text"], key)), None)
         pos.append(idx[hit] if hit is not None else None)
         if hit is not None:
-            cursor = hit + 1
+            cursor = hit if same else hit + 1
     k = 0
     while k < len(pos):
         if pos[k] is not None:
@@ -85,8 +88,32 @@ def find_word(text, idx, words):
     return next((i for i in idx if matches(words[i]["text"], key)), idx[-1])
 
 
+def kinetic(sc, idx, words):
+    """A kinetic hook from plain words: {"big": "3", "words": ["STEP", "TRICK"], "line": "AI INVENTS", "strike": "INVENTS",
+    "punch": "LESS"} -> each piece an object with its own "at", landed in order on the words that say it."""
+    for k in ("big", "line", "punch"):
+        if isinstance(sc.get(k), str):
+            sc[k] = {"text": sc[k]}
+    if isinstance(sc.get("strike"), str):
+        sc["strike"] = {"word": sc["strike"]}
+    if isinstance(sc.get("words"), list):
+        sc["words"] = [{"text": w} if isinstance(w, str) else w for w in sc["words"]]
+    seq = ([sc["big"]] if sc.get("big") else []) + list(sc.get("words") or []) + ([sc["line"]] if sc.get("line") else [])
+    if sc.get("strike"):
+        sc["strike"].setdefault("text", sc["strike"]["word"])
+        seq.append(sc["strike"])
+    if sc.get("punch"):
+        seq.append(sc["punch"])
+    anchor_list(seq, "text", idx, words, same=True)
+    if sc.get("strike"):
+        sc["strike"].pop("text", None)
+    return sc
+
+
 def from_viz(viz, idx, words):
     sc = json.loads(json.dumps(viz))
+    if sc.get("type") == "kinetic":
+        return kinetic(sc, idx, words)
     for key, field in LIST_KEYS.items():
         if isinstance(sc.get(key), list):
             f = "text" if sc.get("type") == "qa-stack" and key == "items" else field

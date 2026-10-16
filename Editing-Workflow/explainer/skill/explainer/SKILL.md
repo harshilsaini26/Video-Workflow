@@ -68,7 +68,7 @@ version v1, the **Voice** row), log "project created".
 | A | **Checkpoint A** | you, with the creator (script, sources, length; voice samples on the first project) | approval | 3 |
 | 3 | Voice | `explainer-voice` · voice | E2 | 4 |
 | 4 | Storyboard | `explainer-director` · plan (from `plan-storyboard.py`'s draft) | its self-check | 5 |
-| 5 | Compose | `explainer-animator` · build | E3, E4 (beat-check, pace-check) | B |
+| 5 | Compose | `explainer-animator` · build | E3, E4 (beat-check, pace-check), E5 (layout-check: a clean picture) | B |
 | B | **Checkpoint B** | you, with the creator (a still of every scene, the voiceover) | approval | 6 |
 | 6 | Render | `reels-renderer` | file exists | 7 |
 | 7 | Verify | `reels-qa` · render | its gates | 8 |

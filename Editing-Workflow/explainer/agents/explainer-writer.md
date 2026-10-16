@@ -49,6 +49,10 @@ they are said, and for a rewrite the notes to act on (ids and verbatim words).
      about 3 s gets two pictures: a list of hints, the second starting on a word of the line
      (`[{"type": "logo-card", "logo": "openai"}, {"type": "icon-row", "from": "large", "items": [...]}]`). A line with no
      hint gets a draft the Director must replace, so hint every line you can.
+   - **the hook's hint is kinetic type** (MOTION.md §4): `{"type": "kinetic", "big": "3", "words": ["STEP", "TRICK"],
+     "line": "AI INVENTS", "strike": "INVENTS", "punch": "LESS"}`: a number or short capitals as `big`, at most two
+     words beside it, an optional claim and the word it crosses out, a one- or two-word punch, all from the hook's
+     own words (in capitals). The planner lands each piece on the word that says it.
 4. **Check (gate E1):**
    `python3 "$ES/scripts/script-check.py" --script "$W/script.json" --report "$W/SCRIPT.md"`
    It fails on a length outside the target, a hook over 12 words, a numeric or fact line without a source, an unknown

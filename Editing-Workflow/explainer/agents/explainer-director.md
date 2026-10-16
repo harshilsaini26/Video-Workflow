@@ -44,9 +44,9 @@ re-plan the notes to act on.
    ```json
    {"id": "<project>", "fps": 60, "voice": "voice.wav", "transcript": "transcript.json",
     "captions": {"emphasis": ["NPV", "$1,000"]},
-    "scenes": [{"type": "title", "id": "hook", "bg": "black", "in": "word:0", "out": "word:9", "text": "...", "kicker": "..."},
+    "scenes": [{"type": "kinetic", "id": "hook", "bg": "mantle", "in": "word:0", "out": "word:9", "big": {"text": "3", "at": "word:1"}, "...": "..."},
                {"...": "..."},
-               {"type": "number", "id": "last", "bg": "black", "in": "word:180", "out": "end", "n": 3, "name": "..."}]}
+               {"type": "number", "id": "last", "bg": "mantle", "in": "word:180", "out": "end", "n": 3, "name": "..."}]}
    ```
    - every `in` / `out` / item `at` is `word:N`; a scene's `out` is the next scene's `in` word; the last scene's `out`
      is `"end"`;
@@ -59,8 +59,8 @@ re-plan the notes to act on.
    - `captions.emphasis`: the script's emphasis words, at most one a line (§E5);
    - `sound` (optional): `{"music": "pad"}` is the default (a generated bed under the voice, never silent);
      `"music": "music/<file>"` for the creator's own track (its licence in SOURCES.md); `"none"` for no music.
-4. **Custom scenes** (the hook and, when the library can't make it land, the payoff: at most two a reel, each costs
-   the Animator a file; MOTION.md §4):
+4. **Custom scenes** (opt-in: only when the creator asks for a moment the library cannot make; the hook is a
+   `kinetic` scene, MOTION.md §4; each custom scene costs the Animator a file and tokens):
    `{"type": "custom", "id": "<id>", "box": {"x", "y", "w", "h"}, "html": "custom/<id>.html", "build": "build<Id>", ...}`
    with the box inside the scene area (x 65 to 1015, y 520 to 1420; x 150 to 930 below y 960), plus a written spec in
    `$W/custom/<id>.md` for the Animator in MOTION.md §4's five parts (the bar, the hero and its one change, the look,

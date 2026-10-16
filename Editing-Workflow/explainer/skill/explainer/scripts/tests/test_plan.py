@@ -60,6 +60,21 @@ class Plan(unittest.TestCase):
         self.assertEqual(said, ["retrieves,", "augments,", "generates."])
         self.assertEqual([n["label"] for n in flow["nodes"]], ["Retrieve", "Augment", "Generate"])
 
+    def test_a_kinetic_hook_from_plain_words(self):
+        script = copy.deepcopy(SCRIPT)
+        script["lines"][0]["viz"] = {"type": "kinetic", "big": "3", "words": ["STEP", "TRICK"], "line": "AI INVENTS",
+                                     "strike": "INVENTS", "punch": "LESS"}
+        d, sb, words = self.plan(script)
+        hk = sb["scenes"][0]
+        self.assertEqual(hk["type"], "kinetic")
+        said = lambda part: words[int(part["at"].split(":")[1])]["text"]
+        self.assertEqual(said(hk["big"]), "3-step")           # "3" lands on "3-step", then each piece on its own word
+        self.assertEqual([said(w) for w in hk["words"]], ["3-step", "trick"])
+        self.assertEqual((said(hk["line"]), said(hk["strike"]), said(hk["punch"])), ("AI", "invent", "less"))
+        self.assertEqual(hk["strike"]["word"], "INVENTS")
+        r = run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
     def test_an_item_not_spoken_is_spread_evenly(self):
         _, sb, words = self.plan()
         stack = next(s for s in sb["scenes"] if s["type"] == "stack")
