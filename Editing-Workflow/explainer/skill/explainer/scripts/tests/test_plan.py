@@ -81,6 +81,21 @@ class Plan(unittest.TestCase):
         self.assertEqual(next(s for s in sb["scenes"] if s["id"].startswith("l2"))["bg"], "blue")   # after the section break
         self.assertIn("passages", sb["captions"]["emphasis"])
 
+    def test_a_line_can_hold_several_pictures(self):
+        # a long line gets two scenes: the second starts on its "from" word, and its items land only on its own words
+        script = copy.deepcopy(SCRIPT)
+        script["lines"][4]["viz"] = [{"type": "title", "text": "Read first"},
+                                     {"type": "list-cards", "from": "writes", "items": ["Answer", "Guessing"]}]
+        _, sb, words = self.plan(script)
+        mine = [s for s in sb["scenes"] if s["id"].startswith("l4")]
+        self.assertEqual([s["type"] for s in mine], ["title", "list-cards"])
+        start = int(mine[1]["in"].split(":")[1])
+        self.assertEqual(words[start]["text"], "writes")
+        self.assertEqual(mine[0]["out"], mine[1]["in"])
+        idx = [int(it["at"].split(":")[1]) for it in mine[1]["items"]]
+        self.assertEqual([words[i]["text"] for i in idx], ["answer", "guessing"])
+        self.assertNotIn("from", mine[1])
+
     def test_a_known_brand_gets_its_logo(self):
         script = copy.deepcopy(SCRIPT)
         script["lines"][3] = {"id": "l3", "show": "Start with the free Coursera course."}

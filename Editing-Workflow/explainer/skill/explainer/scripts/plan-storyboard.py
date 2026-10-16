@@ -8,7 +8,8 @@ Each script line becomes one or more scenes, anchored to its own words:
 - a line with a `viz` hint becomes that scene: {"type": "flow", "nodes": ["Retrieve", "Augment", "Generate"]}. Items may
   be plain strings; each lands on the first word of the line that matches its first word (in order), and an item the
   line never says is spread evenly between its neighbours. Any other "at" written as a word ("better") is found the
-  same way.
+  same way. A long line can hold a list of hints: each after the first starts on its "from" word and anchors its items
+  on its own part of the line.
 - without a hint: a money or percent figure ("$1,000", "40%") → count-up; "step 2", "number 3", "first", "second" at
   the start → number; a brand whose mark is in the local simple-icons set → logo-card; line 0 → a title of the hook;
   anything else → title beats of at most 2.5 s, each showing the line's emphasis word or its last key words (a draft:
@@ -119,6 +120,21 @@ def keywords(chunk, emphasis):
 def plan_line(li, ln, idx, words, brands):
     """[(first word index, scene without id/in/out/bg, rule)] for one line."""
     show = str(ln.get("show", ""))
+    if isinstance(ln.get("viz"), list) and ln["viz"]:
+        # several pictures for one line: each after the first starts on its "from" word (else the line is split evenly),
+        # and its items land on its own stretch of words only
+        hints, starts, cursor = ln["viz"], [0], 1
+        for k, h in enumerate(hints[1:], 1):
+            even = max(cursor, min(len(idx) - 1, round(len(idx) * k / float(len(hints)))))
+            key = key_word(h.get("from", ""))
+            hit = next((j for j in range(cursor, len(idx)) if key and matches(words[idx[j]]["text"], key)), None)
+            starts.append(hit if hit is not None else even)
+            cursor = starts[-1] + 1
+        out = []
+        for k, h in enumerate(hints):
+            part = idx[starts[k]:starts[k + 1] if k + 1 < len(starts) else len(idx)] or [idx[starts[k]]]
+            out.append((part[0], from_viz({x: y for x, y in h.items() if x != "from"}, part, words), "viz"))
+        return out
     if ln.get("viz"):
         return [(idx[0], from_viz(ln["viz"], idx, words), "viz")]
     m = MONEY.search(show)

@@ -50,6 +50,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    word carrying the point.
 7. **A picture for every line:** the Writer adds a `viz` hint to each line that names something to show (a scene type
    from §E4.1 and its items as plain words: `{"type": "flow", "nodes": ["Retrieve", "Augment", "Generate"]}`).
+   A line over about 3 s gets a list of hints, each after the first starting on a word of the line (`"from": "large"`).
    `plan-storyboard.py` turns the hints into the draft storyboard (§E4.8); a line without one becomes a draft title
    the Director must replace.
 

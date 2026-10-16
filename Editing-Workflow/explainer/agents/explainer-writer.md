@@ -45,8 +45,10 @@ they are said, and for a rewrite the notes to act on (ids and verbatim words).
      `"viz": {"type": "flow", "nodes": ["Retrieve", "Augment", "Generate"]}`, `{"type": "cards", "cards": ["Corporate
      Finance", "Valuation"]}`, `{"type": "logo-card", "logo": "coursera"}`, `{"type": "compare", "left": {"title": "Memory",
      "items": ["Guesses"]}, "right": {"title": "RAG", "items": ["Looks it up"]}}`. Items are plain words from the line
-     (the planner lands each on the word that says it); the scene types and their fields are §E4.1's table. A line with
-     no hint gets a draft the Director must replace, so hint every line you can.
+     (the planner lands each on the word that says it); the scene types and their fields are §E4.1's table. A line over
+     about 3 s gets two pictures: a list of hints, the second starting on a word of the line
+     (`[{"type": "logo-card", "logo": "openai"}, {"type": "icon-row", "from": "large", "items": [...]}]`). A line with no
+     hint gets a draft the Director must replace, so hint every line you can.
 4. **Check (gate E1):**
    `python3 "$ES/scripts/script-check.py" --script "$W/script.json" --report "$W/SCRIPT.md"`
    It fails on a length outside the target, a hook over 12 words, a numeric or fact line without a source, an unknown
