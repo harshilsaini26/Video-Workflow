@@ -1,6 +1,6 @@
 # Explainer playbook
 
-The doctrine for faceless, code-animated explainer reels: 60 to 90 s, vertical, an AI voice, word-timed captions and
+The doctrine for faceless, code-animated explainer reels: 30 to 90 s, vertical, an AI voice, word-timed captions and
 a scene for every moment. The Producer and every explainer agent read it at the start of every project. The evidence
 behind each rule is in the workflow repository's `Editing-Workflow/explainer/RESEARCH.md`; the design in its `SPEC.md`.
 How a reel looks and moves (fill the frame, motion with a reason, velocity-matched cuts, a bespoke hook) is in
@@ -11,7 +11,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 
 ## §E0 The profile
 
-- **What it makes:** a 1080x1920, 60 fps reel, 60 to 90 s, with no camera footage. A voice explains one idea; the
+- **What it makes:** a 1080x1920, 60 fps reel, 30 to 90 s, with no camera footage. A voice explains one idea; the
   picture is built in code (HyperFrames + GSAP) from a library of scenes, plus Claude-written custom scenes.
 - **Free only:** Kokoro-82M for the voice (Apache-2.0, runs locally), Parakeet for timing, HyperFrames, FFmpeg, KaTeX
   (MIT), Lucide icons (ISC), simple-icons for brand marks (CC0 data; each mark is its owner's trademark, shown only to
@@ -27,12 +27,21 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 
 ## §E1 Hook and structure
 
+0. **The brief before the script:** who the reel is for and the pain it solves (`audience`), what it should get
+   (`goal`: follow, comment, save, share, link, learn) and its shape (`format`). The call to action asks for the goal;
+   `script-check.py` warns when any of these is missing or the call to action asks for something else.
 1. **The hook is line 0, at most 12 words**, and it promises something specific: a number, a mistake, a secret, a
    result ("3 certificates finance bros gatekeep"). The first scene starts entering at frame 0 and is fully on screen
    by 1.0 s (QA checks this instead of Reels' 0.35 s: every scene fades in).
-2. **One idea per reel.** If the script needs "and also", it is two reels.
+2. **One idea per reel.** If the script needs "and also", it is two reels, or a **series**: name it and number the
+   parts (`brand.series`, `brand.part`: "PART 2" shows on every frame) and let the call to action promise the next.
+   **Short wins:** 30 to 60 s for a how-to or a single point; up to 90 s only when the idea needs it.
 3. **The shape:** hook (0 to 3 s) → why it matters (one line) → the steps or the evidence (most of the time) → the
    payoff (the promise kept, named in `payoff`) → the call to action (`cta`), in the last 5 s.
+   **Formats** (the shapes that spread for informative reels; `script-check.py` warns when a format's shape is
+   missing): `how-to` (a problem solved in steps, `role: step`), `versus` (this vs that, a `compare` picture), `myth`
+   (the common belief, then the truth: `role: myth`, then `role: truth`), `story` (a mini case study or anecdote: the
+   problem, then the solution, `role: problem` then `role: solution`), `explainer` (one concept made simple).
 4. **Every 1.5 to 3 s something changes:** a new scene, a new item, a count, a highlight, a step in a build-up scene
    (the reference reels change their picture every 1.5 to 2 s). `pace-check.py` (gate E4) fails a still stretch over
    3 s and warns over 2 s. Ambient motion (§E6.6) never counts as a change. The kit's gap-scan cannot see this here, since scenes always cover the voice.
@@ -40,8 +49,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 
 ## §E2 Script rules
 
-1. **Length:** 2.7 words a second; 60 to 90 s is **160 to 240 words** (`script-check.py`, gate E1). A target length
-   (60 to 90 s; anything else fails) narrows that to its own ±15%.
+1. **Length:** 2.7 words a second; 30 to 90 s is **81 to 240 words** (`script-check.py`, gate E1). A target length
+   (30 to 90 s; anything else fails) narrows that to its own ±15%.
 2. **Every line twice:** `say` is what the voice reads ("one thousand dollars", "wack"); `show` is what the screen
    shows ("$1,000", "WACC"). Numbers are shown in full digits (1,000, never 1K).
 3. **Short lines:** one breath, one clause. A line over about 18 words gets split.
@@ -55,6 +64,11 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    A line over about 3 s gets a list of hints, each after the first starting on a word of the line (`"from": "large"`).
    `plan-storyboard.py` turns the hints into the draft storyboard (§E4.8); a line without one becomes a draft title
    the Director must replace.
+8. **Talk to one viewer:** "you" and contractions, never "users" or "one"; one question to the viewer (in the hook
+   or the call to action) so the comments have something to answer; one real example (`role: example`: a case, a
+   number, a short story) because a concrete case is what people remember; humour only where it serves the point
+   (one light line, never a sketch). `script-check.py` warns when a script never says "you", asks nothing or gives no
+   example.
 
 ## §E3 Voice
 
@@ -75,6 +89,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    licence in SOURCES.md), looped, faded and ducked under the voice so the reel never drops to silence between lines;
    a whoosh ahead of each moving transition and a pop as items land (`"sfx": false` turns them off; `"music": "none"`
    for no music). The Packager levels the reel with the bed already in it.
+8. **A chime on the payoff:** the payoff's first scene lands with a soft two-tone chime (the planner marks it
+   `"chime": true`), the one sound the viewer remembers the point by; a pop never sounds on top of it. A trending
+   sound is the creator's call at posting, only when it fits, under the voice.
 
 ## §E4 Scenes and pacing
 

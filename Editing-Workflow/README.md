@@ -15,7 +15,7 @@ jobs, a fixed order, file hand-offs, quality gates and a learning loop.
 | [`templates/`](templates/README.md) | the four project files: `STATUS.md`, `ASSET-REQUESTS.md`, `QA.md`, `NOTES.md` | ✅ |
 | [`longform/`](longform/README.md) | the agent team for **YouTube long-form** (8 to 25 min, 4K 30 fps, free tools only): the Producer skill, the long-form playbook, 13 agent files, and the research behind them | ✅ |
 | [`reels/`](reels/README.md) | the agent team for **Reels** (9:16, 1080x1920, 60 fps, free tools only): the Producer skill, the Reels playbook, 11 agent files, tested vertical scripts, and the research behind them | ✅ |
-| [`explainer/`](explainer/README.md) | the agent team for **animated explainer reels** with no camera (9:16, 1080x1920, 60 fps, 60 to 90 s, free tools only): a local AI voice (Kokoro), code-animated scenes, word captions; the Producer skill, the playbook, 4 new agents plus 5 reused from Reels, tested scripts, and the research behind them | ✅ |
+| [`explainer/`](explainer/README.md) | the agent team for **animated explainer reels** with no camera (9:16, 1080x1920, 60 fps, 30 to 90 s, free tools only): a local AI voice (Kokoro), code-animated scenes, word captions; the Producer skill, the playbook, 4 new agents plus 5 reused from Reels, tested scripts, and the research behind them | ✅ |
 
 > **Free tools only.** Every profile uses free tools and free licences, nothing else. The kit's paid routes (Tella,
 > Epidemic Sound, AI B-roll) are never used, nor paid stock or music, AI video generators (Motion by Mosaic, Runway and
@@ -972,7 +972,7 @@ come from, and a few rules.
 | Output | 3840x2160 (4K) | 1080x1920 | 1080x1920 |
 | Frame rate | 30 fps | 60 fps | 60 fps |
 | Record | 4K, 30 fps | 4K **vertical** (2160x3840), 60 fps | nothing: a script, voiced by Kokoro (free, local) |
-| Length | 8 to 25 min | 15 to 60 s (up to 3 min) | 60 to 90 s (160 to 240 words) |
+| Length | 8 to 25 min | 15 to 60 s (up to 3 min) | 30 to 90 s (81 to 240 words) |
 | Captions | none burned in; a closed-caption SRT (long form: two or three key words on screen) | burned in, word by word, from the final cut, in the caption slot (y 1050 to 1248) | burned in, word by word, from the aligned script, in the band at y 330 to 470 |
 | Hero text | ~100 px | hook 96 px, headline 84 px, max 60 characters for the hook | a scene library (19 types) sized by construction and scaled up to fill the scene area (y 520 to 1420) |
 | Cards | sized to the face-safe zone | inside the platforms' safe zone (65 / 269 / 672 px), narrower near the button column | the same safe zone; one scene at a time, anchored to its words |
@@ -1022,7 +1022,7 @@ flowchart LR
 
 | Stage | Explainer |
 |---|---|
-| Script | `explainer-writer`; `script-check.py` (gate E1: 160 to 240 words, a hook of 12 words at most, every number sourced) |
+| Script | `explainer-writer`; `script-check.py` (gate E1: 81 to 240 words, a hook of 12 words at most, every number sourced) |
 | Voice | `explainer-voice`; `tts-kokoro.py` line by line, -16 LUFS; Parakeet + `align-script.py` (gate E2: 98% of words heard) |
 | Plan | `explainer-director`: `storyboard.json`, every scene and item anchored to a word |
 | Compose | `explainer-animator`; `explainer-compose.py` (gate E3: fits by construction, no holes, sources), then the kit's beat-check and `pace-check.py` (E4: something changes at least every 3 s) |

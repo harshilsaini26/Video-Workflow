@@ -80,6 +80,20 @@ class Compose(unittest.TestCase):
         self.assertIn('window.__timelines["test-01"]', html)
         self.assertIn('class="clip cap-layer"', html)
 
+    def test_the_brand_and_the_series_part_sit_over_the_captions(self):
+        # a visual identity on every frame (the handle) and a series the viewer can follow (PART 2), in the safe area
+        def edit(b):
+            b["brand"] = {"handle": "@harshil", "series": "RAG in 60 s", "part": 2}
+        html, _, _ = self.ok(edit)
+        m = re.search(r'<div class="brand" id="brand" style="top:(\d+)px;height:(\d+)px;color:([^"]+)"><span>@harshil</span><span>PART 2</span></div>', html)
+        self.assertTrue(m, html[:3000])
+        top, h = int(m.group(1)), int(m.group(2))
+        self.assertGreaterEqual(top, E.L.SAFE["top"])
+        self.assertLessEqual(top + h, E.CAPTION_BAND[0])
+        self.assertEqual(m.group(3), E.theme(TOK, "mantle")["muted"])
+        html, _, _ = self.ok()
+        self.assertNotIn('id="brand"', html)                   # nothing when the storyboard names no brand
+
     def test_fonts_preloaded(self):
         html, page, _ = self.ok()   # a hidden scene's text would otherwise load its font only when shown, a frame late
         for f in sorted(os.listdir(os.path.join(os.path.dirname(page), "fonts"))):

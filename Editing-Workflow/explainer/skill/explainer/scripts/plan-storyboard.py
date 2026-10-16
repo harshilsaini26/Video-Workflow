@@ -230,6 +230,8 @@ def main():
             full = dict({"type": sc["type"], "id": sid, "bg": BGS[bg % len(BGS)], "in": "word:%d" % start}, **{x: y for x, y in sc.items() if x != "type"})
             if ln.get("source"):
                 full["source"] = ln["source"]
+            if k == 0 and ln["id"] == S.get("payoff"):
+                full["chime"] = True         # the payoff lands with a chime: a sound the viewer remembers it by
             scenes.append(full)
             rows.append((ln["id"], sid, sc["type"], rule, " ".join(words[i]["text"] for i in idx)[:60]))
         if ln.get("break") == "section":
@@ -245,6 +247,8 @@ def main():
         emphasis += [e for e in ln.get("emphasis", []) if e not in emphasis]
     board = {"id": re.sub(r"[^a-z0-9]+", "-", str(S.get("title", "reel")).lower()).strip("-") or "reel", "fps": 60,
              "voice": "voice.wav", "transcript": "transcript.json", "captions": {"emphasis": emphasis}, "scenes": scenes}
+    if S.get("brand"):
+        board["brand"] = S["brand"]          # the handle and the series part, on every frame
     with open(a.out, "w") as f:
         json.dump(board, f, indent=1)
     if a.report:

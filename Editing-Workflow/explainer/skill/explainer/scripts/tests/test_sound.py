@@ -1,6 +1,6 @@
 """The sound bed: a pad (generated here) or the creator's music, looped to the reel, ducked under the voice, with a whoosh
 at every moving transition and a pop as items land, so the reel never drops to silence between lines."""
-import array, copy, math, os, re, subprocess, unittest, wave
+import array, copy, json, math, os, re, subprocess, unittest, wave
 from .helpers import needs_ffmpeg, read, run, scratch, write
 from .test_compose import BOARD, D, VOICE, silent_wav, words30
 import sound
@@ -67,6 +67,19 @@ class Sound(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout)
         self.assertFalse(os.path.exists(os.path.join(out, "bed.wav")))
         self.assertNotIn('id="bed"', read(os.path.join(out, "index.html")))
+
+    def test_the_key_moment_gets_a_chime(self):
+        # a chime marks the payoff (sound synced to the picture as a memory cue); it always lands, a pop near it does not
+        events = sound.events([("zoom", 2.0)], [2.3, 4.0], chimes=[2.3])
+        self.assertEqual(events, [(1.88, "whoosh"), (2.3, "chime"), (4.0, "pop")])
+        self.assertIn("chime", sound.make_sfx(scratch(self)))
+        board = copy.deepcopy(BOARD)
+        board["scenes"][1]["chime"] = True                    # n1 comes in on word 8
+        r, out, _ = self.build(board)
+        self.assertEqual(r.returncode, 0, r.stdout)
+        with open(os.path.join(out, "moments.json")) as f:
+            sounds = json.load(f)["sounds"]
+        self.assertIn([round(0.5 + 8 * 0.4, 3), "chime"], sounds)    # on its word, not ahead of it
 
     def test_the_creators_music_is_used_and_must_exist(self):
         r, _, d = self.build(dict(BOARD, sound={"music": "music/missing.mp3"}))

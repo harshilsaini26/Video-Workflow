@@ -30,7 +30,8 @@ def _write(path, left, right=None, rate=RATE):
 
 
 def make_sfx(folder):
-    """whoosh.wav (0.6 s of swept noise, panned left to right) and pop.wav (a 0.14 s falling blip): {"whoosh", "pop": path}."""
+    """whoosh.wav (0.6 s of swept noise, panned left to right), pop.wav (a 0.14 s falling blip) and chime.wav (a soft
+    two-tone bell for the key moment): {"whoosh", "pop", "chime": path}."""
     os.makedirs(folder, exist_ok=True)
     rng = random.Random(7)
     n = int(0.6 * RATE)
@@ -50,7 +51,11 @@ def make_sfx(folder):
         t = i / float(RATE)
         phase += 2 * math.pi * (900 - 2800 * t) / RATE                    # 900 Hz falling to about 500 Hz
         pop.append(0.32 * math.sin(phase) * math.exp(-35 * t))
-    return {"whoosh": whoosh, "pop": _write(os.path.join(folder, "pop.wav"), pop)}
+    pop = _write(os.path.join(folder, "pop.wav"), pop)
+    n = int(0.9 * RATE)                                                    # chime.wav: a soft two-tone bell, 0.9 s
+    chime = [0.16 * (math.sin(2 * math.pi * 1318.5 * i / RATE) + 0.6 * math.sin(2 * math.pi * 1975.5 * i / RATE))
+             * min(1.0, i / (0.004 * RATE)) * math.exp(-5.0 * i / RATE) for i in range(n)]
+    return {"whoosh": whoosh, "pop": pop, "chime": _write(os.path.join(folder, "chime.wav"), chime)}
 
 
 def make_pad(path):
@@ -88,10 +93,12 @@ def pad_file():
     return path
 
 
-def events(transitions, items):
-    """[(seconds, "whoosh"|"pop")]: a whoosh LEAD ahead of every transition that moves (not fade or cut), a pop at each
-    item's time, never two within SPACE of each other (a whoosh wins)."""
+def events(transitions, items, chimes=()):
+    """[(seconds, "whoosh"|"pop"|"chime")]: a whoosh LEAD ahead of every transition that moves (not fade or cut), a chime
+    on each key moment (the payoff: it always sounds), a pop at each item's time, never a pop within SPACE of another
+    sound."""
     out = [(round(max(0.0, t - LEAD), 3), "whoosh") for kind, t in transitions if kind not in ("fade", "cut")]
+    out += [(round(t, 3), "chime") for t in chimes]
     for t in sorted(items):
         if all(abs(t - s) >= SPACE for s, _ in out):
             out.append((round(t, 3), "pop"))
@@ -104,7 +111,7 @@ def _sfx_track(evs, duration, folder):
     for k, p in sfx.items():
         with wave.open(p) as w:
             clips[k] = array.array("h", w.readframes(w.getnframes()))
-    gain = {"whoosh": 0.55, "pop": 0.6}
+    gain = {"whoosh": 0.55, "pop": 0.6, "chime": 0.5}
     n = int(round(duration * RATE)) * 2
     track = array.array("i", bytes(4 * n))
     for t, kind in evs:

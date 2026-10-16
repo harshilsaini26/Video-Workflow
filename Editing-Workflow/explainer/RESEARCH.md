@@ -86,6 +86,36 @@ and TikTok's current rules when cross-posting. The voice never imitates a real p
 **Became:** §E0. The fonts ship in `skill/explainer/assets/fonts/` with their OFL texts; the libraries are fetched once
 with `npm pack` into `assets/vendor/` so renders work offline.
 
+## 6a. What informative short-form explainers do (three articles, 2026-10-16)
+
+Read from the text the creator pasted (the sites are not reachable from the build machine): Doodle Video, *How to
+Create TikTok Explainer Videos in 2025*; SpeakerHub, *Pro Tips for Making Explainer Videos That Elevate Your Message*;
+CustomerThink, *From Boring to Brilliant: 7 Pro Tips to Create Engaging Explainer Videos*. Practitioner advice, not
+studies; adopted where it fits a faceless reel, in intent where the letter does not.
+
+| Tip | Where it lives |
+|---|---|
+| Short, one idea, clear; "a quick how-to in under 30 seconds", "smarter in less than a minute" (Doodle) | length 30 to 90 s, 30 to 60 s for most (§E1.2, `script-check.py`); one idea or a series |
+| A hook that stops the scroll, then simple visual terms (Doodle) | the kinetic hook (§E6.9); a picture for every line (§E2.7) |
+| Captions, since many watch with the sound off (Doodle) | word captions, burned in (§E5) |
+| End with a call to action: follow, link in bio, comment (Doodle); goals and audience first (CustomerThink #1) | `goal`, `audience` and a CTA that asks for the goal (§E1.0, a warning in `script-check.py`) |
+| What to share: how-tos, this vs that, myth busting, case studies and mini stories (Doodle) | `format` and its shape: steps, a compare picture, myth then truth, problem then solution (§E1.3) |
+| Trends and sounds only when they fit (Doodle) | the posting checklist: a trending sound added in the app, under the voice, only when it fits |
+| Consistency, analytics, a few hashtags (Doodle) | the posting checklist and the analyst comparing reels by format, length and goal |
+| Break the fourth wall, a conversational tone (SpeakerHub) | "you" and contractions (§E2.8, a warning) |
+| Interactivity: questions that invite comments (SpeakerHub) | one question to the viewer (§E2.8, a warning) |
+| Concise, simple language, the key concept early (SpeakerHub) | one idea, short lines, plain words, why it matters as line 2 (§E1, §E2) |
+| A strong visual identity: brand colours, consistent fonts and text overlays (SpeakerHub, CustomerThink #2) | the Latte theme and roles; the creator's handle on every frame (`brand.handle`) |
+| Real-world examples, case studies, anecdotes (SpeakerHub, CustomerThink #4) | one line with `role: example` (§E2.8, a warning) |
+| Data as animated graphs and charts (SpeakerHub, CustomerThink #5) | count-up, bars, line-chart, sheet |
+| Creative visual direction: split screen, animation, inserts, transitions not overdone (SpeakerHub, CustomerThink #2) | compare, the build-up scenes, velocity-matched cuts; MOTION.md "flair for flair is noise" |
+| Tell a story: problem-solution, hero's journey, personal anecdote (SpeakerHub, CustomerThink #4) | the story format (§E1.3) |
+| Humour, well placed and sparing (SpeakerHub, CustomerThink #7) | one light line where it serves the point (§E2.8); not checked |
+| A series rather than a one-off (SpeakerHub) | `brand.series` and `brand.part`: "PART n" on every frame; a CTA that promises the next |
+| Sound design: no noise, normalised, music and effects at key moments, a chime that marks the key point (CustomerThink #3) | a clean local voice levelled to -16 LUFS, the ducked bed, whooshes and pops, and a chime on the payoff (§E3.8) |
+| A voice that matches the tone (CustomerThink #6) | the channel voice picked from samples at Checkpoint A (§E3.1) |
+| Collaborate with other creators (SpeakerHub) | not a production step: the creator's call |
+
 ## 7. Not adopted
 
 - **A talking avatar or mascot** (the reference has one): every capable avatar service found is paid. A custom scene

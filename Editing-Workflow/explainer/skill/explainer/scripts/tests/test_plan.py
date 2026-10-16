@@ -75,6 +75,14 @@ class Plan(unittest.TestCase):
         r = run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
+    def test_the_payoff_chimes_and_the_brand_carries_over(self):
+        script = dict(copy.deepcopy(SCRIPT), payoff="l4", brand={"handle": "@harshil", "part": 1})
+        d, sb, _ = self.plan(script)
+        payoff = [s for s in sb["scenes"] if s["id"].startswith("l4")]
+        self.assertTrue(payoff[0].get("chime"))
+        self.assertEqual(sum(bool(s.get("chime")) for s in sb["scenes"]), 1)
+        self.assertEqual(sb["brand"], {"handle": "@harshil", "part": 1})
+
     def test_an_item_not_spoken_is_spread_evenly(self):
         _, sb, words = self.plan()
         stack = next(s for s in sb["scenes"] if s["type"] == "stack")

@@ -36,6 +36,7 @@ GSAP_CDN = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
 FONTS = os.path.join(HERE, "..", "assets", "fonts")
 FONT_FILES = ("DMSans-500.woff2", "DMSans-700.woff2", "JetBrainsMono-500.woff2")
 CAP_SIZE = 64
+BRAND_TOP, BRAND_H = 281, 40           # the handle and the series part: inside the safe area, above the caption band
 
 
 def fail(msg):
@@ -408,6 +409,8 @@ def main():
   .tx-layer { position:absolute; inset:0; z-index:20; pointer-events:none; overflow:hidden; }
   .tx-p { position:absolute; opacity:0; border-radius:5px; will-change:transform; }
   .box { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .brand { position:absolute; left:%dpx; width:%dpx; z-index:31; display:flex; align-items:center; justify-content:space-between;
+    font-family: var(--label); font-weight:500; font-size:30px; letter-spacing:.06em; pointer-events:none; }
   .cap-layer { position:absolute; left:0; top:0; width:1080px; height:1920px; z-index:30; pointer-events:none; }
   .cap { position:absolute; left:%dpx; width:%dpx; top:%dpx; height:%dpx; display:flex; align-items:center; justify-content:center;
     flex-wrap:wrap; gap:0 .26em; visibility:hidden; font-weight:700; font-size:%dpx; line-height:1.1; letter-spacing:-.01em;
@@ -415,7 +418,7 @@ def main():
   .cap .cw { position:relative; display:inline-block; padding:0 .14em; border-radius:6px; }
   .cap .hd { position:absolute; width:14px; height:14px; background:%s; border:3px solid %s; opacity:0; }
   .cap .hd.a { left:-7px; top:-7px; } .cap .hd.b { right:-7px; bottom:-7px; }
-%s""" % (tok["fonts"]["label_file"], stage_bg, stage_bg, tok["fonts"]["display"], tok["fonts"]["label"], WIDE[0], WIDE[1], band_top,
+%s""" % (tok["fonts"]["label_file"], stage_bg, stage_bg, tok["fonts"]["display"], tok["fonts"]["label"], WIDE[0], WIDE[1], WIDE[0], WIDE[1], band_top,
          band_bottom - band_top, CAP_SIZE, hl["handle"], hl["handle_border"], "".join(css.values()))
 
     HELPERS = """
@@ -433,10 +436,20 @@ def main():
     elif music not in (None, "none") and not shutil.which("ffmpeg"):
         print("WARN no ffmpeg on PATH: the reel has no music bed (install FFmpeg, or set \"sound\": {\"music\": \"none\"})")
     else:
-        evs = sound.events([(kinds[k], timed[k][3]) for k in range(1, len(timed))], item_times) if want_sfx else []
+        chimes = [E.resolve(sc["in"], words) for sc, _, _, _, _, _ in timed if sc.get("chime")]    # on the word itself
+        evs = sound.events([(kinds[k], timed[k][3]) for k in range(1, len(timed))], item_times, chimes) if want_sfx else []
+        moments["sounds"] = [[t, kind] for t, kind in evs]
         sound.mix_bed(os.path.join(out, "voice.wav"), None if music in (None, "none") else (sound.pad_file() if music == "pad" else music),
                       evs, D, os.path.join(out, "bed.wav"), float(snd.get("music_db", -22)))
         bed = ('    <audio id="bed" src="bed.wav" data-start="0" data-duration="%.3f" data-track-index="40" data-volume="1"></audio>\n' % D)
+    brand = S.get("brand") or {}
+    if brand.get("handle") or brand.get("part"):
+        # a visual identity on every frame and a series the viewer can follow: the handle left, "PART n" right, quiet,
+        # in the safe area above the caption band
+        part = ("PART %s" % brand["part"]) if brand.get("part") else ""
+        cap_html = ('    <div class="brand" id="brand" style="top:%dpx;height:%dpx;color:%s"><span>%s</span><span>%s</span></div>\n'
+                    % (BRAND_TOP, BRAND_H, E.theme(tok, timed[0][2])["muted"], html.escape(str(brand.get("handle", ""))),
+                       html.escape(part))) + cap_html
     if tx_html:   # transition sprays sit above the scenes, under the captions
         cap_html = '    <div class="tx-layer" id="tx">%s</div>\n' % "".join(tx_html) + cap_html
     page = """<!doctype html>

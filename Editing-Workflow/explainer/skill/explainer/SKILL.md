@@ -1,6 +1,6 @@
 ---
 name: explainer
-description: Produce a faceless animated explainer reel (1080x1920, 60 fps, 60 to 90 s) end to end as the Producer, using free tools only - a script with sources, a local AI voice (Kokoro) aligned word by word, code-animated scenes from a library plus sandboxed custom scenes, word captions, two checkpoints, render, QA, packaging and the learning loop, directing the explainer-* agents and the reused reels-* agents. Use when the creator asks for an explainer, an animated reel with a voiceover, a faceless reel, or a reel made from a topic, notes or a script rather than footage.
+description: Produce a faceless animated explainer reel (1080x1920, 60 fps, 30 to 90 s) end to end as the Producer, using free tools only - a script with sources, a local AI voice (Kokoro) aligned word by word, code-animated scenes from a library plus sandboxed custom scenes, word captions, two checkpoints, render, QA, packaging and the learning loop, directing the explainer-* agents and the reused reels-* agents. Use when the creator asks for an explainer, an animated reel with a voiceover, a faceless reel, or a reel made from a topic, notes or a script rather than footage.
 ---
 
 # Producer: Explainer
@@ -49,9 +49,12 @@ Agents load at the start of a conversation: after installing, open a new one.
 
 Ask once, in one numbered message (skip what the creator already said):
 1. **The input:** a topic, notes, or a finished script (paste or file).
-2. **Who it is for** and what they should be able to do or know after 60 to 90 s.
-3. **Target length** (60 to 90 s; default 75).
-4. **The call to action** (comment a word, follow for part 2, a link in bio).
+2. **Who it is for**, the pain it solves, and what they should be able to do or know after it; and **the goal**
+   (follows, comments, saves, shares, a link click, or simply learning) and the format (a how-to, this vs that, a
+   myth busted, a mini story or case study, or a plain explainer) if the creator has one in mind (§E1).
+3. **Target length** (30 to 90 s; default 45: short wins on Reels and TikTok).
+4. **The call to action** that serves the goal (comment a word, follow for part 2, save it, a link in bio), and
+   whether this reel is part of a **series** (its name and part number) and the creator's **handle** for the frame.
 5. **Terms** to spell and say right (names, acronyms), and how they are said if unusual.
 6. **The voice:** on the first project, "you'll pick from three samples"; later, the channel's voice from the Brief.
 7. **Music:** the generated pad under the voice (the default: never silent, nothing to license), a free licensed track
@@ -102,12 +105,16 @@ Start agents with the Agent tool (`subagent_type` = the agent's name); update ST
   `snaps/SCENES.md` instead; the posting checklist gets the AI-voice line (§E3).
 - `reels-librarian`: also keeps `$ES/lexicon.json` (new pronunciations) and promotes custom scenes the creator liked
   into `$ES/scripts/scenes/` with a test (§E6).
-- `reels-analyst`: unchanged.
+- `reels-analyst`: also compares reels by format, length and goal, so the next brief starts from what worked.
+- **Posting** (the posting checklist): post on a steady rhythm (consistency beats bursts); 3 to 5 hashtags that fit
+  (one broad such as #LearnOnInstagram or #LearnOnTikTok, one format tag such as #HowTo or #Explained, the rest the
+  topic); a trending sound only when it truly fits the reel, added in the app over the voice at a low level, never
+  instead of it; the series part in the caption.
 
 ## 3. The brief
 
 ```
-PROJECT   videos/<project> · version v<n> · profile explainer (1080x1920, 60 fps, 60 to 90 s, free tools only)
+PROJECT   videos/<project> · version v<n> · profile explainer (1080x1920, 60 fps, 30 to 90 s, free tools only)
 JOB       <the agent's job>
 INPUTS    <exact files>
 TASK      <one or two sentences>

@@ -1,7 +1,7 @@
 # Explainer: the agent team (free tools only)
 
 The agent team for **faceless animated explainer reels**: a voice explains one idea while code-drawn scenes land on
-its words, with word captions on top. No camera, no footage. **1080x1920, 60 fps, 60 to 90 s, free tools only.** The
+its words, with word captions on top. No camera, no footage. **1080x1920, 60 fps, 30 to 90 s, free tools only.** The
 voice is Kokoro-82M, which runs on your own computer (Apache-2.0); the picture is HyperFrames + GSAP with KaTeX and
 Lucide icons. It implements the workflow in [`../README.md`](../README.md) for this profile, reuses five agents from
 [`../reels/`](../reels/README.md) for rendering, checking, packaging and learning, and adds tested scripts for the
@@ -35,7 +35,7 @@ explainer/
 │       ├── explainer_lib.py        shared: word anchors, the scene area, text measured with real glyph widths
 │       ├── scenes/                 one module per scene type (21, custom included)
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
-│       └── tests/                  180 tests (python3 -m unittest discover -s tests -t .)
+│       └── tests/                  190 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
     explainer-writer.md · explainer-voice.md · explainer-director.md · explainer-animator.md
 ```
@@ -182,13 +182,13 @@ flowchart TD
 
 | Script | What it does | Tests |
 |---|---|---|
-| `script-check.py` | gate E1 on `script.json`; writes `SCRIPT.md` | 9: lengths and target (60 to 90 s), hook, sources (objects or plain strings), payoff and call to action, the report |
+| `script-check.py` | gate E1 on `script.json`; writes `SCRIPT.md` | 16: lengths and target (30 to 90 s), the brief's warnings (format, audience, goal, you, a question, an example, the format's shape), hook, sources (objects or plain strings), payoff and call to action, the report |
 | `tts-kokoro.py` | Kokoro line by line (`--only` one line), pauses by break, high-pass, compression, two-pass loudnorm to -16 LUFS / -1 dBTP (a peak over -1 dBTP fails); `--samples` for the voice choice; a `fake` engine for tests | 7 (1 needs Kokoro) |
 | `align-script.py` | gate E2: sequence alignment of heard to spoken words (tolerant of spelling, of the lexicon's respellings, of digits heard for number words: "1,000", "10%", "2024", "2.5"), shown words timed across their spoken span, spoken-only words at the start included | 11 |
 | `pace-check.py` | gate E4's pacing, from the `moments.json` the composer writes next to the page: every tween, count and item is a moment of change, ambient motion is not; a still stretch over 3 s fails, over 2 s warns (the kit's gap-scan can't see it: scenes always cover the voice) | 5, and it runs in the end-to-end test |
 | `plan-storyboard.py` | the draft storyboard: `viz` hints into scenes with each item on its word (an unspoken item halfway between its neighbours), money into count-ups, steps into numbers, brands into logo cards, the rest into draft titles; `PLAN.md` says which rule made each scene | 6, including the draft composing and passing pace-check, and a line with two pictures |
 | `transitions.py` | the transition for each scene (fade first, wipe on a new background, then a zoom-through and a whip, velocity-matched with a motion blur), the matching exit, the background wipe, the seeded burst | 7 |
-| `sound.py` | the generated pad and sound effects (the same bytes every time), the events (a whoosh per moving transition, pops 0.35 s apart), the bed: looped, faded, ducked under the voice | 5: never silent, at least 6 dB of ducking, the creator's track looped and faded |
+| `sound.py` | the generated pad and sound effects (the same bytes every time), the events (a whoosh per moving transition, a chime on the payoff, pops 0.35 s apart), the bed: looped, faded, ducked under the voice | 6: never silent, at least 6 dB of ducking, the creator's track looped and faded |
 | `snap-page.py` | a page's screenshot at an exact size with local Chrome in a fresh profile | 2 (1 needs Chrome) |
 | `explainer-compose.py` | gate E3: places every scene by its measured height and scales it up to fill the scene area, glows that travel with each cut, transitions, word captions with the highlight box, the voice and the sound bed, the kit's markup; WARNs on a title that repeats the voice and on the same layout twice in a row | 33 (6 for the craft rules: fill, title size, the taller area, same layout), plus the kit's beat-check run on its page; bad storyboard values fail with the scene named |
 | `scenes/*.py` | 19 library scenes (6 build-up scenes and the logo card among them) and the sandboxed custom scene | 39 across the scene and asset suites (a screenshot punching in on its focus line among them), 10 for the custom contract (unique build names, and MOTION.md's banned eases, loops and randomness) |
@@ -201,7 +201,7 @@ flowchart TD
 | end to end | script-check → fake voice → alignment → compose → beat-check → `hyperframes check` → a 60 fps render → the kit's `verify-render.py --res 1080x1920` | 1 (needs FFmpeg, the kit, HyperFrames and a local GSAP), plus 1 with real Kokoro and Parakeet |
 
 **How it was verified** (2026-10-14 and 2026-10-15, on Linux with HyperFrames 0.8.157 and 0.8.159, and Chromium):
-- the whole suite: 180 tests, all passing; 2 skipped where Kokoro is not installed (re-run 2026-10-16 after the
+- the whole suite: 190 tests, all passing; 2 skipped where Kokoro is not installed (re-run 2026-10-16 after the
   Catppuccin Latte pass, HyperFrames 0.8.164);
 - the end-to-end run (pace-check included): a 4-line, 30-word script voiced by the fake engine (11.09 s, -15.95 LUFS), aligned 100% with
   the widest gap inside a line 0.02 s, composed into 4 scenes, 4 backgrounds and 8 caption phrases, rendered at
