@@ -76,6 +76,28 @@ class Ctx:
             shutil.copy(src, dst)
         return "vendor/" + name
 
+    def icon(self, name):
+        """A Lucide icon's SVG, inlined from vendor/lucide/<name>.svg (ISC), or fail naming the icon and the install."""
+        if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", str(name)):
+            self.fail("icon %r is not a Lucide icon name (lowercase words joined by -)" % (name,))
+        path = os.path.join(self.vendor_dir, "lucide", "%s.svg" % name)
+        if not os.path.exists(path):
+            self.fail("unknown icon %r: no vendor/lucide/%s.svg (browse lucide.dev/icons; get the set with: %s)" % (name, name, LUCIDE_INSTALL))
+        with open(path) as f:
+            svg = re.sub(r"^(\s*<!--.*?-->)*\s*", "", f.read(), flags=re.S).strip()   # Lucide files open with a licence comment
+        if not svg.startswith("<svg") or re.search(r"<script|on\w+=", svg, re.I):
+            self.fail("vendor/lucide/%s.svg is not a plain SVG icon" % name)
+        return svg
+
+    def idle(self, sel, t0, t1, props, every=1.6):
+        """An idle back-and-forth while a scene holds (ambient: not a change): from t0 to t1, `sel` eases to `props` and
+        back every `every` seconds ({"y": -8} floats; {"scale": 1.08} pulses)."""
+        t, k = t0, 0
+        rest = {p: (1 if p == "scale" else 0) for p in props}
+        while t + every <= t1 + 1e-6:
+            self.ambient("tl.to(%s, %s, %.3f);" % (sel_js(sel), js_obj(dict(props if k % 2 == 0 else rest, duration=every, ease="sine.inOut")), t))
+            t, k = t + every, k + 1
+
     def add_head(self, tag):
         if tag not in self.head:
             self.head.append(tag)
@@ -91,6 +113,9 @@ class Ctx:
             g["stagger"] = {"amount": round(min(stagger, m["stagger_total_max"]), 3)}
         g["immediateRender"] = False
         return "tl.fromTo(%s, %s, %s, %.3f);" % (sel_js(sel), js_obj(f), js_obj(g), t)
+
+
+LUCIDE_INSTALL = "npm pack lucide-static@0.454.0, then copy its icons/*.svg to assets/vendor/lucide/"
 
 
 def js_str(s):
@@ -145,7 +170,8 @@ def need(scene, keys):
 
 
 _MODULES = ["title", "number", "count_up", "list_cards", "line_chart", "bars", "duration", "qa_stack",
-            "browser", "sheet", "formula", "icon_row", "custom"]
+            "browser", "sheet", "formula", "icon_row", "custom",
+            "flow", "stack", "compare", "timeline", "cards", "hub"]
 REGISTRY = {}
 for _m in _MODULES:
     _mod = importlib.import_module("scenes." + _m)

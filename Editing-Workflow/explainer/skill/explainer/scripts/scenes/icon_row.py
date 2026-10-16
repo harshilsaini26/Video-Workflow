@@ -1,5 +1,5 @@
 """icon-row: two to four Lucide icons (ISC, inlined from the local copy) pop in with their labels (SPEC §6.2)."""
-import os, re
+import re
 import explainer_lib as E
 from scenes import js_obj, line_px, need, widest
 
@@ -7,7 +7,6 @@ TYPE = "icon-row"
 TILE, ICON = 150, 84
 L_SIZE, L_LH, L_GAP = 36, 1.2, 20
 COL_GAP = 24
-INSTALL = "npm pack lucide-static@0.454.0, then copy its icons/*.svg to assets/vendor/lucide/"
 _NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 CSS = """
@@ -54,13 +53,7 @@ def render(scene, ctx, box):
     tile_bg = "#FFFFFF" if ctx.light else "rgba(255,255,255,.10)"
     cols, js = [], []
     for i, it in enumerate(scene["items"]):
-        name = "lucide/%s.svg" % it["icon"]
-        if not os.path.exists(os.path.join(ctx.vendor_dir, name)):
-            ctx.fail("unknown icon %r: no vendor/%s (browse lucide.dev/icons; get the set with: %s)" % (it["icon"], name, INSTALL))
-        with open(os.path.join(ctx.vendor_dir, name)) as f:
-            svg = re.sub(r"^(\s*<!--.*?-->)*\s*", "", f.read(), flags=re.S).strip()   # Lucide files open with a licence comment
-        if not svg.startswith("<svg") or re.search(r"<script|on\w+=", svg, re.I):
-            ctx.fail("vendor/%s is not a plain SVG icon" % name)
+        svg = ctx.icon(it["icon"])
         t, attrs = ctx.item(it["at"])
         cols.append('<div class="ic-col"%s><div class="ic-tile" id="%s-i%d" style="background:%s;color:%s">%s</div>'
                     '<div class="ic-label" id="%s-l%d" style="color:%s">%s</div></div>'
