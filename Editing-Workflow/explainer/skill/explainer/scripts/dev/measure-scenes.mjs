@@ -22,6 +22,10 @@ for (const c of cases) {
     const live = document.getElementById(id + "-live");
     live.style.transform = "none";
     const out = [];
+    if (live.dataset.baked) {             // sized for the width it was composed at: measure it there
+      live.style.height = "auto";
+      return [{ width: live.offsetWidth, height: live.offsetHeight }];
+    }
     for (const w of [950, 780]) {
       live.style.width = w + "px";
       live.style.height = "auto";

@@ -105,6 +105,11 @@ CASES = {
                    {"center": "Model", "items": [{"label": "Search", "at": at(2)}, {"label": "Rank", "at": at(4)}, {"label": "Answer", "at": at(6)}]},
                    {"center": "You", "items": [{"label": "Budgeting", "at": at(2)}, {"label": "Risk", "at": at(3)}, {"label": "Valuation", "at": at(4)},
                                                {"label": "Markets", "at": at(5)}, {"label": "Data", "at": at(6)}, {"label": "Models", "at": at(7)}]}),
+    "kinetic": lengths({"words": [{"text": "STOP", "at": at(2)}]},
+                       {"big": {"text": "3", "at": at(1)}, "words": [{"text": "STEP", "at": at(2)}, {"text": "TRICK", "at": at(3)}], "source": "s"},
+                       {"big": {"text": "90%", "at": at(1)}, "words": [{"text": "OF", "at": at(2)}, {"text": "SCRIPTS", "at": at(3)}],
+                        "line": {"text": "AI WRITES", "at": at(5)}, "strike": {"word": "WRITES", "at": at(7)},
+                        "punch": {"text": "FAIL", "at": at(8)}, "source": "s"}),
 }
 
 

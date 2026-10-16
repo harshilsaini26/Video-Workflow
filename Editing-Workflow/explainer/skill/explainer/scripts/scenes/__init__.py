@@ -204,7 +204,7 @@ def need(scene, keys):
 
 _MODULES = ["title", "number", "count_up", "list_cards", "line_chart", "bars", "duration", "qa_stack",
             "browser", "sheet", "formula", "icon_row", "custom",
-            "flow", "stack", "compare", "timeline", "cards", "hub", "logo_card"]
+            "flow", "stack", "compare", "timeline", "cards", "hub", "logo_card", "kinetic"]
 REGISTRY = {}
 for _m in _MODULES:
     _mod = importlib.import_module("scenes." + _m)

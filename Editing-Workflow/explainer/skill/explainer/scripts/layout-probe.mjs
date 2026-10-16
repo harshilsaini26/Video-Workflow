@@ -66,6 +66,9 @@ for (const s of pg.samples) {
       return (bg ? (bg.length > 3 ? parseFloat(bg[3]) : 1) : 0) >= 0.6 || cs.backgroundImage !== "none";
     };
     const name = (el) => (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.className && el.className.baseVal === undefined ? "." + String(el.className).split(" ")[0] : ""));
+    const where = (r) => " (x " + Math.round(r.left) + " to " + Math.round(r.right) + ", y " + Math.round(r.top) + " to " + Math.round(r.bottom) + ")";
+    const outside = (r) => r.left < area.left - 2 || r.right > area.right + 2 || r.top < area.top - 2 || r.bottom > area.bottom + 2 ||
+      (r.bottom > area.col_top + 2 && (r.left < area.narrow_left - 2 || r.right > area.narrow_right + 2));
     // what is really visible of a box: clipped by every ancestor that hides its overflow (a screenshot in its window)
     const clip = (el, r) => {
       let { left, top, right, bottom } = r;
@@ -77,9 +80,6 @@ for (const s of pg.samples) {
       }
       return { left, top, right, bottom, width: right - left, height: bottom - top };
     };
-    const where = (r) => " (x " + Math.round(r.left) + " to " + Math.round(r.right) + ", y " + Math.round(r.top) + " to " + Math.round(r.bottom) + ")";
-    const outside = (r) => r.left < area.left - 2 || r.right > area.right + 2 || r.top < area.top - 2 || r.bottom > area.bottom + 2 ||
-      (r.bottom > area.col_top + 2 && (r.left < area.narrow_left - 2 || r.right > area.narrow_right + 2));
     // the text on screen: elements with their own visible text, and the rectangles of its lines
     const texts = [];
     for (const k of root.querySelectorAll(".katex")) {    // a typeset formula is one piece: KaTeX places its glyphs itself
@@ -96,6 +96,11 @@ for (const s of pg.samples) {
         const range = document.createRange();
         range.selectNodeContents(n);
         for (const r of range.getClientRects()) if (r.width > 1 && r.height > 1) rects.push(r);
+      }
+      // only what is drawn: text still below its mask (kinetic type before its word) is not on screen
+      for (let i = rects.length - 1; i >= 0; i--) {
+        const v = clip(el, rects[i]);
+        if (v.width <= 1 || v.height <= 1) rects.splice(i, 1);
       }
       if (!rects.length) continue;
       const box = el.getBoundingClientRect();
