@@ -123,6 +123,28 @@ class Build(unittest.TestCase):
             r, _ = self.build(dict(sc, bg="base"))
             self.assertEqual(r.returncode, 0, "%s: %s" % (t, r.stdout))
 
+    def test_a_cards_title_waits_for_the_last_one_to_leave(self):
+        r, html = self.build(GOOD["cards"])
+        self.assertEqual(r.returncode, 0, r.stdout)
+        out = re.search(r"tl\.to\('#sc-t0, #sc-u0', \{ opacity: 0, y: -16, duration: ([\d.]+), ease: '[\w.]+' \}, ([\d.]+)\);", html)
+        inn = re.search(r"tl\.fromTo\('#sc-t1', \{ opacity: 0, y: 20 \}, \{[^}]*\}, ([\d.]+)\);", html)
+        self.assertGreaterEqual(float(inn.group(1)), float(out.group(2)) + float(out.group(1)) - 1e-6)   # no double exposure
+
+    def test_the_winner_badge_sits_inside_its_head(self):
+        from scenes import compare
+        self.assertNotRegex(compare.CSS, r"\.cp-win \{[^}]*(right|top):-")
+        sc = copy.deepcopy(GOOD["compare"])
+        plain = compare.min_width(dict(sc, winner=None))
+        self.assertGreaterEqual(compare.min_width(sc), plain)
+        self.assertGreaterEqual(compare.min_width(sc), 2 * (int(E.text_width("RAG", compare.T_SIZE)) + 2 * compare.BADGE_ROOM))
+
+    def test_the_address_bar_fits(self):
+        from scenes import browser
+        short = browser.min_width({"title": "X", "domain": "a.org"})
+        long = browser.min_width({"title": "X", "domain": "notes / team-handbook / section-four"})
+        self.assertGreater(long, short)
+        self.assertGreaterEqual(long, browser.bar_width("notes / team-handbook / section-four"))
+
 
 class Hub(unittest.TestCase):
     """The hub's geometry is computed, not drawn by eye: every node clears the middle disc and every other node, and
@@ -149,6 +171,13 @@ class Hub(unittest.TestCase):
                 for j, (x2, y2, w2, h2) in enumerate(nodes[:i]):
                     apart = max(x2 - (x + w), x - (x2 + w2), y2 - (y + hh), y - (y2 + h2))
                     self.assertGreaterEqual(apart, hub.GAP - 0.01, (labels, i, j))
+
+    def test_three_long_labels_fit_the_narrow_column(self):
+        # a portrait frame: the ring may be taller than wide, so three long labels still fit 780 px unscaled
+        from scenes import hub
+        sc = {"center": "RAG", "items": [{"label": l, "at": W(6)} for l in ("Retrieval", "Augmented", "Generation")]}
+        self.assertLessEqual(hub.min_width(sc), 780)
+        self.assertLessEqual(hub.height(sc, 780), E.SCENE["bottom"] - E.SCENE["top"])
 
     def test_labels_are_large_and_nothing_spins(self):
         from scenes import hub

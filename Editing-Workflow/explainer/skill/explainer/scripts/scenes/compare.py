@@ -7,6 +7,7 @@ TYPE = "compare"
 HEAD, H_GAP, ROW, R_GAP, COL_GAP = 104, 22, 84, 14, 26
 T_SIZE, R_SIZE = 50, 38          # title and row: DM Sans 700, one line each
 PAD, MARK, M_GAP = 26, 16, 14    # row padding, the row's dot and its gap
+BADGE_ROOM = 64 + 12 + 8         # the winner's check sits inside its head, at the right: room kept on both sides of the title
 SIDES = ("left", "right")
 
 CSS = """
@@ -20,9 +21,9 @@ CSS = """
   .cp-dot { width:%dpx; height:%dpx; border-radius:50%%; flex:none; }
   .cp-vs { position:absolute; left:50%%; top:%dpx; width:76px; height:76px; margin:-38px 0 0 -38px; border-radius:50%%; z-index:2;
     display:flex; align-items:center; justify-content:center; font-family: var(--label); font-weight:500; font-size:26px; opacity:0; }
-  .cp-win { position:absolute; right:-14px; top:-18px; width:64px; height:64px; border-radius:50%%; display:flex; align-items:center;
+  .cp-win { position:absolute; right:12px; top:%dpx; width:64px; height:64px; border-radius:50%%; display:flex; align-items:center;
     justify-content:center; font-weight:700; font-size:38px; opacity:0; z-index:3; }
-""" % (COL_GAP, HEAD, H_GAP, T_SIZE, ROW, M_GAP, PAD, R_SIZE, R_GAP, MARK, MARK, HEAD // 2)
+""" % (COL_GAP, HEAD, H_GAP, T_SIZE, ROW, M_GAP, PAD, R_SIZE, R_GAP, MARK, MARK, HEAD // 2, (HEAD - 64) // 2)
 
 
 def validate(scene):
@@ -56,6 +57,9 @@ def min_width(scene):
     for s in SIDES:
         col = max(col, E.text_width(scene[s]["title"], T_SIZE) + 2 * PAD,
                   *[E.text_width(it["text"], R_SIZE) + 2 * PAD + MARK + M_GAP for it in scene[s]["items"]])
+    w = scene.get("winner")
+    if w and w.get("side") in SIDES:   # the check inside the winner's head keeps clear of its title
+        col = max(col, E.text_width(scene[w["side"]]["title"], T_SIZE) + 2 * BADGE_ROOM)
     return 2 * (int(col) + 1) + COL_GAP
 
 

@@ -22,6 +22,9 @@ def main():
     ap.add_argument("--no-hf", action="store_true", help="skip `hyperframes check` (the probe alone)")
     a = ap.parse_args()
     pub = os.path.dirname(os.path.abspath(a.index))
+    if not os.path.exists(os.path.join(pub, "moments.json")):
+        print("E5 ERROR: no moments.json next to %s: compose the page first (explainer-compose.py writes it)" % a.index)
+        sys.exit(2)
     with open(os.path.join(pub, "moments.json")) as f:
         moments = json.load(f)
     smp = LC.samples(moments)

@@ -35,7 +35,7 @@ explainer/
 │       ├── explainer_lib.py        shared: word anchors, the scene area, text measured with real glyph widths
 │       ├── scenes/                 one module per scene type (21, custom included)
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
-│       └── tests/                  175 tests (python3 -m unittest discover -s tests -t .)
+│       └── tests/                  180 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
     explainer-writer.md · explainer-voice.md · explainer-director.md · explainer-animator.md
 ```
@@ -201,7 +201,7 @@ flowchart TD
 | end to end | script-check → fake voice → alignment → compose → beat-check → `hyperframes check` → a 60 fps render → the kit's `verify-render.py --res 1080x1920` | 1 (needs FFmpeg, the kit, HyperFrames and a local GSAP), plus 1 with real Kokoro and Parakeet |
 
 **How it was verified** (2026-10-14 and 2026-10-15, on Linux with HyperFrames 0.8.157 and 0.8.159, and Chromium):
-- the whole suite: 175 tests, all passing; 2 skipped where Kokoro is not installed (re-run 2026-10-16 after the
+- the whole suite: 180 tests, all passing; 2 skipped where Kokoro is not installed (re-run 2026-10-16 after the
   Catppuccin Latte pass, HyperFrames 0.8.164);
 - the end-to-end run (pace-check included): a 4-line, 30-word script voiced by the fake engine (11.09 s, -15.95 LUFS), aligned 100% with
   the widest gap inside a line 0.02 s, composed into 4 scenes, 4 backgrounds and 8 caption phrases, rendered at

@@ -7,6 +7,7 @@ from scenes import GHOST, js_obj, need
 TYPE = "cards"
 CW, CH = 250, 320                # a card
 FAN = 50                         # room for the fan's tilt and lift
+TITLE_OUT = 0.2                  # the last title leaves in this long before the next comes in
 OFF, OFF_MIN = 170, 110          # card to card, at most and at least
 GAP = 36                         # fan to title
 T_SIZE, T_LINE = 50, 60          # title: DM Sans 700, one line
@@ -80,10 +81,11 @@ def render(scene, ctx, box):
 
     def show(i, t, prev):
         sel = "#%s-t%d" % (sid, i) + (", #%s-u%d" % (sid, i) if cards[i].get("sub") else "")
-        out = [ctx.enter(sel, t + 0.1, {"y": 20})]
+        # a new title only once the last one has gone (TITLE_OUT), never two on one spot at once
+        out = [ctx.enter(sel, t + (TITLE_OUT if prev is not None else 0.1), {"y": 20})]
         if prev is not None:
             psel = "#%s-t%d" % (sid, prev) + (", #%s-u%d" % (sid, prev) if cards[prev].get("sub") else "")
-            out.append("tl.to('%s', %s, %.3f);" % (psel, js_obj({"opacity": 0, "y": -16, "duration": 0.2, "ease": mo["exit_ease"]}), t))
+            out.append("tl.to('%s', %s, %.3f);" % (psel, js_obj({"opacity": 0, "y": -16, "duration": TITLE_OUT, "ease": mo["exit_ease"]}), t))
         return out
     for i, t in enumerate(times):
         js += show(i, t, i - 1 if i else None)

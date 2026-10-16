@@ -79,6 +79,7 @@ def line_span(line):
     return None
 
 
+IDLE_ROOM = 12                       # a holding scene floats up to this far: keep it clear of the area's edges
 SCALE_MAX, SCALE_STEP = 1.8, 0.05   # how far a template scene is blown up to fill the scene area (MOTION.md: fill the frame)
 
 
@@ -94,7 +95,7 @@ def place(sid, mod, scene):
             fail("%s: the box %d,%d %dx%d is outside the scene area (x %d to %d, y %d to %d; x %d to %d below y %d)"
                  % (sid, left, top, width, h, sa["left"], sa["right"], sa["top"], sa["bottom"], L.NARROW["left"], L.NARROW["right"], L.RIGHT_COL_TOP))
         return left, top, width, h, width, h, 1.0
-    area_h = sa["bottom"] - sa["top"]
+    area_h = sa["bottom"] - sa["top"] - 2 * IDLE_ROOM
     need = mod.min_width(scene)
     cap = min(SCALE_MAX, mod.max_scale(scene) if hasattr(mod, "max_scale") else getattr(mod, "MAX_SCALE", SCALE_MAX))
     cap = math.floor(cap * 100 + 1e-6) / 100.0          # the page draws scale(%.2f): size the box with exactly that
@@ -108,14 +109,14 @@ def place(sid, mod, scene):
             w, h = int(math.floor(iw * s)), int(math.ceil(ih * s))
             if col_w == WIDE[1]:    # the full width only above the action column: centred in y 520 to 960
                 top = int(round(WIDE_CENTRE - h / 2.0))
-                if h > L.RIGHT_COL_TOP - sa["top"]:
+                if h > L.RIGHT_COL_TOP - sa["top"] - 2 * IDLE_ROOM:
                     continue
             else:
                 top = int(round(CENTRE - h / 2.0))
             if h > area_h:
                 continue
             left = col_left + (col_w - w) // 2
-            if E.inside_scene(left, top, w, h):
+            if E.inside_scene(left, top - IDLE_ROOM, w, h + 2 * IDLE_ROOM):
                 return left, top, w, h, iw, ih, round(s, 2)
     # nothing fits even unscaled: say why, as before
     left, width = NARROW

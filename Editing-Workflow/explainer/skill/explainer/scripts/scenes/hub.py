@@ -1,9 +1,9 @@
 """hub: one idea in the middle and two to six around it; each spoke draws and its node lands on its word (PLAYBOOK §E4).
 For "the parts of X", "what X connects".
 
-The geometry is computed, never drawn by eye (layout()): the nodes sit on the smallest circle where every node clears the
-middle disc and every other node by GAP, and the scene is as tall and as wide as that circle needs, so nothing overlaps,
-crosses a label or leaves the box. Nothing spins; the middle keeps one slow pulse while it holds."""
+The geometry is computed, never drawn by eye (layout()): the nodes sit on the narrowest ring (a circle, or an ellipse
+taller than wide, as a portrait frame allows) where every node clears the middle disc and every other node by GAP, and
+the scene is as tall and as wide as that ring needs, so nothing overlaps, crosses a label or leaves the box. Nothing spins; the middle keeps one slow pulse while it holds."""
 import math
 import explainer_lib as E
 from scenes import GHOST, js_obj, need
@@ -42,31 +42,44 @@ def pill_w(label):
     return math.ceil(E.text_width(label, N_SIZE)) + 2 * N_PAD
 
 
+COL = E.L.NARROW["right"] - E.L.NARROW["left"]       # 780: a hub reaches below y 960, so it lives in the narrow column
+AREA = E.SCENE["bottom"] - E.SCENE["top"]            # 900
+
+
+def _fits(cs):
+    for i, (x, y, w, h) in enumerate(cs):
+        dx, dy = max(abs(x) - w / 2.0, 0), max(abs(y) - h / 2.0, 0)
+        if math.hypot(dx, dy) < DISC / 2.0 + GAP:
+            return False
+        for x2, y2, w2, h2 in cs[:i]:
+            if max(abs(x - x2) - (w + w2) / 2.0, abs(y - y2) - (h + h2) / 2.0) < GAP:
+                return False
+    return True
+
+
 def _ring(scene):
-    """(radius, [(dx, dy, w, h)] node centres from the middle): the smallest radius where every node clears the disc
-    and every other node by GAP. Node k sits at -90 + 360k/n degrees: the first one straight above."""
+    """(radius, [(dx, dy, w, h)] node centres from the middle). Node k sits at -90 + 360k/n degrees (the first one
+    straight above) on an ellipse: for each height-to-width ratio from a circle up to 2.2, the smallest ring where every
+    node clears the disc and every other node by GAP; of those, the one the composer can scale up the most in the
+    narrow column (a portrait frame has height to spare, not width)."""
     items = scene["items"]
     n = len(items)
     sizes = [(pill_w(it["label"]), N_H) for it in items]
     angles = [math.radians(-90 + 360.0 * k / n) for k in range(n)]
-    r = DISC / 2.0 + GAP + N_H / 2.0
-    while True:
-        cs = [(r * math.cos(a), r * math.sin(a), w, h) for a, (w, h) in zip(angles, sizes)]
-        ok = True
-        for i, (x, y, w, h) in enumerate(cs):
-            dx, dy = max(abs(x) - w / 2.0, 0), max(abs(y) - h / 2.0, 0)
-            if math.hypot(dx, dy) < DISC / 2.0 + GAP:
-                ok = False
+    best = None
+    for q in [1.0 + 0.1 * j for j in range(13)]:
+        r = DISC / 2.0 + GAP + N_H / 2.0
+        while True:
+            cs = [(r * math.cos(a), q * r * math.sin(a), w, h) for a, (w, h) in zip(angles, sizes)]
+            if _fits(cs):
                 break
-            for x2, y2, w2, h2 in cs[:i]:
-                if max(abs(x - x2) - (w + w2) / 2.0, abs(y - y2) - (h + h2) / 2.0) < GAP:
-                    ok = False
-                    break
-            if not ok:
-                break
-        if ok:
-            return r, cs
-        r += 2
+            r += 2
+        width = 2 * max(abs(x) + w / 2.0 for x, y, w, h in cs)
+        height = 2 * max(abs(y) + h / 2.0 for x, y, w, h in cs) + 2 * PAD
+        fill = min(COL / width, AREA / height)       # how far the composer can scale it up in the narrow column
+        if best is None or fill > best[0] + 1e-6:
+            best = (fill, r, cs)
+    return best[1], best[2]
 
 
 def _extent(scene):

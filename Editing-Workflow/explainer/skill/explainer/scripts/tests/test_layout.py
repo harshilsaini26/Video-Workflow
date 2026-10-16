@@ -91,6 +91,14 @@ class Gate(unittest.TestCase):
         self.assertEqual([], ["%s: %s %s" % (os.path.basename(os.path.dirname(os.path.dirname(i["page"]))), i["text"], i["detail"])
                               for i in issues])
 
+    def test_a_page_not_composed_yet_is_named(self):
+        d = scratch(self)
+        write(os.path.join(d, "public", "index.html"), "<html></html>")
+        r = run("layout-check.py", "--index", os.path.join(d, "public", "index.html"), "--no-hf")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("compose", r.stdout)
+        self.assertNotIn("Traceback", r.stdout + r.stderr)
+
     def test_hyperframes_findings_that_matter_are_kept(self):
         self.assertTrue(LC, "layout_check.py is missing")
         report = {"layout": {"issues": [
@@ -104,6 +112,15 @@ class Gate(unittest.TestCase):
         self.assertEqual([k["code"] for k in kept], ["content_overlap", "contrast_aa_failure", "clipped_text"])
         self.assertEqual(kept[0]["scene"], "sc")
         self.assertEqual(kept[1]["scene"], "captions")
+        # at a handover the old scene leaves through the new one for 0.2 s: two scenes' text crossing then is the cut,
+        # not a collision; the same overlap inside one scene, or long after a cut, still fails
+        scenes = [{"id": "a", "in": 0.0, "out": 4.0}, {"id": "b", "in": 4.0, "out": 8.0}]
+        cross = {"code": "content_overlap", "severity": "info", "selector": "#a-c1", "containerSelector": "#b-c", "text": "x"}
+        report = {"layout": {"issues": [dict(cross, time=4.1), dict(cross, time=6.0),
+                                         dict(cross, time=4.1, containerSelector="#a-c2"),
+                                         dict(cross, time=4.2, selector="#cw3-1", containerSelector="#b-c")]}}
+        kept = LC.hf_findings(report, scenes)
+        self.assertEqual([k["time"] for k in kept], [6.0, 4.1])
 
 
 if __name__ == "__main__":

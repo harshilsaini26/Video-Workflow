@@ -16,6 +16,7 @@ import explainer_lib as E
 HERE = os.path.dirname(os.path.abspath(__file__))
 MIN_PX = 28          # the smallest text a phone viewer reads on the 1080 px frame (labels are 34 px or more by design)
 KEEP = ("content_overlap", "text_box_overflow", "clipped_text", "contrast_aa_failure")
+HANDOVER = 0.6       # after a scene starts, the old one may still be leaving through it (the cut and its blur)
 
 
 def area():
@@ -110,17 +111,23 @@ def hf_findings(report, scenes):
             for v in o:
                 yield from walk(v)
     ids = sorted((s["id"] for s in scenes), key=len, reverse=True)
+    starts = [s["in"] for s in scenes[1:]]
+
+    def owner(sel, t):
+        if re.match(r"#(cw|cap)\d", sel):
+            return "captions"
+        sid = next((x for x in ids if re.match(r"#%s(\b|-)" % re.escape(x), sel)), None)
+        return sid or next((s["id"] for s in scenes if t is not None and s["in"] <= t <= s["out"]), "page")
     for i in walk(report):
         sel = str(i.get("selector", ""))
         if i["code"] not in KEEP or re.match(r"#bg\d", sel):
             continue
-        if re.match(r"#(cw|cap)\d", sel):
-            scene = "captions"
-        else:
-            scene = next((sid for sid in ids if re.match(r"#%s(\b|-)" % re.escape(sid), sel)), None)
-            if scene is None:
-                t = i.get("time")
-                scene = next((s["id"] for s in scenes if t is not None and s["in"] <= t <= s["out"]), "page")
+        t = i.get("time")
+        scene = owner(sel, t)
+        other = i.get("containerSelector")
+        if (i["code"] == "content_overlap" and other and owner(str(other), t) != scene and t is not None
+                and any(0 <= t - s0 <= HANDOVER for s0 in starts)):
+            continue      # the old scene leaving through the new one at a cut: the transition, not a collision
         found.append(dict(i, scene=scene))
     return found
 

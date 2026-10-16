@@ -5,6 +5,7 @@ fixed 400 px view showing the top of the page, and the title sits under the wind
 in the screenshot, "at": its word}) the page holds still, then punches in (1.25x) on that row when the word is said,
 never pulling the page's edge into the view.
 """
+import math
 import explainer_lib as E
 from scenes import js_obj, line_px, mono_lines, need, png_size, stagger_for, widest
 
@@ -42,6 +43,11 @@ CSS = """
 
 def _badge_w(b):
     return len(b) * B_SIZE * 0.6 + 2 * B_PADX
+
+
+def bar_width(domain):
+    """The address bar's width: its padding, three dots and their gaps, the address chip and the address in mono."""
+    return 24 + 3 * 16 + 3 * 12 + 18 + 2 * 20 + int(math.ceil(len(str(domain)) * U_SIZE * 0.62)) + 24
 
 
 def validate(scene):
@@ -85,7 +91,8 @@ def height(scene, width):
 
 def min_width(scene):
     badges = max([_badge_w(b) for b in scene.get("badges", [])] or [0])
-    return int(max(widest([(scene["title"], T_SIZE), (scene.get("subtitle"), S_SIZE), (scene.get("button"), BTN_SIZE)]), badges)) + 2 * PAD
+    page = int(max(widest([(scene["title"], T_SIZE), (scene.get("subtitle"), S_SIZE), (scene.get("button"), BTN_SIZE)]), badges)) + 2 * PAD
+    return max(page, bar_width(scene.get("domain", "")))    # the address shows whole, never clipped
 
 
 def render(scene, ctx, box):
