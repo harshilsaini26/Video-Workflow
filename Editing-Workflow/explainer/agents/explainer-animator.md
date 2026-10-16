@@ -26,8 +26,9 @@ a render takes minutes.
 
 1. **Local libraries, once per machine** (renders must work offline): in `$ES/assets/vendor/`, `gsap.min.js`
    (`npm pack gsap@3.14.2`), `katex/` (`npm pack katex@0.16.11`: its `dist/` katex.min.js, katex.min.css, fonts/),
-   `lucide/*.svg` (`npm pack lucide-static@0.454.0`: its `icons/`), and for a 3D custom scene
-   `three/three.module.min.js` (`npm pack three@0.169.0`).
+   `lucide/*.svg` (`npm pack lucide-static@0.454.0`: its `icons/`), `simple-icons/` (`npm pack simple-icons@13.21.0`:
+   its `icons/` and `_data/`, for logo cards), and for a 3D custom scene `three/three.module.min.js`
+   (`npm pack three@0.169.0`).
 2. **Custom scenes** (from `$W/custom/<id>.md`): write `$W/custom/<id>.html` with a `<style>` whose every selector
    starts with `#<id>`, the markup, and a `<script>` defining `function build<Id>(tl, root, t0, t1)` that adds its
    tweens to `tl` between `t0` and `t1`, selecting only through `root.querySelector(...)` or `'#<id> ...'`. No
@@ -42,7 +43,10 @@ a render takes minutes.
 5. **Gate E4, beats:** `python3 "$SK/scripts/beat-check.py" --index "$W/public/index.html" --transcript "$W/transcript.json"`
    clean (every entrance 0.15 to 0.25 s before its word).
 6. **Gate E4, pacing:** `python3 "$ES/scripts/pace-check.py" --index "$W/public/index.html"`: no still stretch over
-   6 s (warnings over 4 s go to the Director). The kit's gap-scan finds nothing here (scenes cover the voice).
+   3 s (warnings over 2 s go to the Director). The kit's gap-scan finds nothing here (scenes cover the voice).
+   **The sound bed:** the composer writes `public/bed.wav` (the pad or the creator's music, ducked under the voice,
+   with a whoosh on each moving transition and a pop as items land); listen to the start, a scene change and the end
+   once. No FFmpeg means no bed: the composer warns.
 7. **Stills with the safe zone:**
    ```bash
    python3 "$SK/scripts/snap-beats.py" --project "$W" --at 0.35 --at <each scene's in + 0.6> --at <duration - 0.1>

@@ -40,7 +40,13 @@ they are said, and for a rewrite the notes to act on (ids and verbatim words).
    - `say` is what the voice reads (numbers and symbols in words, acronyms the way they are said), `show` what the
      screen shows (full digits, the real spelling); keep them word for word the same otherwise;
    - a line whose `show` has a digit, `%` or `$`, or states a fact (`"fact": true`), names its `source`;
-   - `break` by §E2.4; one emphasis word at most a line.
+   - `break` by §E2.4; one emphasis word at most a line;
+   - **a picture for every line** (§E2.7): add a `viz` hint wherever the words name something to show, e.g.
+     `"viz": {"type": "flow", "nodes": ["Retrieve", "Augment", "Generate"]}`, `{"type": "cards", "cards": ["Corporate
+     Finance", "Valuation"]}`, `{"type": "logo-card", "logo": "coursera"}`, `{"type": "compare", "left": {"title": "Memory",
+     "items": ["Guesses"]}, "right": {"title": "RAG", "items": ["Looks it up"]}}`. Items are plain words from the line
+     (the planner lands each on the word that says it); the scene types and their fields are §E4.1's table. A line with
+     no hint gets a draft the Director must replace, so hint every line you can.
 4. **Check (gate E1):**
    `python3 "$ES/scripts/script-check.py" --script "$W/script.json" --report "$W/SCRIPT.md"`
    It fails on a length outside the target, a hook over 12 words, a numeric or fact line without a source, an unknown

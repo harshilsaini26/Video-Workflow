@@ -1025,7 +1025,7 @@ flowchart LR
 | Script | `explainer-writer`; `script-check.py` (gate E1: 160 to 240 words, a hook of 12 words at most, every number sourced) |
 | Voice | `explainer-voice`; `tts-kokoro.py` line by line, -16 LUFS; Parakeet + `align-script.py` (gate E2: 98% of words heard) |
 | Plan | `explainer-director`: `storyboard.json`, every scene and item anchored to a word |
-| Compose | `explainer-animator`; `explainer-compose.py` (gate E3: fits by construction, no holes, sources), then the kit's beat-check and `pace-check.py` (E4: something changes at least every 6 s) |
+| Compose | `explainer-animator`; `explainer-compose.py` (gate E3: fits by construction, no holes, sources), then the kit's beat-check and `pace-check.py` (E4: something changes at least every 3 s) |
 | Render, verify, package, learn | `reels-renderer`, `reels-qa`, `reels-packager`, `reels-librarian`, `reels-analyst` |
 
 ---
@@ -1073,7 +1073,7 @@ From the kit's `PROMPTS.md`, placed in the workflow.
    templates and the 13 agent files as in [`longform/README.md`](longform/README.md) § 2. **Reels:** the Producer
    skill, the playbook, the scripts, the templates and the 11 agent files as in [`reels/README.md`](reels/README.md) § 2.
    **Explainer:** the Reels team first, then the explainer skill, its 4 agent files, Kokoro and the local libraries as
-   in [`explainer/README.md`](explainer/README.md) § 2 (its tests: 105, `OK`).
+   in [`explainer/README.md`](explainer/README.md) § 2 (its tests: 142, `OK`).
 5. Open a **new** conversation: skills and agents load at the start of a conversation.
 
 ---

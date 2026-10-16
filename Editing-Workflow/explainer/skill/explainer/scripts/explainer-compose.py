@@ -250,6 +250,15 @@ def main():
             fail("no scene from %.2f to %.2f s (between %s and %s); every moment of the voice needs a scene" % (e1, s2, a1["id"], a2["id"]))
         if e1 - s2 > GAP_MAX + 1e-6:
             fail("%s and %s overlap by %.2f s (at most %.1f): end %s earlier" % (a1["id"], a2["id"], e1 - s2, GAP_MAX, a1["id"]))
+    # a title that says what the voice is saying adds nothing the captions don't (PLAYBOOK §E5.5); the hook is meant to
+    for sc, _, _, t_in, t_out, _ in timed[1:]:      # be read, so the first scene may
+        if sc["type"] != "title" or t_out - t_in <= 2.0:
+            continue
+        said = {L.norm(w["text"]) for w in words if t_in - 0.3 <= w["start"] <= t_out}
+        mine = [L.norm(w) for w in str(sc.get("text", "")).split() if L.norm(w)]
+        if len(mine) >= 2 and sum(w in said for w in mine) >= 0.8 * len(mine):
+            print("WARN %s: the title repeats what the voice is saying for %.1f s; show a picture of it instead (PLAYBOOK §E5.5)"
+                  % (sc["id"], t_out - t_in))
     if timed[0][3] > GAP_MAX:
         fail("no scene from 0.00 to %.2f s: the first scene starts late" % timed[0][3])
     if timed[-1][5] < D - GAP_MAX:

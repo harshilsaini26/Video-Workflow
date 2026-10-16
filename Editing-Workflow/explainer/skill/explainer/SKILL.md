@@ -38,7 +38,9 @@ storyboard, compose or judge a render yourself.
   from the system's packages for words outside its dictionary).
 - Local libraries in `$ES/assets/vendor/` so renders work offline (the Animator fetches them once):
   `npm pack gsap@3.14.2` (→ `gsap.min.js`), `npm pack katex@0.16.11` (→ `katex/`), `npm pack lucide-static@0.454.0`
-  (→ `lucide/*.svg`), and only for custom 3D scenes `npm pack three@0.169.0` (→ `three/three.module.min.js`).
+  (→ `lucide/*.svg`), `npm pack simple-icons@13.21.0` (→ `simple-icons/icons/` and `simple-icons/_data/`, for logo
+  cards), and only for custom 3D scenes `npm pack three@0.169.0` (→ `three/three.module.min.js`). Chrome also takes the
+  page screenshots (`$ES/scripts/snap-page.py`).
 Agents load at the start of a conversation: after installing, open a new one.
 
 ## 1. Starting a reel
@@ -50,7 +52,8 @@ Ask once, in one numbered message (skip what the creator already said):
 4. **The call to action** (comment a word, follow for part 2, a link in bio).
 5. **Terms** to spell and say right (names, acronyms), and how they are said if unusual.
 6. **The voice:** on the first project, "you'll pick from three samples"; later, the channel's voice from the Brief.
-7. **Music:** none in the file (add it in the app) or in the file (a free licensed track).
+7. **Music:** the generated pad under the voice (the default: never silent, nothing to license), a free licensed track
+   of the creator's in the file, or none in the file (add it in the app).
 
 Create `$W`, copy `$ES/templates/{STATUS,NOTES}.md`, fill the header and **Brief** (profile `explainer`,
 version v1, the **Voice** row), log "project created".
@@ -62,7 +65,7 @@ version v1, the **Voice** row), log "project created".
 | 2 | Script | `explainer-writer` · write | E1 | A |
 | A | **Checkpoint A** | you, with the creator (script, sources, length; voice samples on the first project) | approval | 3 |
 | 3 | Voice | `explainer-voice` · voice | E2 | 4 |
-| 4 | Storyboard | `explainer-director` · plan | its self-check | 5 |
+| 4 | Storyboard | `explainer-director` · plan (from `plan-storyboard.py`'s draft) | its self-check | 5 |
 | 5 | Compose | `explainer-animator` · build | E3, E4 (beat-check, pace-check) | B |
 | B | **Checkpoint B** | you, with the creator (a still of every scene, the voiceover) | approval | 6 |
 | 6 | Render | `reels-renderer` | file exists | 7 |
@@ -86,8 +89,9 @@ Start agents with the Agent tool (`subagent_type` = the agent's name); update ST
   - **first frame:** frame 0 shows the background and the first scene fading in (§E1.1); the check is that the hook
     is fully on screen by 1.0 s, not 0.35 s;
   - skip the face and footage checks; the safe zone, loudness, frame rate and bitrate apply unchanged.
-- `reels-packager`: `captions.srt` from `$W/transcript.json` (the shown words, matching the burned-in captions) with
-  the brief's terms; skip `STORYBOARD.md` (the Reels script reads Reels beats) and attach the Animator's
+- `reels-packager`: the music is already in the render (the composer's sound bed, §E3.7): level the reel to -14 LUFS and
+  never mix music in again (the music row of its report: "in the render"); `captions.srt` from `$W/transcript.json`
+  (the shown words, matching the burned-in captions) with the brief's terms; skip `STORYBOARD.md` (the Reels script reads Reels beats) and attach the Animator's
   `snaps/SCENES.md` instead; the posting checklist gets the AI-voice line (§E3).
 - `reels-librarian`: also keeps `$ES/lexicon.json` (new pronunciations) and promotes custom scenes the creator liked
   into `$ES/scripts/scenes/` with a test (§E6).
