@@ -30,6 +30,7 @@ class Manifest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         m = load(os.path.join(d, "public", "moments.json"))
         self.assertEqual([s["id"] for s in m["scenes"]], ["hook", "yield", "cu"])
-        r = run("pace-check.py", "--index", os.path.join(d, "public", "index.html"))
+        # this test is about what pace-check reads, not the threshold: the BOARD's last scene holds 5 s on purpose
+        r = run("pace-check.py", "--index", os.path.join(d, "public", "index.html"), "--max", "6", "--warn", "6")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("3 scenes", r.stdout)

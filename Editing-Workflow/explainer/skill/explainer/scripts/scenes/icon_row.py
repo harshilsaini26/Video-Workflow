@@ -1,7 +1,7 @@
 """icon-row: two to four Lucide icons (ISC, inlined from the local copy) pop in with their labels (SPEC §6.2)."""
 import os, re
 import explainer_lib as E
-from scenes import line_px, need, widest
+from scenes import js_obj, line_px, need, widest
 
 TYPE = "icon-row"
 TILE, ICON = 150, 84
@@ -67,4 +67,12 @@ def render(scene, ctx, box):
                     % (attrs, sid, i, tile_bg, acc, svg, sid, i, ctx.ink, ctx.esc(it["label"])))
         js.append(ctx.enter("#%s-i%d" % (sid, i), t, {"scale": 0.5}))
         js.append(ctx.enter("#%s-l%d" % (sid, i), t + 0.1, {"y": 16}))
+        # the arrived icons stay centred: the row starts shifted right and slides left by half a column per arrival
+        n, mo = len(scene["items"]), ctx.tokens["motion"]
+        pitch = (box[2] + COL_GAP) / float(n)
+        x = round((n - 1 - i) * pitch / 2.0, 3)
+        if i == 0:
+            js.append("tl.set('#%s .ic-row', %s, %.3f);" % (sid, js_obj({"x": x}), ctx.t_in))
+        else:
+            js.append("tl.to('#%s .ic-row', %s, %.3f);" % (sid, js_obj({"x": x, "duration": mo["enter"], "ease": mo["enter_ease"]}), t))
     return '<div class="ic-row">%s</div>' % "".join(cols), js

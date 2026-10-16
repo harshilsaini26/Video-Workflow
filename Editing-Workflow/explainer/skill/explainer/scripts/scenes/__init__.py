@@ -35,6 +35,10 @@ class Ctx:
         self.bg = bg
         self.ink = tokens["text_on"][bg]
         self.light = bg == "light"
+        self.ambient_lines = []   # idle motion (a float, a pulse, a slow turn): on the page, but not a change for pace-check
+
+    def ambient(self, line):
+        self.ambient_lines.append(line)
 
     def fail(self, msg):
         raise SceneError(msg)

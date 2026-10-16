@@ -85,7 +85,7 @@ class Custom(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         t_in, t_out = t_word(4) - E.LEAD, t_word(14) - E.LEAD
         self.assertIn('window.buildYield(tl, document.getElementById("yield"), %.3f, %.3f)' % (t_in, t_out), html)
-        self.assertRegex(html, r'<div class="box" id="yield" style="left:65px;top:560px;width:950px;height:380px">\s*<style>')
+        self.assertRegex(html, r'<div class="box" id="yield" style="left:65px;top:560px;width:950px;height:380px"><div class="live" id="yield-live">\s*<style>')
 
     def test_three_needs_its_vendor_copy(self):
         html = GOOD.replace("<script>", '<script type="module">\n  import * as THREE from "three";\n  window.buildYield = buildYield;')

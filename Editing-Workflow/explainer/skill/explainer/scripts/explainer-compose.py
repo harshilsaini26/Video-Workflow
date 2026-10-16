@@ -17,7 +17,7 @@ has a word wider than its column, an anchor that does not resolve or runs backwa
 number with no source, more than 0.3 s with no scene (at the start, between scenes or at the end), or two scenes
 overlapping by more than 0.3 s.
 """
-import argparse, html, json, os, re, shutil, sys, wave
+import argparse, html, json, os, random, re, shutil, sys, wave
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -103,6 +103,27 @@ def place(sid, mod, scene):
     return left, top, width, h
 
 
+def orbs(D, bgs, amb, bg_js):
+    """Three soft glows behind the scenes that drift for the whole reel (ambient: never a change for pace-check). Their
+    path is fixed by a seed, so every render of the page is the same; their strength follows the background."""
+    every = float(amb["drift_every"])
+    html_ = []
+    for k, col in enumerate(amb["orbs"]):
+        rng = random.Random(7 + k)
+        x0, y0 = rng.randint(-300, 480), rng.randint(-200, 1300)
+        html_.append('<i class="orb" id="orb%d" style="left:%dpx;top:%dpx;background:radial-gradient(circle, %s 0%%, transparent 65%%)"></i>'
+                     % (k, x0, y0, col))
+        t = 0.0
+        while t < D - 1e-6:
+            bg_js.append("tl.to('#orb%d', %s, %.3f);" % (k, js_obj({"x": rng.randint(-260, 260), "y": rng.randint(-360, 360),
+                                                                   "duration": every, "ease": "sine.inOut"}), t))
+            t += every
+    op = amb["orb_opacity"]
+    for b, t_in in bgs[1:]:
+        bg_js.append("tl.to('#orbs', %s, %.3f);" % (js_obj({"opacity": op[b], "duration": E.BG_FADE, "ease": "power1.inOut"}), t_in))
+    return '    <div class="orbs" id="orbs" style="opacity:%s">%s</div>\n' % (op[bgs[0][0]], "".join(html_))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--spec", required=True)
@@ -119,7 +140,7 @@ def main():
     out = a.out
     os.makedirs(out, exist_ok=True)
     tok = E.load_tokens()
-    mo = tok["motion"]
+    mo, amb = tok["motion"], tok["ambient"]
 
     tpath, vpath = rel(S.get("transcript", "transcript.json")), rel(S.get("voice", "voice.wav"))
     spath = rel(S.get("script", "script.json"))
@@ -243,10 +264,14 @@ def main():
         anchor = ' data-unanchored="1"' if word == "-" else ' data-anchor="%s"' % html.escape(word, quote=True)
         hosts.append('    <div class="card-host clip" id="host-%s" data-start="%.3f" data-duration="%.3f" data-track-index="%d"%s\n'
                      '      style="left:0;top:0;width:1080px;height:1920px;visibility:hidden;">'
-                     '<div class="box" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx">%s</div></div>\n'
-                     % (sid, t_in, end - t_in, 3 + k, anchor, sid, left, top, width, h, inner))
+                     '<div class="box" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx"><div class="live" id="%s-live">%s</div></div></div>\n'
+                     % (sid, t_in, end - t_in, 3 + k, anchor, sid, left, top, width, h, sid, inner))
         js.append("// %s (%s) %.2f to %.2f s" % (sid, mod.TYPE, t_in, t_out))
         js.extend(lines)
+        # the living layer: the scene pushes in slowly for as long as it is on screen (ambient: not a change)
+        js.append("tl.fromTo('#%s-live', { scale: 1 }, %s, %.3f);" % (sid, js_obj({"scale": amb["push"], "duration": round(end - t_in, 3),
+                                                                                  "ease": "sine.inOut", "immediateRender": False}), t_in))
+        js.extend(ctx.ambient_lines)
         if t_out < D - 1e-6:
             lines = lines + ["tl.to('#%s', %s, %.3f);" % (sid, js_obj({"opacity": 0, "y": -24, "duration": mo["exit"], "ease": mo["exit_ease"]}), t_out)]
             js.append(lines[-1])
@@ -261,6 +286,7 @@ def main():
             bgs.append((sbg, t_in))
     bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d"></div>\n' % (i, tok["backgrounds"][b], 0 if i else 1)
                       for i, (b, _) in enumerate(bgs))
+    bg_html += orbs(D, bgs, amb, bg_js)
 
     def bg_at(t):
         cur = timed[0][2]
@@ -304,6 +330,9 @@ def main():
   html, body { margin:0; padding:0; width:100%%; height:100%%; overflow:hidden; background:#000; }
   #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:#000; font-family: %s; --label: %s; }
   .bg { position:absolute; inset:0; }
+  .orbs { position:absolute; inset:0; z-index:1; pointer-events:none; }
+  .orb { position:absolute; width:900px; height:900px; border-radius:50%%; will-change:transform; }
+  .live { width:100%%; height:100%%; display:flex; flex-direction:column; align-items:center; justify-content:center; will-change:transform; }
   .card-host { position:absolute; pointer-events:none; overflow:hidden; z-index:10; }
   .box { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .cap-layer { position:absolute; left:0; top:0; width:1080px; height:1920px; z-index:30; pointer-events:none; }

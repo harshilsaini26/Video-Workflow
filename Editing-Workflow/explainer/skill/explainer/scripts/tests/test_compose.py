@@ -195,10 +195,10 @@ class Compose(unittest.TestCase):
         for tw in tweens:
             if re.search(r"ease: 'none'", tw) and re.search(r"\b(x|y|scale): ", tw):
                 self.fail("linear easing on movement: " + tw)
-            if tw.startswith("tl.fromTo(") and re.search(r"^tl\.fromTo\([^{]*\{ opacity: 0\b", tw):
+            if tw.startswith("tl.fromTo(") and re.search(r"^tl\.fromTo\([^{]*\{ opacity: 0[,} ]", tw):
                 entrances += 1
                 self.assertIn("ease: '%s'" % m["enter_ease"], tw)
-            elif tw.startswith("tl.to(") and re.search(r"\{ opacity: 0\b", tw):
+            elif tw.startswith("tl.to(") and re.search(r"\{ opacity: 0[,} ]", tw):   # to 0, not to 0.4
                 exits += 1
                 self.assertIn("ease: '%s'" % m["exit_ease"], tw)
                 self.assertLessEqual(float(re.search(r"duration: ([\d.]+)", tw).group(1)), m["exit"])
