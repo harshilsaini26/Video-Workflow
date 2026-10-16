@@ -7,7 +7,7 @@
 
 Three text lengths per scene type (custom excluded: it brings its own box). A developer tool, not part of a video run.
 """
-import argparse, json, os, subprocess, sys, wave
+import argparse, json, os, struct, subprocess, sys, wave, zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.dirname(HERE)
@@ -99,11 +99,28 @@ CASES = {
                      {"cards": [{"title": "Corporate Finance", "sub": "Coursera", "at": at(2)}, {"title": "Valuation", "at": at(4)}]},
                      {"cards": [{"title": "Corporate Finance", "at": at(2)}, {"title": "Valuation", "at": at(4)}, {"title": "Engineering", "at": at(6)},
                                 {"title": "Modelling", "sub": "the hardest one", "at": at(8)}], "focus": {"card": 2, "at": at(10)}}),
+    "logo-card": lengths({"logo": "coursera"}, {"logo": "github", "badge": "1", "sub": "Where the code lives"},
+                         {"src": "logo.png", "name": "The Wharton School", "badge": "12", "sub": "University of Pennsylvania"}),
     "hub": lengths({"center": "RAG", "items": [{"label": "In", "at": at(2)}, {"label": "Out", "at": at(4)}]},
                    {"center": "Model", "items": [{"label": "Search", "at": at(2)}, {"label": "Rank", "at": at(4)}, {"label": "Answer", "at": at(6)}]},
                    {"center": "You", "items": [{"label": "Budgeting", "at": at(2)}, {"label": "Risk", "at": at(3)}, {"label": "Valuation", "at": at(4)},
                                                {"label": "Markets", "at": at(5)}, {"label": "Data", "at": at(6)}, {"label": "Models", "at": at(7)}]}),
 }
+
+
+# the browser with a real page in it: the view is fixed, so only the title under the window changes the height
+SHOTS = [("shot-short", {"title": "Coursera", "domain": "coursera.org", "screenshot": "shot.png"}),
+         ("shot-long", {"title": "Introduction to Corporate Finance", "subtitle": "The Wharton School",
+                        "domain": "coursera.org", "screenshot": "shot.png"})]
+CASES["browser"] = CASES["browser"] + SHOTS
+
+
+def png(path, w, h):
+    raw = b"".join(b"\x00" + b"\x30\x60\xc0" * w for _ in range(h))
+    chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
+    with open(path, "wb") as f:
+        f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) +
+                chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 
 
 def compose(root, vendor):
@@ -118,6 +135,9 @@ def compose(root, vendor):
             with wave.open(os.path.join(d, "voice.wav"), "wb") as w:
                 w.setnchannels(1); w.setsampwidth(2); w.setframerate(8000)
                 w.writeframes(b"\x00\x00" * int((D - 0.5) * 8000))
+            for key in ("screenshot", "src"):
+                if data.get(key):
+                    png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
             scene = dict({"type": typ, "id": "sc", "bg": "black", "in": "word:0", "out": D}, **data)
             with open(os.path.join(d, "storyboard.json"), "w") as f:
                 json.dump({"id": case, "scenes": [scene]}, f)

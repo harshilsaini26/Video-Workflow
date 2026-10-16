@@ -44,7 +44,7 @@ def fail(msg):
 RESERVED = re.compile(r"^(stage|captions|voice|bg\d+|cap\d+)$")
 NOT_SHOWN = {"type", "id", "bg", "in", "out", "at", "source", "icon", "html", "build", "tex", "style", "unit",
              "n", "size", "decimals", "point", "row", "cell", "box", "hi", "value", "points",
-             "card", "side", "transition"}   # settings, indexes and step numbers
+             "card", "side", "transition", "badge", "logo", "src", "screenshot"}   # settings, indexes, step numbers, files
 BAD_DATA = (TypeError, ValueError, KeyError, AttributeError, IndexError)
 
 

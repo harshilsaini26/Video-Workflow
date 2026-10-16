@@ -13,7 +13,7 @@ Each module has
 Every entrance is an opacity 0 -> 1 fromTo with the enter ease (ctx.enter); exits belong to the composer. Staggers
 are written as { amount: total } and never pass tokens.motion.stagger_total_max.
 """
-import html as _html, importlib, json, math, os, re, shutil
+import html as _html, importlib, json, math, os, re, shutil, struct
 
 import explainer_lib as E
 
@@ -98,6 +98,17 @@ class Ctx:
             self.ambient("tl.to(%s, %s, %.3f);" % (sel_js(sel), js_obj(dict(props if k % 2 == 0 else rest, duration=every, ease="sine.inOut")), t))
             t, k = t + every, k + 1
 
+    def asset(self, rel):
+        """Copy a project file (a path relative to storyboard.json) next to the page as assets/<id>-<name>; returns
+        (the page's relative path, the source's full path), or fails naming the missing file."""
+        src = rel if os.path.isabs(rel) else os.path.join(self.spec_dir, rel)
+        if not os.path.isfile(src):
+            self.fail("no file at %s (paths are relative to storyboard.json: %s)" % (rel, src))
+        name = "%s-%s" % (self.id, os.path.basename(src))
+        os.makedirs(os.path.join(self.out_dir, "assets"), exist_ok=True)
+        shutil.copy(src, os.path.join(self.out_dir, "assets", name))
+        return "assets/" + name, src
+
     def add_head(self, tag):
         if tag not in self.head:
             self.head.append(tag)
@@ -141,6 +152,15 @@ def js_obj(d):
     return "{ " + ", ".join(parts) + " }"
 
 
+def png_size(path):
+    """(width, height) from a PNG's header, or None when the file is not a PNG."""
+    with open(path, "rb") as f:
+        head = f.read(24)
+    if len(head) < 24 or head[:8] != b"\x89PNG\r\n\x1a\n" or head[12:16] != b"IHDR":
+        return None
+    return struct.unpack(">II", head[16:24])
+
+
 def stagger_for(n, each=0.06):
     """The stagger total for n items at `each` apart (the cap is applied in ctx.enter)."""
     return round(each * (n - 1), 3) if n > 1 else None
@@ -171,7 +191,7 @@ def need(scene, keys):
 
 _MODULES = ["title", "number", "count_up", "list_cards", "line_chart", "bars", "duration", "qa_stack",
             "browser", "sheet", "formula", "icon_row", "custom",
-            "flow", "stack", "compare", "timeline", "cards", "hub"]
+            "flow", "stack", "compare", "timeline", "cards", "hub", "logo_card"]
 REGISTRY = {}
 for _m in _MODULES:
     _mod = importlib.import_module("scenes." + _m)
