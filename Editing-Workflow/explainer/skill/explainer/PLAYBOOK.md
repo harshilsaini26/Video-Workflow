@@ -15,9 +15,10 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
   (MIT), Lucide icons (ISC), simple-icons for brand marks (CC0 data; each mark is its owner's trademark, shown only to
   name the brand), Chrome on the creator's machine for page screenshots, DM Sans and JetBrains Mono (OFL, bundled in
   `assets/fonts/`), and a music pad and sound effects the composer generates. No paid voice, stock, AI video or avatar.
-- **The layers:** a background (blue, black or light) with three soft orbs drifting across it, one scene at a time in
-  the scene area (x 65 to 1015, y 520 to 1248; 780 px wide below y 960), a transition layer, and captions in the band
-  at y 330 to 470. Under the voice, a sound bed (§E3.7). Nothing else goes on screen.
+- **The layers:** a background (a bright royal blue lighter at the top, near-black, or light) with its own soft glows
+  drifting across it (lilac and periwinkle on blue, a big blue glow on black, faint cool ones on light), one scene at a
+  time in the scene area (x 65 to 1015, y 520 to 1248; 780 px wide below y 960), a transition layer, and captions in
+  the band at y 330 to 470. Under the voice, a sound bed (§E3.7). Nothing else goes on screen.
 - **The look** lives in `$ES/tokens.json`: change it once and every scene follows.
 - **Reused from Reels unchanged:** the renderer, QA, packager, librarian and analyst, and their checks (Reels PLAYBOOK
   §R3 safe zone, §R10 free sources).
@@ -146,7 +147,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    and a missing function. A function defined in a `<script type="module">` (three.js) also needs
    `window.build<Id> = build<Id>;`: a module's names are its own, so the page could not call it. GSAP is always there; KaTeX and three.js come from the local vendor folder. Checkpoint B shows them at in, middle and out;
    one the creator likes is promoted into the library by the Librarian, with a test.
-6. **The living layer:** the picture never stands still. Three orbs drift behind every scene on a fixed path; each
+6. **The living layer:** the picture never stands still. Each background's three glows travel around their home spots
+   (up to 380 px across and 520 px down every 4 s, on a fixed path, so every render is the same); each
    scene pushes in slowly (to 1.045) for as long as it is on screen; and each build-up scene keeps an idle motion going
    while it holds (a pulse down a connector, a float, a breathing dot, a slow turn). None of this counts as a change
    for pace-check (§E1.4): it keeps the picture alive between changes, it is not one.

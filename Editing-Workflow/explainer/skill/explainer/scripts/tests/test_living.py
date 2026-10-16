@@ -29,19 +29,34 @@ class Living(unittest.TestCase):
             self.assertRegex(html, r"tl\.fromTo\('#%s-live', \{ scale: 1 \}, \{ scale: %s, duration: [\d.]+, ease: 'sine.inOut'"
                              % (sid, re.escape(str(push))))
 
-    def test_orbs_drift_for_the_whole_reel(self):
-        html, _ = self.build(BOARD)
-        self.assertEqual(len(re.findall(r'<i class="orb" id="orb\d"', html)), 3)
-        every = TOK["ambient"]["drift_every"]
-        for k in range(3):
-            moves = re.findall(r"tl\.to\('#orb%d', \{ x: -?[\d.]+, y: -?[\d.]+, duration: [\d.]+, ease: 'sine.inOut' \}, ([\d.]+)\);" % k, html)
-            self.assertGreaterEqual(len(moves), int(D // every), k)
-            self.assertGreaterEqual(max(map(float, moves)), D - every - 1e-6)
+    def test_each_background_has_its_own_glows(self):
+        html, _ = self.build(BOARD)                      # black, black, then light at the count-up: two background layers
+        for i, bg in enumerate(("black", "light")):
+            layer = re.search(r'<div class="bg" id="bg%d"[^>]*>(.*?)</div>' % i, html).group(1)
+            glows = re.findall(r'<i class="orb" id="bg%d-o(\d)" style="[^"]*background:radial-gradient\(circle, ([^ ]+) 0%%' % i, layer)
+            self.assertEqual([c for _, c in glows], [g["color"] for g in TOK["ambient"]["glows"][bg]], bg)
+        self.assertNotIn('id="orbs"', html)              # no shared layer whose colours suit only one background
 
-    def test_orbs_follow_the_background(self):
-        html, _ = self.build(BOARD)     # black, black, then light at the count-up
-        light = TOK["ambient"]["orb_opacity"]["light"]
-        self.assertRegex(html, r"tl\.to\('#orbs', \{ opacity: %s, duration: [\d.]+, ease: 'power1.inOut' \}, ([\d.]+)\);" % re.escape(str(light)))
+    def test_glows_travel_visibly_for_the_whole_reel(self):
+        html, _ = self.build(BOARD)
+        drift = TOK["ambient"]["drift"]
+        for i in range(2):
+            for k in range(3):
+                moves = re.findall(r"tl\.to\('#bg%d-o%d', \{ x: (-?[\d.]+), y: (-?[\d.]+), duration: [\d.]+, ease: 'sine.inOut' \}, ([\d.]+)\);"
+                                   % (i, k), html)
+                self.assertGreaterEqual(len(moves), int(D // drift["every"]), (i, k))
+                self.assertGreaterEqual(max(float(t) for _, _, t in moves), D - drift["every"] - 1e-6)
+        xs = [abs(float(x)) for x in re.findall(r"tl\.to\('#bg\d-o\d', \{ x: (-?[\d.]+)", html)]
+        ys = [abs(float(y)) for y in re.findall(r"tl\.to\('#bg\d-o\d', \{ x: -?[\d.]+, y: (-?[\d.]+)", html)]
+        self.assertGreaterEqual(max(xs), 300)            # the reference's glows travel about 400 px every 2 to 3 s
+        self.assertGreaterEqual(max(ys), 400)
+
+    def test_blue_is_a_light_royal_blue(self):
+        lum = lambda h: 0.2126 * int(h[1:3], 16) + 0.7152 * int(h[3:5], 16) + 0.0722 * int(h[5:7], 16)
+        stops = re.findall(r"#[0-9A-Fa-f]{6}", TOK["backgrounds"]["blue"])
+        self.assertGreater(lum(stops[0]), lum(stops[-1]) + 15)          # lighter at the top, like the reference
+        self.assertNotIn("205,0,238", TOK["backgrounds"]["blue"])        # no violet baked in: the lilac glow moves instead
+        self.assertGreaterEqual(sum(map(lum, stops)) / len(stops), 70)   # the reference's core #2941D1 is about 69
 
     def test_ambient_motion_is_not_a_change(self):
         _, out = self.build(BOARD)

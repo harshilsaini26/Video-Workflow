@@ -106,25 +106,24 @@ def place(sid, mod, scene):
     return left, top, width, h
 
 
-def orbs(D, bgs, amb, bg_js):
-    """Three soft glows behind the scenes that drift for the whole reel (ambient: never a change for pace-check). Their
-    path is fixed by a seed, so every render of the page is the same; their strength follows the background."""
-    every = float(amb["drift_every"])
-    html_ = []
-    for k, col in enumerate(amb["orbs"]):
-        rng = random.Random(7 + k)
-        x0, y0 = rng.randint(-300, 480), rng.randint(-200, 1300)
-        html_.append('<i class="orb" id="orb%d" style="left:%dpx;top:%dpx;background:radial-gradient(circle, %s 0%%, transparent 65%%)"></i>'
-                     % (k, x0, y0, col))
+def glows(D, i, bg, amb, bg_js):
+    """The glows inside background layer i: each background's own (tokens.ambient.glows: lilac and periwinkle on blue, a
+    big blue glow on black, faint cool ones on light), each drifting around its home spot for the whole reel (ambient:
+    never a change for pace-check). Their paths are fixed by a seed, so every render of the page is the same."""
+    dr = amb["drift"]
+    every = float(dr["every"])
+    out = []
+    for k, g in enumerate(amb["glows"][bg]):
+        rng = random.Random(97 * i + 7 + k)
+        size, (cx, cy) = int(g["size"]), g["at"]
+        out.append('<i class="orb" id="bg%d-o%d" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;'
+                   'background:radial-gradient(circle, %s 0%%, transparent 65%%)"></i>' % (i, k, cx - size // 2, cy - size // 2, size, size, g["color"]))
         t = 0.0
         while t < D - 1e-6:
-            bg_js.append("tl.to('#orb%d', %s, %.3f);" % (k, js_obj({"x": rng.randint(-260, 260), "y": rng.randint(-360, 360),
-                                                                   "duration": every, "ease": "sine.inOut"}), t))
+            bg_js.append("tl.to('#bg%d-o%d', %s, %.3f);" % (i, k, js_obj({"x": rng.randint(-dr["x"], dr["x"]), "y": rng.randint(-dr["y"], dr["y"]),
+                                                                         "duration": every, "ease": "sine.inOut"}), t))
             t += every
-    op = amb["orb_opacity"]
-    for b, t_in in bgs[1:]:
-        bg_js.append("tl.to('#orbs', %s, %.3f);" % (js_obj({"opacity": op[b], "duration": E.BG_FADE, "ease": "power1.inOut"}), t_in))
-    return '    <div class="orbs" id="orbs" style="opacity:%s">%s</div>\n' % (op[bgs[0][0]], "".join(html_))
+    return "".join(out)
 
 
 def main():
@@ -325,9 +324,8 @@ def main():
             elif bgs:
                 bg_js.append("tl.to('#bg%d', { opacity: 1, duration: %.3f, ease: 'power1.inOut' }, %.3f);" % (len(bgs), E.BG_FADE, t_in))
             bgs.append((sbg, t_in))
-    bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d"></div>\n' % (i, tok["backgrounds"][b], 0 if i else 1)
-                      for i, (b, _) in enumerate(bgs))
-    bg_html += orbs(D, bgs, amb, bg_js)
+    bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d">%s</div>\n'
+                      % (i, tok["backgrounds"][b], 0 if i else 1, glows(D, i, b, amb, bg_js)) for i, (b, _) in enumerate(bgs))
 
     def bg_at(t):
         cur = timed[0][2]
@@ -370,9 +368,8 @@ def main():
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; width:100%%; height:100%%; overflow:hidden; background:#000; }
   #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:#000; font-family: %s; --label: %s; }
-  .bg { position:absolute; inset:0; }
-  .orbs { position:absolute; inset:0; z-index:1; pointer-events:none; }
-  .orb { position:absolute; width:900px; height:900px; border-radius:50%%; will-change:transform; }
+  .bg { position:absolute; inset:0; overflow:hidden; }
+  .orb { position:absolute; border-radius:50%%; pointer-events:none; will-change:transform; }
   .live { width:100%%; height:100%%; display:flex; flex-direction:column; align-items:center; justify-content:center; will-change:transform; }
   .card-host { position:absolute; pointer-events:none; overflow:hidden; z-index:10; }
   .tx-layer { position:absolute; inset:0; z-index:20; pointer-events:none; overflow:hidden; }

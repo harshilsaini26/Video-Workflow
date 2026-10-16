@@ -47,7 +47,7 @@ explainer/
 | The voice must say "one thousand dollars" while the screen shows "$1,000" | every line is kept twice, `say` and `show`; captions show `show`, timed across the whole `say` span | §E2, §E5 |
 | A misread acronym spoils the reel | a pronunciation lexicon shared by every project; a bad line is regenerated alone | §E3 |
 | Graphics drift off their words | every scene and item is anchored to a word (`word:N`), never to seconds; the kit's beat-check checks every entrance against its word | §E4 |
-| A scene that sits still too long | `pace-check.py` fails any stretch over 3 s with nothing changing; the living layer (drifting orbs, a slow push-in, idle motion) keeps the picture moving in between | §E1, §E6 |
+| A scene that sits still too long | `pace-check.py` fails any stretch over 3 s with nothing changing; the living layer (each background's drifting glows, a slow push-in, idle motion) keeps the picture moving in between | §E1, §E6 |
 | Slides instead of a video | six build-up scenes that grow on the words (flow, stack, compare, timeline, cards, hub), automatic transitions, real logos and real page screenshots | §E4, §E6 |
 | Silence between lines | a sound bed under the voice (a generated pad or the creator's track), ducked, with a whoosh on transitions and a pop as items land | §E3 |
 | A storyboard costs many tokens | the Writer hints a picture for each line (`viz`) and `plan-storyboard.py` writes the draft with every anchor; the Director only edits | §E2, §E4 |
@@ -184,7 +184,7 @@ flowchart TD
 | `transitions.py` | the transition for each scene (fade first, wipe on a new background, then zoom and push), the matching exit, the background wipe, the seeded burst | 6 |
 | `sound.py` | the generated pad and sound effects (the same bytes every time), the events (a whoosh per moving transition, pops 0.35 s apart), the bed: looped, faded, ducked under the voice | 5: never silent, at least 6 dB of ducking, the creator's track looped and faded |
 | `snap-page.py` | a page's screenshot at an exact size with local Chrome in a fresh profile | 2 (1 needs Chrome) |
-| `explainer-compose.py` | gate E3: places every scene by its measured height, the living layer (orbs, push-in), transitions, word captions with the highlight box, the voice and the sound bed, the kit's markup; WARNs on a title that repeats the voice | 26, plus the kit's beat-check run on its page; bad storyboard values fail with the scene named |
+| `explainer-compose.py` | gate E3: places every scene by its measured height, the living layer (per-background glows, push-in), transitions, word captions with the highlight box, the voice and the sound bed, the kit's markup; WARNs on a title that repeats the voice | 26, plus the kit's beat-check run on its page; bad storyboard values fail with the scene named |
 | `scenes/*.py` | 19 library scenes (6 build-up scenes and the logo card among them) and the sandboxed custom scene | 39 across the scene and asset suites, 9 for the custom contract (unique build names included) |
 | heights | each scene's predicted height against Chromium, 3 cases × 2 column widths × 19 scene types | 2, over 118 measured rows: every one 0 to 4 px over, never under |
 | `explainer_lib.py` | anchors, tokens, glyph-width text measuring | 5 |
