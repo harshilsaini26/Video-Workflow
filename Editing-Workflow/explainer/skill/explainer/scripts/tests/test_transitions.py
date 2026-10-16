@@ -10,11 +10,11 @@ import transitions as X
 
 class Pick(unittest.TestCase):
     def test_rules(self):
-        self.assertEqual(X.pick(0, None, "black", None), "fade")            # the first scene fades up
-        self.assertEqual(X.pick(3, "black", "light", None), "wipe")         # a new background is wiped in
-        self.assertEqual(X.pick(1, "black", "black", None), "zoom")
-        self.assertEqual(X.pick(2, "black", "black", None), "push")
-        self.assertEqual(X.pick(2, "black", "light", "burst"), "burst")     # the storyboard's choice wins
+        self.assertEqual(X.pick(0, None, "mantle", None), "fade")            # the first scene fades up
+        self.assertEqual(X.pick(3, "mantle", "base", None), "wipe")         # a new background is wiped in
+        self.assertEqual(X.pick(1, "mantle", "mantle", None), "zoom")
+        self.assertEqual(X.pick(2, "mantle", "mantle", None), "push")
+        self.assertEqual(X.pick(2, "mantle", "base", "burst"), "burst")     # the storyboard's choice wins
         self.assertEqual(set(X.KINDS), {"fade", "push", "zoom", "wipe", "burst", "cut"})
 
     def test_burst_is_the_same_every_time(self):

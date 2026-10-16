@@ -48,8 +48,8 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    hl = ctx.tokens["highlight"]
-    face = "background:#FFFFFF;box-shadow:0 14px 40px rgba(11,12,16,.12)" if ctx.light else "background:rgba(255,255,255,.10)"
+    hl = ctx.c["highlight"]
+    face = ctx.card()
     html, js = [], []
     for i, it in enumerate(scene["items"]):
         t, attrs = ctx.item(it["at"])

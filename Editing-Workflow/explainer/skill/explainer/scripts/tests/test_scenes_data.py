@@ -13,11 +13,11 @@ class SceneCase(unittest.TestCase):
         d = scratch(self)
         write(os.path.join(d, "transcript.json"), {"words": words30()})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
-        lead = {"type": "title", "id": "lead", "bg": "black", "in": "word:0", "out": "word:4", "text": "Lead in"}
-        sc = dict({"id": "sc", "bg": "black", "in": "word:4", "out": D}, **scene)
+        lead = {"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:4", "text": "Lead in"}
+        sc = dict({"id": "sc", "bg": "mantle", "in": "word:4", "out": D}, **scene)
         scenes = [lead, sc]
         if sc["out"] not in (D, "end"):     # a short scene under test: a closing scene covers the rest
-            scenes.append({"type": "title", "id": "tail", "bg": "black", "in": sc["out"], "out": "end", "text": "The end"})
+            scenes.append({"type": "title", "id": "tail", "bg": "mantle", "in": sc["out"], "out": "end", "text": "The end"})
         sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": scenes})
         out = os.path.join(d, "public")
         r = run("explainer-compose.py", "--spec", sp, "--out", out, "--vendor", os.path.join(d, "vendor"))
@@ -116,8 +116,8 @@ class Bars(SceneCase):
         self.assertEqual(len(fills), 3)
         for (w, col), v in zip(fills, (40, 1000, 500)):
             self.assertAlmostEqual(int(w), box_w * v / 1000, delta=1)
-        self.assertEqual(fills[1][1], TOK["colors"]["cyan"])
-        self.assertNotEqual(fills[0][1], TOK["colors"]["cyan"])
+        self.assertEqual(fills[1][1], E.theme(TOK, "mantle")["accent"])
+        self.assertNotEqual(fills[0][1], E.theme(TOK, "mantle")["accent"])
 
     def test_unbreakable_word_too_wide_fails(self):
         sc = self.bars()

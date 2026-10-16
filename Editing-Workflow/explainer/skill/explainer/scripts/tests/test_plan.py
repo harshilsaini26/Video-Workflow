@@ -77,8 +77,8 @@ class Plan(unittest.TestCase):
         long_line = [s for s in sb["scenes"] if s["id"].startswith("l4")]
         self.assertGreaterEqual(len(long_line), 2)                       # 16 words, 5.6 s: split into beats
         self.assertTrue(any("passages" in s.get("text", "").lower() for s in long_line))
-        self.assertEqual(sb["scenes"][0]["bg"], "black")
-        self.assertEqual(next(s for s in sb["scenes"] if s["id"].startswith("l2"))["bg"], "blue")   # after the section break
+        self.assertEqual(sb["scenes"][0]["bg"], "mantle")
+        self.assertEqual(next(s for s in sb["scenes"] if s["id"].startswith("l2"))["bg"], "base")   # after the section break
         self.assertIn("passages", sb["captions"]["emphasis"])
 
     def test_a_line_can_hold_several_pictures(self):
@@ -117,7 +117,7 @@ class TitleRepeat(unittest.TestCase):
         write(os.path.join(d, "transcript.json"), {"words": words30()})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
         board = copy.deepcopy(BOARD)
-        board["scenes"][1] = {"type": "title", "id": "echo", "bg": "black", "in": "word:8", "out": "word:18", "text": "word8 word9 word10", "source": "s1"}
+        board["scenes"][1] = {"type": "title", "id": "echo", "bg": "mantle", "in": "word:8", "out": "word:18", "text": "word8 word9 word10", "source": "s1"}
         sp = write(os.path.join(d, "storyboard.json"), board)
         r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"))
         self.assertEqual(r.returncode, 0, r.stdout)

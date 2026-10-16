@@ -42,12 +42,12 @@ def brand(vendor_dir, name):
 
 CSS = """
   .lc { position:relative; width:100%%; display:flex; flex-direction:column; align-items:center; }
-  .lc-card { position:relative; width:%dpx; height:%dpx; margin-top:%dpx; border-radius:%dpx; background:#FFFFFF; display:flex;
-    align-items:center; justify-content:center; box-shadow:0 40px 90px rgba(0,0,0,.40); opacity:0; }
+  .lc-card { position:relative; width:%dpx; height:%dpx; margin-top:%dpx; border-radius:%dpx; display:flex;
+    align-items:center; justify-content:center; opacity:0; }
   .lc-mark { width:%dpx; height:%dpx; display:flex; align-items:center; justify-content:center; }
   .lc-mark svg, .lc-mark img { width:100%%; height:100%%; object-fit:contain; display:block; }
   .lc-badge { position:absolute; right:-24px; top:-%dpx; width:%dpx; height:%dpx; border-radius:50%%; display:flex; align-items:center;
-    justify-content:center; font-weight:700; font-size:46px; line-height:1; box-shadow:0 10px 30px rgba(0,0,0,.35); opacity:0; }
+    justify-content:center; font-weight:700; font-size:46px; line-height:1; opacity:0; }
   .lc-glow { position:absolute; left:50%%; top:%dpx; width:%dpx; height:%dpx; margin:-%dpx 0 0 -%dpx; border-radius:50%%; opacity:.55; }
   .lc-name { margin-top:%dpx; height:%dpx; font-weight:700; font-size:%dpx; line-height:%dpx; white-space:nowrap; opacity:0; }
   .lc-sub { height:%dpx; font-weight:500; font-size:%dpx; line-height:%dpx; white-space:nowrap; opacity:0; }
@@ -75,16 +75,15 @@ def min_width(scene):
     return max(CARD + 60, int(max(E.text_width(name, N_SIZE), E.text_width(scene.get("sub", ""), S_SIZE, "display500"))) + 1)
 
 
-def readable(hexcol):
-    """The brand colour, or ink when it would vanish on the white card."""
+def readable(hexcol, ink):
+    """The brand colour, or the theme's ink when it would vanish on the light card."""
     r, g, b = (int(hexcol[i:i + 2], 16) for i in (0, 2, 4))
-    return "#" + hexcol if 0.2126 * r + 0.7152 * g + 0.0722 * b < 225 else "#0B0C10"
+    return "#" + hexcol if 0.2126 * r + 0.7152 * g + 0.0722 * b < 225 else ink
 
 
 def render(scene, ctx, box):
-    c, mo = ctx.tokens["colors"], ctx.tokens["motion"]
+    c, mo = ctx.c, ctx.tokens["motion"]
     sid = ctx.id
-    acc = c["magenta"] if ctx.light else c["cyan"]
     if scene.get("logo"):
         name_ = str(scene["logo"])
         path = os.path.join(ctx.vendor_dir, "simple-icons", "icons", "%s.svg" % name_)
@@ -95,8 +94,8 @@ def render(scene, ctx, box):
             svg = f.read().strip()
         if not svg.startswith("<svg") or re.search(r"<script|on\w+=|href", svg, re.I):
             ctx.fail("vendor/simple-icons/icons/%s.svg is not a plain SVG mark" % name_)
-        info = brand(ctx.vendor_dir, name_) or {"title": name_, "hex": "0B0C10"}
-        svg = re.sub(r"<title>.*?</title>", "", svg, flags=re.S).replace("<svg ", '<svg fill="%s" ' % readable(info["hex"]), 1)
+        info = brand(ctx.vendor_dir, name_) or {"title": name_, "hex": c["ink"][1:]}
+        svg = re.sub(r"<title>.*?</title>", "", svg, flags=re.S).replace("<svg ", '<svg fill="%s" ' % readable(info["hex"], c["ink"]), 1)
         mark = svg
         title = scene.get("name") or info["title"]
         print("note: %s: %s is a trademark of its owner; show it only to name the brand%s"
@@ -106,13 +105,13 @@ def render(scene, ctx, box):
         mark = '<img src="%s" alt="" />' % ctx.esc(rel)
         title = scene["name"]
     badge = ('<div class="lc-badge" id="%s-b" style="background:%s;color:%s">%s</div>'
-             % (sid, c["amber"], c["ink"], ctx.esc(scene["badge"])) if scene.get("badge") is not None else "")
-    sub = '<div class="lc-sub" id="%s-s" style="color:%s">%s</div>' % (sid, c["dim_light" if ctx.light else "dim"], ctx.esc(scene["sub"])) \
+             % (sid, c["accent"], c["on_accent"], ctx.esc(scene["badge"])) if scene.get("badge") is not None else "")
+    sub = '<div class="lc-sub" id="%s-s" style="color:%s">%s</div>' % (sid, c["dim"], ctx.esc(scene["sub"])) \
         if scene.get("sub") else '<div class="lc-sub"></div>'
     html = ('<div class="lc"><i class="lc-glow" id="%s-g" style="background:radial-gradient(circle, %s 0%%, transparent 62%%)"></i>'
-            '<div class="lc-card" id="%s-card"><div class="lc-mark">%s</div>%s</div>'
+            '<div class="lc-card" id="%s-card" style="%s"><div class="lc-mark">%s</div>%s</div>'
             '<div class="lc-name" id="%s-n" style="color:%s">%s</div>%s</div>'
-            % (sid, acc, sid, mark, badge, sid, ctx.ink, ctx.esc(title), sub))
+            % (sid, c["accent_soft"], sid, ctx.card(), mark, badge, sid, ctx.ink, ctx.esc(title), sub))
     t = ctx.t_in
     js = ["tl.fromTo('#%s-card', %s, %s, %.3f);" % (sid, js_obj({"opacity": 0, "scale": 0.6, "y": 60, "rotation": -8}),
                                                     js_obj({"opacity": 1, "scale": 1, "y": 0, "rotation": 0, "duration": 0.6,

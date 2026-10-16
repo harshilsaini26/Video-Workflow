@@ -126,18 +126,19 @@ def place(sid, mod, scene):
          % (sid, mod.height(scene, width), area_h))
 
 
-def glows(i, bg, amb, cuts, bg_js):
+def glows(i, bg, tok, cuts, bg_js):
     """The glows inside background layer i (tokens.ambient.glows: each background's own). They hold still while a scene
     holds and move only on a cut, travelling with it (expo.out over ambient.shift.duration): motion with a reason, not
     lazy breathing (MOTION.md). Each move is to a seeded spot around the glow's home, so every render is the same.
     Ambient: never a change for pace-check."""
+    amb = tok["ambient"]
     sh = amb["shift"]
     out = []
     for k, g in enumerate(amb["glows"][bg]):
         rng = random.Random(97 * i + 7 + k)
         size, (cx, cy) = int(g["size"]), g["at"]
         out.append('<i class="orb" id="bg%d-o%d" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;'
-                   'background:radial-gradient(circle, %s 0%%, transparent 65%%)"></i>' % (i, k, cx - size // 2, cy - size // 2, size, size, g["color"]))
+                   'background:radial-gradient(circle, %s 0%%, transparent 65%%)"></i>' % (i, k, cx - size // 2, cy - size // 2, size, size, E.rgba(tok["palette"][g["color"]], g["alpha"])))
         at = (0, 0)   # each move starts where the last one ended, written out: a seek into an overlap draws the same frame
         for n, t in enumerate(cuts):
             sign = 1 if (n + k) % 2 == 0 else -1
@@ -232,7 +233,7 @@ def main():
         mod = REGISTRY.get(sc.get("type"))
         if not mod:
             fail("%s: unknown scene type %r (one of: %s)" % (sid, sc.get("type"), ", ".join(sorted(REGISTRY))))
-        bg = sc.get("bg", bg or "blue")
+        bg = sc.get("bg", bg or next(iter(tok["backgrounds"])))
         if bg not in tok["backgrounds"]:
             fail("%s: unknown bg %r (one of: %s)" % (sid, bg, ", ".join(tok["backgrounds"])))
         if sc.get("transition") is not None and sc["transition"] not in X.KINDS:
@@ -321,8 +322,7 @@ def main():
         item_times += [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner)]
         lines = X.enter(kinds[k], sid, t_in) + lines
         if kinds[k] == "burst":
-            c = tok["colors"]
-            spray, spray_js = X.burst(k, t_in, [c["cyan"], c["amber"], c["magenta"], c["white"]])
+            spray, spray_js = X.burst(k, t_in, [f for f, _ in E.theme(tok, sbg)["series"]])
             tx_html.append(spray)
             lines += spray_js
         word = E.anchor_text(sc["in"], words)
@@ -356,7 +356,7 @@ def main():
             cuts.setdefault(i, []).append(t_in)
         layer_of.append(i)
     bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d">%s</div>\n'
-                      % (i, tok["backgrounds"][b], 0 if i else 1, glows(i, b, amb, cuts.get(i, []), bg_js)) for i, (b, _) in enumerate(bgs))
+                      % (i, E.theme(tok, b)["bg"], 0 if i else 1, glows(i, b, tok, cuts.get(i, []), bg_js)) for i, (b, _) in enumerate(bgs))
 
     def bg_at(t):
         cur = timed[0][2]
@@ -368,13 +368,13 @@ def main():
     # ---- captions -------------------------------------------------------------------------------------------------
     C = S.get("captions", {}) or {}
     em = {L.norm(x) for x in C.get("emphasis", [])}
-    hl = tok["highlight"]
+    hl = E.theme(tok, timed[0][2])["highlight"]
     chunks = L.chunk_words([w for w in words if w["start"] < D], 4, 24)
     caps, cap_js = [], []
     for i, ch in enumerate(chunks):
         b = bg_at(ch["start"])
-        dim = tok["colors"]["dim_light" if b == "light" else "dim"]
-        on = tok["text_on"][b]
+        th = E.theme(tok, b)
+        dim, on = th["muted"], th["ink"]      # a word not yet said, a word said
         spans = []
         for j, w in enumerate(ch["words"]):
             cid = "cw%d-%d" % (i, j)
@@ -385,20 +385,21 @@ def main():
             else:
                 spans.append('<span class="cw" id="%s">%s</span>' % (cid, html.escape(w["text"])))
                 cap_js.append("tl.set('#%s', { color: '%s' }, %.3f);" % (cid, on, w["start"]))
-        caps.append('      <div class="cap%s" id="cap%d" style="color:%s">%s</div>\n' % (" on-light" if b == "light" else "", i, dim, " ".join(spans)))
+        caps.append('      <div class="cap" id="cap%d" style="color:%s">%s</div>\n' % (i, dim, " ".join(spans)))
         cap_js.append("tl.set('#cap%d', { visibility: 'visible' }, %.3f);" % (i, ch["start"]))
         cap_js.append("tl.fromTo('#cap%d', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.12, ease: '%s', immediateRender: false }, %.3f);"
                       % (i, mo["enter_ease"], ch["start"]))
         cap_js.append("tl.set('#cap%d', { visibility: 'hidden' }, %.3f);" % (i, ch["end"]))
 
     band_top, band_bottom = E.CAPTION_BAND
+    stage_bg = E.theme(tok, timed[0][2])["bg"]
     CSS = """
   @font-face { font-family: "DM Sans"; src: url("fonts/DMSans-500.woff2") format("woff2"); font-weight: 500; font-display: block; }
   @font-face { font-family: "DM Sans"; src: url("fonts/DMSans-700.woff2") format("woff2"); font-weight: 700; font-display: block; }
   @font-face { font-family: "JetBrains Mono"; src: url("%s") format("woff2"); font-weight: 500; font-display: block; }
   * { box-sizing: border-box; }
-  html, body { margin:0; padding:0; width:100%%; height:100%%; overflow:hidden; background:#000; }
-  #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:#000; font-family: %s; --label: %s; }
+  html, body { margin:0; padding:0; width:100%%; height:100%%; overflow:hidden; background:%s; }
+  #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:%s; font-family: %s; --label: %s; }
   .bg { position:absolute; inset:0; overflow:hidden; }
   .orb { position:absolute; border-radius:50%%; pointer-events:none; will-change:transform; }
   .live { position:absolute; left:0; top:0; transform-origin:0 0; display:flex; flex-direction:column; align-items:center; justify-content:center; will-change:transform; }
@@ -409,12 +410,11 @@ def main():
   .cap-layer { position:absolute; left:0; top:0; width:1080px; height:1920px; z-index:30; pointer-events:none; }
   .cap { position:absolute; left:%dpx; width:%dpx; top:%dpx; height:%dpx; display:flex; align-items:center; justify-content:center;
     flex-wrap:wrap; gap:0 .26em; visibility:hidden; font-weight:700; font-size:%dpx; line-height:1.1; letter-spacing:-.01em;
-    text-align:center; text-shadow: 0 2px 10px rgba(0,0,0,.45); }
-  .cap.on-light { text-shadow:none; }
+    text-align:center; }
   .cap .cw { position:relative; display:inline-block; padding:0 .14em; border-radius:6px; }
   .cap .hd { position:absolute; width:14px; height:14px; background:%s; border:3px solid %s; opacity:0; }
   .cap .hd.a { left:-7px; top:-7px; } .cap .hd.b { right:-7px; bottom:-7px; }
-%s""" % (tok["fonts"]["label_file"], tok["fonts"]["display"], tok["fonts"]["label"], WIDE[0], WIDE[1], band_top,
+%s""" % (tok["fonts"]["label_file"], stage_bg, stage_bg, tok["fonts"]["display"], tok["fonts"]["label"], WIDE[0], WIDE[1], band_top,
          band_bottom - band_top, CAP_SIZE, hl["handle"], hl["handle_border"], "".join(css.values()))
 
     HELPERS = """

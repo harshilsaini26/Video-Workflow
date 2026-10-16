@@ -60,17 +60,17 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c, mo = ctx.tokens["colors"], ctx.tokens["motion"]
-    sid, acc = ctx.id, (c["magenta"] if ctx.light else c["cyan"])
-    face = "background:#FFFFFF;box-shadow:0 14px 40px rgba(11,12,16,.12)" if ctx.light else "background:rgba(255,255,255,.09)"
-    head = "background:#0B0C10;color:#FFFFFF" if ctx.light else "background:rgba(255,255,255,.16);color:#FFFFFF"
+    c, mo = ctx.c, ctx.tokens["motion"]
+    sid, acc = ctx.id, c["accent"]
+    face = ctx.card()
+    head = "background:%s;color:%s" % (c["ink"], c["bg"])
     cols, js = [], []
     for k, s in enumerate(SIDES):
         rows_html = []
         for i, it in enumerate(scene[s]["items"]):
             t, attrs = ctx.item(it["at"])
             rows_html.append('<div class="cp-row" id="%s-%s%d"%s style="%s;color:%s"><i class="cp-dot" style="background:%s"></i>%s</div>'
-                             % (sid, s[0], i, attrs, face, ctx.ink, acc if k else c["dim_light" if ctx.light else "dim"], ctx.esc(it["text"])))
+                             % (sid, s[0], i, attrs, face, ctx.ink, acc if k else c["muted"], ctx.esc(it["text"])))
             off = {"x": -40 if k == 0 else 40}       # a dim ghost of the row, off to its side, until its word slides it in
             js.append(ctx.ghost("#%s-%s%d" % (sid, s[0], i), off))
             js.append(ctx.enter("#%s-%s%d" % (sid, s[0], i), t, dict(off, opacity=GHOST)))
@@ -78,15 +78,15 @@ def render(scene, ctx, box):
                     % (sid, k, sid, k, head, ctx.esc(scene[s]["title"]), "".join(rows_html)))
     js.append(ctx.enter("#%s-h0, #%s-h1" % (sid, sid), ctx.t_in, {"y": -24}, stagger=0.12))
     js.append(ctx.enter("#%s-vs" % sid, ctx.t_in + 0.2, {"scale": 0.4}))
-    vs = '<div class="cp-vs" id="%s-vs" style="background:%s;color:%s">VS</div>' % (sid, acc, "#FFFFFF" if ctx.light else c["ink"])
+    vs = '<div class="cp-vs" id="%s-vs" style="background:%s;color:%s">VS</div>' % (sid, acc, c["on_accent"])
     win = ""
     w = scene.get("winner")
     if w:
         t = ctx.at(w["at"])
         k = SIDES.index(w["side"])
-        win = '<div class="cp-win" id="%s-w" style="background:%s;color:%s">&#10003;</div>' % (sid, acc, "#FFFFFF" if ctx.light else c["ink"])
+        win = '<div class="cp-win" id="%s-w" style="background:%s;color:%s">&#10003;</div>' % (sid, acc, c["on_accent"])
         js.append("tl.to('#%s-c%d', %s, %.3f);" % (sid, k, js_obj({"scale": 1.04, "duration": mo["enter"], "ease": mo["enter_ease"]}), t))
-        js.append("tl.to('#%s-h%d', %s, %.3f);" % (sid, k, js_obj({"backgroundColor": acc, "color": "#FFFFFF" if ctx.light else c["ink"],
+        js.append("tl.to('#%s-h%d', %s, %.3f);" % (sid, k, js_obj({"backgroundColor": acc, "color": c["on_accent"],
                                                                    "duration": 0.3, "ease": mo["enter_ease"]}), t))
         js.append("tl.to('#%s-c%d', %s, %.3f);" % (sid, 1 - k, js_obj({"opacity": 0.45, "duration": 0.4, "ease": mo["enter_ease"]}), t))
         js.append(ctx.enter("#%s-w" % sid, t + 0.1, {"scale": 0.3}))

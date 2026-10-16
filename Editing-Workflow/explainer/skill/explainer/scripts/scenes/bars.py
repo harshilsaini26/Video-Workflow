@@ -1,4 +1,4 @@
-"""bars: horizontal bars grow on their words; the highlighted row is cyan (SPEC §6.2)."""
+"""bars: horizontal bars grow on their words; the highlighted row is the accent (SPEC §6.2)."""
 import explainer_lib as E
 from scenes import line_px, need, widest
 
@@ -54,15 +54,14 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.tokens["colors"]
+    c = ctx.c
     width = box[2]
     top = max(r["value"] for r in scene["rows"])
-    track = "rgba(11,12,16,.08)" if ctx.light else "rgba(255,255,255,.10)"
-    rest = "rgba(11,12,16,.35)" if ctx.light else "rgba(255,255,255,.45)"
+    track, rest = c["track"], c["line"]
     html, js = [], []
     for i, r in enumerate(scene["rows"]):
         t, attrs = ctx.item(r["at"])
-        fill = c["cyan"] if r.get("hi") else rest
+        fill = c["accent"] if r.get("hi") else rest
         w = int(round(width * r["value"] / top))
         html.append('<div class="b-row" id="%s-r%d"%s><div class="b-head" style="color:%s"><span>%s</span><span class="b-text">%s</span></div>'
                     '<div class="b-track" style="background:%s"><div class="b-fill" style="width:%dpx;background:%s"></div></div></div>'

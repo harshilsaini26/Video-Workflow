@@ -42,14 +42,12 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c, mo = ctx.tokens["colors"], ctx.tokens["motion"]
-    sid, acc = ctx.id, (c["magenta"] if ctx.light else c["cyan"])
-    dim = c["dim_light"] if ctx.light else c["dim"]
-    rail = "rgba(11,12,16,.12)" if ctx.light else "rgba(255,255,255,.16)"
+    c, mo = ctx.c, ctx.tokens["motion"]
+    sid, acc, dim, rail = ctx.id, c["accent"], c["dim"], c["line"]
     steps = scene["steps"]
     cy = lambda i: i * STEP_H + L_LINE // 2           # a step's dot centre, level with its label
     parts = ['<div class="tm-rail" style="top:%dpx;height:%dpx;background:%s"></div>' % (cy(0), cy(len(steps) - 1) - cy(0), rail),
-             '<div class="tm-prog" id="%s-prog" style="top:%dpx;background:%s;box-shadow:0 0 16px %s"></div>' % (sid, cy(0), acc, acc)]
+             '<div class="tm-prog" id="%s-prog" style="top:%dpx;background:%s"></div>' % (sid, cy(0), acc)]
     # the rail and its empty dots come in with the scene, so the plan is on screen before its first step is said
     js, times = [ctx.enter("#%s .tm-rail, #%s .tm-dot" % (sid, sid), ctx.t_in, {"y": -16}, stagger=0.3)], []
     for i, s in enumerate(steps):
@@ -58,7 +56,7 @@ def render(scene, ctx, box):
         sub = '<div class="tm-s" style="color:%s">%s</div>' % (dim, ctx.esc(s["sub"])) if s.get("sub") else ""
         parts.append('<i class="tm-halo" id="%s-h%d" style="top:%dpx;background:%s"></i>' % (sid, i, cy(i) - (DOT + 26) // 2, acc))
         parts.append('<i class="tm-dot" id="%s-d%d" style="top:%dpx;border-color:%s;background:%s"></i>'
-                     % (sid, i, cy(i) - DOT // 2, rail, "#F2F3F7" if ctx.light else "#0B0C10"))
+                     % (sid, i, cy(i) - DOT // 2, rail, c["bg"]))
         parts.append('<div class="tm-step" id="%s-s%d"%s style="top:%dpx"><div class="tm-l" style="color:%s">%s</div>%s</div>'
                      % (sid, i, attrs, i * STEP_H, ctx.ink, ctx.esc(s["label"]), sub))
         js.append(ctx.enter("#%s-s%d" % (sid, i), t, {"x": -30}))

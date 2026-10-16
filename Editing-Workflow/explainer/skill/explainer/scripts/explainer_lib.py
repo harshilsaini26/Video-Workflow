@@ -79,8 +79,32 @@ def apply_lexicon(text, lex):
     return text
 
 
+def rgba(hexcol, alpha):
+    """A palette colour at an alpha, as CSS: rgba(r,g,b,a)."""
+    return "rgba(%d,%d,%d,%s)" % (int(hexcol[1:3], 16), int(hexcol[3:5], 16), int(hexcol[5:7], 16), ("%.3f" % alpha).rstrip("0").rstrip("."))
+
+
+def theme(tokens, bg):
+    """The colours a scene on background `bg` uses, by role (tokens.json: palette, backgrounds, roles, series):
+    bg, card, card_line, ink, dim, muted, line, accent, on_accent, accent2, good, bad, warn, accent_soft, track,
+    shadow, series [(fill, text on it)], highlight {fill, text, handle, handle_border}. One colour means one thing:
+    accent is "what the voice is talking about now"; good, bad and warn are signals, always beside a label."""
+    p = tokens["palette"]
+    b = tokens["backgrounds"][bg]
+    c = {k: p[v] for k, v in tokens["roles"].items()}
+    c.update(bg=p[b["fill"]], card=p[b["card"]], card_line=p[b["card_line"]])
+    c["accent_soft"] = rgba(c["accent"], 0.12)
+    c["track"] = rgba(c["ink"], 0.08)
+    sh = tokens["shadow"]
+    c["shadow"] = sh["card"] % rgba(p[sh["color"]], sh["alpha"])
+    c["series"] = [(p[f], p[o]) for f, o in tokens["series"]]
+    c["highlight"] = {k: p[v] for k, v in tokens["highlight"].items()}
+    return c
+
+
 def load_tokens(path=None):
-    """The look: fonts, colours, backgrounds, the highlight box, motion timing (tokens.json next to scripts/)."""
+    """The look: fonts, the Catppuccin Latte palette and its roles, backgrounds, motion timing (tokens.json next to
+    scripts/). Scenes read colours through theme(), never from the palette directly."""
     with open(path or os.path.join(HERE, "..", "tokens.json")) as f:
         return json.load(f)
 

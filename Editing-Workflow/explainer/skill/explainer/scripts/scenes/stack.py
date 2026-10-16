@@ -7,9 +7,6 @@ TYPE = "stack"
 SLAB, GAP, THICK = 92, 14, 14    # a slab, the gap between two, the bottom slab's thickness shadow
 STEP = 44                        # each slab is this much narrower than the one under it
 PAD, SIZE = 30, 44               # label: DM Sans 700, one line
-# fill, edge (the slab's thickness), label: cyan, blue, amber, magenta, white, round and round
-SLABS = [("#0AF0F0", "#069C9C", "#0B0C10"), ("#2A35D6", "#161D86", "#FFFFFF"), ("#FFB904", "#A87A00", "#0B0C10"),
-         ("#CD00EE", "#80009A", "#FFFFFF"), ("#FFFFFF", "#AEB2C4", "#0B0C10")]
 
 CSS = """
   .sk { position:relative; width:100%%; }
@@ -43,11 +40,12 @@ def render(scene, ctx, box):
     parts, js = [], []
     for i, it in enumerate(items):
         t, attrs = ctx.item(it["at"])
-        fill, edge, ink = SLABS[i % len(SLABS)]
+        fill, ink = ctx.c["series"][i % len(ctx.c["series"])]     # the theme's series: fill and the text on it
+        edge = E.rgba(ctx.c["ink"], 0.28)                          # the slab's thickness: a darker ledge under it
         top = h - THICK - SLAB - i * (SLAB + GAP)
         parts.append('<div class="sk-slab" id="%s-s%d"%s style="top:%dpx;left:%dpx;right:%dpx;background:%s;color:%s;'
-                     'box-shadow:0 %dpx 0 %s, 0 26px 50px rgba(0,0,0,.30)">%s</div>'
-                     % (sid, i, attrs, top, i * STEP // 2, i * STEP // 2, fill, ink, THICK, edge, ctx.esc(it["label"])))
+                     'box-shadow:0 %dpx 0 %s, %s">%s</div>'
+                     % (sid, i, attrs, top, i * STEP // 2, i * STEP // 2, fill, ink, THICK, edge, ctx.c["shadow"], ctx.esc(it["label"])))
         js.append(ctx.ghost("#%s-s%d" % (sid, i)))
         js.append("tl.fromTo('#%s-s%d', %s, %s, %.3f);"
                   % (sid, i, js_obj({"opacity": GHOST, "y": -240}), js_obj({"opacity": 1, "y": 0, "duration": 0.55, "ease": "expo.out", "immediateRender": False}), t))

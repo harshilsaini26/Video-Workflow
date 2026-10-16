@@ -43,8 +43,8 @@ class Build(unittest.TestCase):
         d = scratch(self)
         write(os.path.join(d, "transcript.json"), {"words": words30()})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
-        lead = {"type": "title", "id": "lead", "bg": "black", "in": "word:0", "out": "word:4", "text": "Lead in"}
-        sc = dict({"id": "sc", "bg": "black", "in": "word:4", "out": D}, **scene)
+        lead = {"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:4", "text": "Lead in"}
+        sc = dict({"id": "sc", "bg": "mantle", "in": "word:4", "out": D}, **scene)
         sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [lead, sc]})
         out = os.path.join(d, "public")
         r = run("explainer-compose.py", "--spec", sp, "--out", out, "--vendor", stub_vendor(d))
@@ -92,7 +92,7 @@ class Build(unittest.TestCase):
         words = words30()
         for t, sc in GOOD.items():
             sc = dict({"id": "sc", "in": "word:4", "out": D}, **copy.deepcopy(sc))
-            ctx = Ctx(sc, 1.9, D, words, TOK, stub_vendor(scratch(self)), scratch(self), "black")
+            ctx = Ctx(sc, 1.9, D, words, TOK, stub_vendor(scratch(self)), scratch(self), "mantle")
             mod = REGISTRY[t]
             mod.render(sc, ctx, (150, 600, 780))
             self.assertTrue(ctx.ambient_lines, t)
@@ -120,7 +120,7 @@ class Build(unittest.TestCase):
 
     def test_light_background_builds(self):
         for t, sc in GOOD.items():
-            r, _ = self.build(dict(sc, bg="light"))
+            r, _ = self.build(dict(sc, bg="base"))
             self.assertEqual(r.returncode, 0, "%s: %s" % (t, r.stdout))
 
 

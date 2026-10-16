@@ -33,10 +33,10 @@ BOARD = {
     "id": "test-01", "fps": 60, "voice": "voice.wav", "transcript": "transcript.json",
     "captions": {"emphasis": ["NPV"]},
     "scenes": [
-        {"type": "title", "id": "hook", "bg": "black", "in": "word:0", "out": "word:8",
+        {"type": "title", "id": "hook", "bg": "mantle", "in": "word:0", "out": "word:8",
          "text": "Three certificates nobody tells you about", "kicker": "IF YOU'RE NEW"},
-        {"type": "number", "id": "n1", "bg": "black", "in": "word:8", "out": "word:18", "n": 1, "name": "Coursera finance"},
-        {"type": "count-up", "id": "cu", "bg": "light", "in": "word:18", "out": D, "value": 1000, "prefix": "$",
+        {"type": "number", "id": "n1", "bg": "mantle", "in": "word:8", "out": "word:18", "n": 1, "name": "Coursera finance"},
+        {"type": "count-up", "id": "cu", "bg": "base", "in": "word:18", "out": D, "value": 1000, "prefix": "$",
          "sub": "saved a year", "source": "s1"},
     ],
 }
@@ -158,7 +158,7 @@ class Compose(unittest.TestCase):
 
     def test_background_crossfades_on_change(self):
         def edit(b):
-            b["scenes"][1]["bg"] = "light"
+            b["scenes"][1]["bg"] = "base"
             b["scenes"][1]["transition"] = "push"     # a named transition other than wipe keeps the cross-fade
         html, _, _ = self.ok(edit)
         self.assertEqual(len(re.findall(r'class="bg"', html)), 2)
@@ -230,7 +230,7 @@ class Compose(unittest.TestCase):
 
     def test_item_on_the_first_word_with_an_early_voice(self):
         def edit(b):
-            b["scenes"][0] = {"type": "qa-stack", "id": "hook", "bg": "black", "in": "word:0", "out": "word:8",
+            b["scenes"][0] = {"type": "qa-stack", "id": "hook", "bg": "mantle", "in": "word:0", "out": "word:8",
                               "items": [{"text": "Is it cheap?", "at": "word:0"}]}
         self.ok(edit, t0=0.1)
 
@@ -242,7 +242,7 @@ class Compose(unittest.TestCase):
 
     def test_json_numbers_on_screen_need_a_source(self):
         def edit(b):
-            b["scenes"][1] = {"type": "sheet", "id": "n1", "bg": "black", "in": "word:8", "out": "word:18",
+            b["scenes"][1] = {"type": "sheet", "id": "n1", "bg": "mantle", "in": "word:8", "out": "word:18",
                               "rows": [["Year", "Revenue"], [2023, 1500000]]}
         self.fails(edit, "n1: ")
 

@@ -33,9 +33,15 @@ class Ctx:
         self.words, self.tokens = words, tokens
         self.vendor_dir, self.out_dir = vendor_dir, out_dir
         self.bg = bg
-        self.ink = tokens["text_on"][bg]
-        self.light = bg == "light"
+        self.c = E.theme(tokens, bg)          # the colours, by role (explainer_lib.theme)
+        self.ink = self.c["ink"]
         self.ambient_lines = []   # idle motion (a float, a pulse, a slow turn): on the page, but not a change for pace-check
+
+    def card(self):
+        """The style of a card on this background: the card fill, a hairline (an inset ring, so no height changes) and a
+        soft shadow."""
+        c = self.c
+        return "background:%s;box-shadow:inset 0 0 0 2px %s, %s" % (c["card"], c["card_line"], c["shadow"])
 
     def ambient(self, line):
         self.ambient_lines.append(line)

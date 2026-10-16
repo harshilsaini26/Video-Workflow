@@ -20,7 +20,7 @@ VIEW, CAP_GAP = 400, 30                   # a screenshot's view, and the gap to 
 FOCUS_ZOOM = 1.25                         # the punch-in on a screenshot's focus line
 
 CSS = """
-  .br-win { width:100%%; border-radius:26px; overflow:hidden; opacity:0; box-shadow:0 30px 80px rgba(0,0,0,.35); }
+  .br-win { width:100%%; border-radius:26px; overflow:hidden; opacity:0; }
   .br-bar { height:%dpx; display:flex; align-items:center; gap:12px; padding:0 24px; }
   .br-dot { width:16px; height:16px; border-radius:50%%; flex:none; }
   .br-url { flex:1; height:40px; margin-left:18px; border-radius:20px; display:flex; align-items:center; padding:0 20px;
@@ -89,11 +89,10 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.tokens["colors"]
+    c = ctx.c
     sid = ctx.id
-    page_bg, bar_bg, url_bg = ("#FFFFFF", "#ECEDF2", "#FFFFFF") if ctx.light else ("#16182A", "#0E0F1C", "rgba(255,255,255,.08)")
-    dim = c["dim_light"] if ctx.light else c["dim"]
-    dots = "".join('<i class="br-dot" style="background:%s"></i>' % col for col in ("#FF5F57", "#FEBC2E", "#28C840"))
+    page_bg, bar_bg, url_bg, dim = c["card"], c["chrome"], c["card"], c["dim"]
+    dots = "".join('<i class="br-dot" style="background:%s"></i>' % col for col in (c["bad"], c["warn"], c["good"]))
     url = '<div class="br-url" style="background:%s;color:%s">%s</div>' % (url_bg, dim, ctx.esc(scene.get("domain", "")))
     if scene.get("screenshot"):
         return shot(scene, ctx, box, page_bg, bar_bg, dots, url, dim)
@@ -102,13 +101,11 @@ def render(scene, ctx, box):
         parts.append('<div class="br-sub" style="color:%s">%s</div>' % (dim, ctx.esc(scene["subtitle"])))
     if scene.get("badges"):
         parts.append('<div class="br-badges">%s</div>' % "".join(
-            '<span class="br-badge" style="background:%s;color:%s">%s</span>' % ("rgba(10,240,240,.14)" if not ctx.light else "#EEF0FF",
-                                                                                ctx.ink, ctx.esc(b)) for b in scene["badges"]))
+            '<span class="br-badge" style="background:%s;color:%s">%s</span>' % (c["accent_soft"], ctx.ink, ctx.esc(b)) for b in scene["badges"]))
     if scene.get("button"):
-        parts.append('<div class="br-btn" style="background:%s;color:%s">%s</div>' % (c["cyan"] if not ctx.light else c["ink"],
-                                                                                     c["ink"] if not ctx.light else "#FFFFFF", ctx.esc(scene["button"])))
-    html = ('<div class="br-win" id="%s-win" style="background:%s"><div class="br-bar" style="background:%s">%s%s</div>'
-            '<div class="br-page">%s</div></div>' % (sid, page_bg, bar_bg, dots, url, "".join(parts)))
+        parts.append('<div class="br-btn" style="background:%s;color:%s">%s</div>' % (c["accent"], c["on_accent"], ctx.esc(scene["button"])))
+    html = ('<div class="br-win" id="%s-win" style="background:%s;box-shadow:inset 0 0 0 2px %s, %s"><div class="br-bar" style="background:%s">%s%s</div>'
+            '<div class="br-page">%s</div></div>' % (sid, page_bg, c["card_line"], c["shadow"], bar_bg, dots, url, "".join(parts)))
     n = 1 + bool(scene.get("subtitle")) + len(scene.get("badges", [])) + bool(scene.get("button"))
     js = [ctx.enter("#%s-win" % sid, ctx.t_in, {"y": -60}),
           ctx.enter("#%s .br-title, #%s .br-sub, #%s .br-badge, #%s .br-btn" % (sid, sid, sid, sid), ctx.t_in + 0.2, {"y": 16},
@@ -127,9 +124,9 @@ def shot(scene, ctx, box, page_bg, bar_bg, dots, url, dim):
     cap = '<div class="br-title" style="color:%s">%s</div>' % (ctx.ink, ctx.esc(scene["title"]))
     if scene.get("subtitle"):
         cap += '<div class="br-sub" style="color:%s">%s</div>' % (dim, ctx.esc(scene["subtitle"]))
-    html = ('<div class="br-win" id="%s-win" style="background:%s"><div class="br-bar" style="background:%s">%s%s</div>'
+    html = ('<div class="br-win" id="%s-win" style="background:%s;box-shadow:inset 0 0 0 2px %s, %s"><div class="br-bar" style="background:%s">%s%s</div>'
             '<div class="br-view" style="background:%s"><img id="%s-shot" src="%s" alt="" /></div></div><div class="br-cap">%s</div>'
-            % (sid, page_bg, bar_bg, dots, url, page_bg, sid, ctx.esc(rel), cap))
+            % (sid, page_bg, ctx.c["card_line"], ctx.c["shadow"], bar_bg, dots, url, page_bg, sid, ctx.esc(rel), cap))
     js = [ctx.enter("#%s-win" % sid, ctx.t_in, {"y": -60, "scale": 0.94}),
           ctx.enter("#%s .br-title, #%s .br-sub" % (sid, sid), ctx.t_in + 0.25, {"y": 16}, stagger=0.08)]
     f = scene.get("focus")

@@ -30,19 +30,19 @@ class Living(unittest.TestCase):
 
     def test_each_background_has_its_own_glows(self):
         html, _ = self.build(BOARD)                      # black, black, then light at the count-up: two background layers
-        for i, bg in enumerate(("black", "light")):
+        for i, bg in enumerate(("mantle", "base")):
             layer = re.search(r'<div class="bg" id="bg%d"[^>]*>(.*?)</div>' % i, html).group(1)
             glows = re.findall(r'<i class="orb" id="bg%d-o(\d)" style="[^"]*background:radial-gradient\(circle, ([^ ]+) 0%%' % i, layer)
-            self.assertEqual([c for _, c in glows], [g["color"] for g in TOK["ambient"]["glows"][bg]], bg)
+            self.assertEqual([c for _, c in glows], [E.rgba(TOK["palette"][g["color"]], g["alpha"]) for g in TOK["ambient"]["glows"][bg]], bg)
         self.assertNotIn('id="orbs"', html)              # no shared layer whose colours suit only one background
 
     def test_glows_move_only_on_a_cut_and_travel_with_it(self):
         board = copy.deepcopy(BOARD)                     # four scenes on black: three cuts
         board["scenes"] = [
-            {"type": "title", "id": "a", "bg": "black", "in": "word:0", "out": "word:5", "text": "One"},
-            {"type": "title", "id": "b", "bg": "black", "in": "word:5", "out": "word:10", "text": "Two"},
-            {"type": "title", "id": "c", "bg": "black", "in": "word:10", "out": "word:15", "text": "Three"},
-            {"type": "title", "id": "d", "bg": "black", "in": "word:15", "out": "end", "text": "Four"}]
+            {"type": "title", "id": "a", "bg": "mantle", "in": "word:0", "out": "word:5", "text": "One"},
+            {"type": "title", "id": "b", "bg": "mantle", "in": "word:5", "out": "word:10", "text": "Two"},
+            {"type": "title", "id": "c", "bg": "mantle", "in": "word:10", "out": "word:15", "text": "Three"},
+            {"type": "title", "id": "d", "bg": "mantle", "in": "word:15", "out": "end", "text": "Four"}]
         html, _ = self.build(board)
         sh = TOK["ambient"]["shift"]
         cuts = [round(t_word(i) - E.LEAD, 3) for i in (5, 10, 15)]
@@ -73,28 +73,21 @@ class Living(unittest.TestCase):
         for p in srcs:
             self.assertNotRegex(read(p), r"['\"](back|elastic|bounce)\.\w+", p)
 
-    def test_blue_is_a_light_royal_blue(self):
-        lum = lambda h: 0.2126 * int(h[1:3], 16) + 0.7152 * int(h[3:5], 16) + 0.0722 * int(h[5:7], 16)
-        stops = re.findall(r"#[0-9A-Fa-f]{6}", TOK["backgrounds"]["blue"])
-        self.assertGreater(lum(stops[0]), lum(stops[-1]) + 15)          # lighter at the top, like the reference
-        self.assertNotIn("205,0,238", TOK["backgrounds"]["blue"])        # no violet baked in: the lilac glow moves instead
-        self.assertGreaterEqual(sum(map(lum, stops)) / len(stops), 70)   # the reference's core #2941D1 is about 69
-
     def test_ambient_motion_is_not_a_change(self):
         _, out = self.build(BOARD)
         with open(os.path.join(out, "moments.json")) as f:
             spans = json.load(f)["spans"]
         self.assertLess(max(e - s for s, e in spans), 2.0)        # idle floats and glow shifts are not changes
         board = copy.deepcopy(BOARD)
-        board["scenes"] = [{"type": "title", "id": "only", "bg": "black", "in": "word:0", "out": "end", "text": "One idea"}]
+        board["scenes"] = [{"type": "title", "id": "only", "bg": "mantle", "in": "word:0", "out": "end", "text": "One idea"}]
         _, out = self.build(board)
         r = run("pace-check.py", "--index", os.path.join(out, "index.html"))
         self.assertNotEqual(r.returncode, 0, r.stdout)
 
     def test_icon_row_stays_centred_as_icons_arrive(self):
         board = copy.deepcopy(BOARD)
-        board["scenes"] = [{"type": "title", "id": "lead", "bg": "black", "in": "word:0", "out": "word:4", "text": "Lead in"},
-                           {"type": "icon-row", "id": "sc", "bg": "black", "in": "word:4", "out": "end",
+        board["scenes"] = [{"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:4", "text": "Lead in"},
+                           {"type": "icon-row", "id": "sc", "bg": "mantle", "in": "word:4", "out": "end",
                             "items": [{"icon": "book", "label": "Read", "at": "word:6"}, {"icon": "clock", "label": "Wait", "at": "word:9"}]}]
         html, _ = self.build(board)
         width = int(re.search(r'id="sc-live" style="width:(\d+)px', html).group(1))

@@ -60,7 +60,7 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.tokens["colors"]
+    c = ctx.c
     left, top, width = box
     pts = [float(p) for p in scene["points"]]
     lo, hi = min(0.0, min(pts)), max(pts)
@@ -70,14 +70,14 @@ def render(scene, ctx, box):
     seg = [((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5 for (x1, y1), (x2, y2) in zip(xy, xy[1:])]
     total = round(sum(seg), 1)
     upto = lambda k: round(sum(seg[:k]), 1)
-    line_col = c["magenta"] if ctx.light else c["cyan"]
+    line_col = c["accent"]
     reveals = sorted(((ctx.at(r["at"]), r["point"]) for r in scene.get("reveal", [])))
     if not reveals:
         reveals = [(ctx.t_in + 0.2, len(pts) - 1)]
     sid = ctx.id
     parts = []
     if scene.get("label"):
-        parts.append('<div class="c-label" style="color:%s">%s</div>' % (c["dim_light"] if ctx.light else c["dim"], ctx.esc(scene["label"])))
+        parts.append('<div class="c-label" style="color:%s">%s</div>' % (c["dim"], ctx.esc(scene["label"])))
     first = pts[0]
     if [p for _, p in reveals] != sorted(set(p for _, p in reveals)):
         ctx.fail("reveal points must move forward in time (got %s)" % [p for _, p in reveals])
@@ -85,12 +85,12 @@ def render(scene, ctx, box):
                  % (sid, ctx.esc(fmt(scene, pts[reveals[-1][1]])), ctx.ink, ctx.esc(fmt(scene, first))))
     path = "M" + " L".join("%s %s" % p for p in xy)
     dots = "".join('<div class="c-dot" id="%s-d%d" style="left:%spx;top:%spx;border-color:%s;background:%s"></div>'
-                   % (sid, i, x, y, line_col, c["ink"] if not ctx.light else "#FFFFFF") for i, (x, y) in enumerate(xy))
+                   % (sid, i, x, y, line_col, c["card"]) for i, (x, y) in enumerate(xy))
     parts.append('<div class="c-plot" id="%s-plot"><svg width="%d" height="%d" viewBox="0 0 %d %d">'
                  '<path id="%s-line" d="%s" fill="none" stroke="%s" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"'
                  ' stroke-dasharray="%s" stroke-dashoffset="%s"/></svg>%s</div>'
                  % (sid, width, CHART, width, CHART, sid, path, line_col, total, total, dots))
-    parts.append('<div class="c-x" style="color:%s">%s</div>' % (c["dim_light"] if ctx.light else c["dim"],
+    parts.append('<div class="c-x" style="color:%s">%s</div>' % (c["dim"],
                                                                  "".join("<span>%s</span>" % ctx.esc(x) for x in scene["x"])))
     js = [ctx.enter("#%s .c-label, #%s-v, #%s-plot, #%s .c-x" % (sid, sid, sid, sid), ctx.t_in, {"y": 24}, stagger=0.15),
           ctx.enter("#%s-d0" % sid, ctx.t_in + 0.1, {"scale": 0.4})]

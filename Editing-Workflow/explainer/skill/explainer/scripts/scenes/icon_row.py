@@ -47,17 +47,15 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.tokens["colors"]
     sid = ctx.id
-    acc = c["magenta"] if ctx.light else c["cyan"]
-    tile_bg = "#FFFFFF" if ctx.light else "rgba(255,255,255,.10)"
+    acc = ctx.c["accent"]
     cols, js = [], []
     for i, it in enumerate(scene["items"]):
         svg = ctx.icon(it["icon"])
         t, attrs = ctx.item(it["at"])
-        cols.append('<div class="ic-col"%s><div class="ic-tile" id="%s-i%d" style="background:%s;color:%s">%s</div>'
+        cols.append('<div class="ic-col"%s><div class="ic-tile" id="%s-i%d" style="%s;color:%s">%s</div>'
                     '<div class="ic-label" id="%s-l%d" style="color:%s">%s</div></div>'
-                    % (attrs, sid, i, tile_bg, acc, svg, sid, i, ctx.ink, ctx.esc(it["label"])))
+                    % (attrs, sid, i, ctx.card(), acc, svg, sid, i, ctx.ink, ctx.esc(it["label"])))
         js.append(ctx.enter("#%s-i%d" % (sid, i), t, {"scale": 0.5}))
         js.append(ctx.enter("#%s-l%d" % (sid, i), t + 0.1, {"y": 16}))
         # the arrived icons stay centred: the row starts shifted right and slides left by half a column per arrival

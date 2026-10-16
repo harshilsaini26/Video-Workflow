@@ -8,9 +8,9 @@ import explainer_lib as E
 
 TOK = E.load_tokens()
 AREA_H = E.SCENE["bottom"] - E.SCENE["top"]
-LIST = {"type": "list-cards", "id": "lc", "bg": "black", "in": "word:4", "out": D,
+LIST = {"type": "list-cards", "id": "lc", "bg": "mantle", "in": "word:4", "out": D,
         "items": [{"label": "Newer", "at": "word:6"}, {"label": "Private", "at": "word:9"}, {"label": "Wrong", "at": "word:12"}]}
-LEAD_IN = {"type": "title", "id": "lead", "bg": "black", "in": "word:0", "out": "word:4", "text": "Lead in"}
+LEAD_IN = {"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:4", "text": "Lead in"}
 
 
 def boxes(html):
@@ -88,7 +88,7 @@ class Craft(unittest.TestCase):
         self.assertTrue(E.inside_scene(150, 900, 780, 520))
         self.assertFalse(E.inside_scene(65, 900, 950, 520))        # below y 960 it keeps clear of the action column
         self.assertFalse(E.inside_scene(150, 900, 780, 521))
-        tm = {"type": "timeline", "id": "tm", "bg": "black", "in": "word:4", "out": D,
+        tm = {"type": "timeline", "id": "tm", "bg": "mantle", "in": "word:4", "out": D,
               "steps": [{"label": "Step " + "ABCDE"[i], "at": "word:%d" % (5 + 2 * i)} for i in range(5)]}
         left, top, w, h, iw, ih, s = boxes(self.build(dict(BOARD, scenes=[LEAD_IN, tm]))[0])["tm"]
         self.assertGreaterEqual(s, 1.3)                            # 660 px of steps: 1.1 at most in a 728 px area

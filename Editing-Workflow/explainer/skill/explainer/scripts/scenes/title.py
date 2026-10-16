@@ -48,7 +48,7 @@ def render(scene, ctx, box):
     words = scene["text"].split()
     kick = ""
     if scene.get("kicker"):
-        col = ctx.tokens["colors"]["dim_light" if ctx.light else "cyan"]
+        col = ctx.c["accent"]
         kick = '<div class="t-kicker" style="color:%s">%s</div>' % (col, ctx.esc(scene["kicker"]))
     text = '<div class="t-text" style="font-size:%dpx;line-height:%dpx;color:%s">%s</div>' % (
         s, line_px(s, LH), ctx.ink, " ".join('<span class="w">%s</span>' % ctx.esc(w) for w in words))

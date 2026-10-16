@@ -29,10 +29,10 @@ class Custom(unittest.TestCase):
         write(os.path.join(d, "transcript.json"), {"words": words30()})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
         write(os.path.join(d, "custom", "yield.html"), html)
-        lead = {"type": "title", "id": "lead", "bg": "black", "in": "word:0", "out": "word:4", "text": "Lead in"}
-        cu = {"type": "custom", "id": "yield", "bg": "black", "in": "word:4", "out": "word:14",
+        lead = {"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:4", "text": "Lead in"}
+        cu = {"type": "custom", "id": "yield", "bg": "mantle", "in": "word:4", "out": "word:14",
               "box": box or {"x": 65, "y": 560, "w": 950, "h": 380}, "html": "custom/yield.html", "build": "buildYield", "source": "s1"}
-        tail = {"type": "title", "id": second_id, "bg": "black", "in": "word:14", "out": D, "text": "The end"}
+        tail = {"type": "title", "id": second_id, "bg": "mantle", "in": "word:14", "out": D, "text": "The end"}
         scenes = [lead, cu, tail]
         if extra:
             extra(scenes)

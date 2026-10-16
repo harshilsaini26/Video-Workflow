@@ -14,7 +14,7 @@ Each script line becomes one or more scenes, anchored to its own words:
   the start → number; a brand whose mark is in the local simple-icons set → logo-card; line 0 → a title of the hook;
   anything else → title beats of at most 2.5 s, each showing the line's emphasis word or its last key words (a draft:
   replace them with pictures).
-- a line's source goes on its scenes; a `section` break moves the background along black → blue → light.
+- a line's source goes on its scenes; a `section` break moves the background along mantle → base → mantle.
 Every scene's out is the next scene's in; the last runs to "end". The report lists each scene and the rule that made it.
 """
 import argparse, json, os, re, sys
@@ -24,7 +24,7 @@ sys.path.insert(0, HERE)
 from scenes import logo_card
 
 BEAT = 2.5
-BGS = ["black", "blue", "light"]
+BGS = ["mantle", "base"]          # the two Latte surfaces (tokens.json), alternating at each section break
 STOP = set("a an and are as at be but by for from has have i in is it its me my of on or our so than that the their them then "
            "there these they this to was we were what when which who will with you your".split())
 ORDINALS = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5}

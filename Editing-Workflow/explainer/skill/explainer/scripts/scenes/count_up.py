@@ -9,7 +9,6 @@ NEEDS_SOURCE = True
 V_SIZE = 170                    # the number: DM Sans 700, tabular digits, line height 1
 S_SIZE, S_LH, S_GAP = 52, 1.15, 20
 COUNT = 1.2                     # seconds the count takes (shorter when the scene is)
-MONEY = ("$", "€", "£", "₹")
 
 
 CSS = """
@@ -45,16 +44,14 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.tokens["colors"]
-    money = str(scene.get("prefix", "")) in MONEY
-    col = ctx.ink if ctx.light else c["amber" if money else "cyan"]
+    col = ctx.c["accent"]           # the number is what the voice is talking about
     dec = int(scene.get("decimals", 0))
     vid = "%s-v" % ctx.id
     zero = E.L.full_digits(0, scene.get("prefix", ""), scene.get("suffix", ""), dec)
     out = '<div class="c-value" id="%s" style="color:%s">%s</div>' % (vid, col, ctx.esc(zero))
     js = [ctx.enter("#%s" % vid, ctx.t_in, {"y": 30})]
     if scene.get("sub"):
-        out += '<div class="c-sub" style="color:%s">%s</div>' % (ctx.ink, ctx.esc(scene["sub"]))
+        out += '<div class="c-sub" style="color:%s">%s</div>' % (ctx.c["dim"], ctx.esc(scene["sub"]))
         js.append(ctx.enter("#%s .c-sub" % ctx.id, ctx.t_in + 0.18, {"y": 20}))
     dur = max(0.3, min(COUNT, ctx.t_out - ctx.t_in - 0.4))
     js.append("countUp('#%s', 0, %s, %.3f, %.3f, %s, %s, %d);" % (vid, json.dumps(float(scene["value"])), ctx.t_in + 0.1, dur,

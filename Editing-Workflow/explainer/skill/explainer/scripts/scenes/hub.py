@@ -51,11 +51,9 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c, mo = ctx.tokens["colors"], ctx.tokens["motion"]
+    c, mo = ctx.c, ctx.tokens["motion"]
     sid, items, W = ctx.id, scene["items"], box[2]
-    acc = c["magenta"] if ctx.light else c["cyan"]
-    face = "background:#FFFFFF;box-shadow:0 14px 40px rgba(11,12,16,.14)" if ctx.light else "background:rgba(255,255,255,.12)"
-    line = "rgba(11,12,16,.16)" if ctx.light else "rgba(255,255,255,.18)"
+    acc, face, line = c["accent"], ctx.card(), c["line"]
     cx, cy = W / 2.0, H / 2.0
     n = len(items)
     spokes = ['<circle cx="%.0f" cy="%.0f" r="%d" fill="none" stroke="%s" stroke-width="2" stroke-dasharray="4 10"/>' % (cx, cy, R, line)]
@@ -75,8 +73,8 @@ def render(scene, ctx, box):
                      max(ctx.t_in, t - 0.2)))
         js.append(ctx.ghost("#%s-n%d" % (sid, k), {"scale": 0.85}))     # the empty spot shows dimmed until its word
         js.append(ctx.enter("#%s-n%d" % (sid, k), t, {"opacity": GHOST, "scale": 0.85}))
-    centre = '<div class="hb-centre" id="%s-c" style="left:%.0fpx;top:%.0fpx;background:%s;color:%s;box-shadow:0 0 60px %s">%s</div>' % (
-        sid, cx, cy, acc, "#FFFFFF" if ctx.light else c["ink"], acc, ctx.esc(scene["center"]))
+    centre = '<div class="hb-centre" id="%s-c" style="left:%.0fpx;top:%.0fpx;background:%s;color:%s;box-shadow:0 0 0 16px %s">%s</div>' % (
+        sid, cx, cy, acc, c["on_accent"], c["accent_soft"], ctx.esc(scene["center"]))
     js.append(ctx.enter("#%s-c" % sid, ctx.t_in, {"scale": 0.5}))
     # while it holds: the ring turns slowly (its labels turn back, so they stay upright) and the middle breathes
     dur = round(ctx.t_out - ctx.t_in, 3)

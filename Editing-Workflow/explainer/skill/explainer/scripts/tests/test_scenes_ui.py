@@ -24,8 +24,8 @@ class UICase(unittest.TestCase):
         d = scratch(self)
         write(os.path.join(d, "transcript.json"), {"words": words30()})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
-        lead = {"type": "title", "id": "lead", "bg": "black", "in": "word:0", "out": "word:4", "text": "Lead in"}
-        sc = dict({"id": "sc", "bg": "black", "in": "word:4", "out": D}, **scene)
+        lead = {"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:4", "text": "Lead in"}
+        sc = dict({"id": "sc", "bg": "mantle", "in": "word:4", "out": D}, **scene)
         sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [lead, sc]})
         out = os.path.join(d, "public")
         r = run("explainer-compose.py", "--spec", sp, "--out", out, "--vendor", stub_vendor(d, **vendor))

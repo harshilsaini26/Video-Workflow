@@ -44,10 +44,9 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c, mo = ctx.tokens["colors"], ctx.tokens["motion"]
-    sid, acc = ctx.id, (c["magenta"] if ctx.light else c["cyan"])
-    face = "background:#FFFFFF;box-shadow:0 18px 50px rgba(11,12,16,.14)" if ctx.light else "background:rgba(255,255,255,.09)"
-    rest = "rgba(11,12,16,.10)" if ctx.light else "rgba(255,255,255,.16)"
+    c, mo = ctx.c, ctx.tokens["motion"]
+    sid, acc = ctx.id, c["accent"]
+    face, rest = ctx.card(), c["line"]
     nodes = scene["nodes"]
     parts, js, times = [], [], []
     for i, n in enumerate(nodes):

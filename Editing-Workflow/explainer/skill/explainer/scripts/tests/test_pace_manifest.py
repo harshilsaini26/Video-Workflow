@@ -23,7 +23,7 @@ class Manifest(unittest.TestCase):
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
         write(os.path.join(d, "custom", "yield.html"), CUSTOM)
         board = copy.deepcopy(BOARD)
-        board["scenes"][1] = {"type": "custom", "id": "yield", "bg": "black", "in": "word:8", "out": "word:18",
+        board["scenes"][1] = {"type": "custom", "id": "yield", "bg": "mantle", "in": "word:8", "out": "word:18",
                               "box": {"x": 65, "y": 560, "w": 950, "h": 380}, "html": "custom/yield.html", "build": "buildYield"}
         sp = write(os.path.join(d, "storyboard.json"), board)
         r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"))

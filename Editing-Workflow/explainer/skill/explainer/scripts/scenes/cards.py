@@ -11,12 +11,11 @@ OFF, OFF_MIN = 170, 110          # card to card, at most and at least
 GAP = 36                         # fan to title
 T_SIZE, T_LINE = 50, 60          # title: DM Sans 700, one line
 S_SIZE, S_LINE = 32, 42          # sub: DM Sans 500, one line
-FACES = [("#0AF0F0", "#0B0C10"), ("#FFB904", "#0B0C10"), ("#CD00EE", "#FFFFFF"), ("#2A35D6", "#FFFFFF")]
 
 CSS = """
   .cd { position:relative; width:100%%; }
   .cd-card { position:absolute; width:%dpx; height:%dpx; opacity:0; }
-  .cd-face { position:absolute; inset:0; border-radius:24px; padding:26px; box-shadow:0 30px 60px rgba(0,0,0,.35); overflow:hidden; }
+  .cd-face { position:absolute; inset:0; border-radius:24px; padding:26px; overflow:hidden; }
   .cd-tag { font-family: var(--label); font-weight:500; font-size:20px; letter-spacing:.14em; opacity:.7; }
   .cd-n { font-weight:700; font-style:italic; font-size:150px; line-height:1; margin-top:10px; letter-spacing:-.04em; }
   .cd-bar { height:12px; border-radius:6px; margin-top:16px; opacity:.28; }
@@ -53,7 +52,7 @@ def min_width(scene):
 def render(scene, ctx, box):
     mo = ctx.tokens["motion"]
     sid, cards, W = ctx.id, scene["cards"], box[2]
-    dim = ctx.tokens["colors"]["dim_light" if ctx.light else "dim"]
+    dim = ctx.c["dim"]
     n = len(cards)
     off = min(OFF, (W - CW - 40) / max(1, n - 1)) if n > 1 else 0
     mid = (n - 1) / 2.0
@@ -61,14 +60,14 @@ def render(scene, ctx, box):
     for i, cd in enumerate(cards):
         t, attrs = ctx.item(cd["at"])
         times.append(t)
-        fill, ink = FACES[i % len(FACES)]
+        fill, ink = ctx.c["series"][i % len(ctx.c["series"])]
         left = W / 2.0 - CW / 2.0 + (i - mid) * off
         top = FAN / 2.0 + abs(i - mid) * 16
         bars = "".join('<div class="cd-bar" style="width:%d%%;background:%s"></div>' % (w, ink) for w in (86, 70, 54))
         parts.append('<div class="cd-card" id="%s-c%d"%s style="left:%.0fpx;top:%.0fpx;z-index:%d"><div class="cd-face" id="%s-f%d" '
-                     'style="background:%s;color:%s"><div class="cd-tag">No. %d</div><div class="cd-n">%d</div>%s'
+                     'style="background:%s;color:%s;box-shadow:%s"><div class="cd-tag">No. %d</div><div class="cd-n">%d</div>%s'
                      '<i class="cd-star" style="border-color:%s"></i></div></div>'
-                     % (sid, i, attrs, left, top, i + 1, sid, i, fill, ink, i + 1, i + 1, bars, ink))
+                     % (sid, i, attrs, left, top, i + 1, sid, i, fill, ink, ctx.c["shadow"], i + 1, i + 1, bars, ink))
         js.append(ctx.ghost("#%s-c%d" % (sid, i), {"rotation": round((i - mid) * 8, 2)}))   # its place in the fan, dimmed
         js.append("tl.fromTo('#%s-c%d', %s, %s, %.3f);" % (
             sid, i, js_obj({"opacity": GHOST, "x": 320, "y": 420, "rotation": 40}),

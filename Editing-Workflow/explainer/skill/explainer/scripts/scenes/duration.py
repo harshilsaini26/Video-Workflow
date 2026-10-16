@@ -50,10 +50,8 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.tokens["colors"]
     sid = ctx.id
-    acc = c["magenta"] if ctx.light else c["cyan"]
-    ring = "rgba(11,12,16,.12)" if ctx.light else "rgba(255,255,255,.16)"
+    acc, ring = ctx.c["accent"], ctx.c["line"]
     r = FACE / 2 - 14
     circ = round(2 * 3.14159265 * r, 1)
     lead = min(0.2, (ctx.t_out - ctx.t_in) / 4)

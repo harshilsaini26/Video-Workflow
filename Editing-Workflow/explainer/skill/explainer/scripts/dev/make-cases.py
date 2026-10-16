@@ -138,7 +138,7 @@ def compose(root, vendor):
             for key in ("screenshot", "src"):
                 if data.get(key):
                     png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
-            scene = dict({"type": typ, "id": "sc", "bg": "black", "in": "word:0", "out": D}, **data)
+            scene = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:0", "out": D}, **data)
             with open(os.path.join(d, "storyboard.json"), "w") as f:
                 json.dump({"id": case, "scenes": [scene]}, f)
             r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "explainer-compose.py"), "--spec", os.path.join(d, "storyboard.json"),
