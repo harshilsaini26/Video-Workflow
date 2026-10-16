@@ -176,7 +176,7 @@ From each installed skill's `scripts` folder:
 |---|---|---|
 | kit | `cd .claude/skills/youtube-edit/scripts && python3 -m unittest tests` | 51 tests, OK |
 | Reels | `cd .claude/skills/reels/scripts && python3 -m unittest tests` | 48 tests, OK |
-| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 143 tests, OK (a few skip without Kokoro or a local GSAP) |
+| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 148 tests, OK (a few skip without Kokoro or a local GSAP) |
 
 ### 3.6 Open a new conversation
 

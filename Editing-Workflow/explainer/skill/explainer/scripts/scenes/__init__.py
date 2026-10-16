@@ -89,6 +89,12 @@ class Ctx:
             self.fail("vendor/lucide/%s.svg is not a plain SVG icon" % name)
         return svg
 
+    def ghost(self, sel, extra=None):
+        """Show `sel` dimmed (opacity GHOST) from the scene's in, so a build that waits for its words never leaves the
+        stage bare; its entrance then starts from GHOST (ctx.enter(sel, t, {"opacity": GHOST, ...}))."""
+        m = self.tokens["motion"]
+        return "tl.to(%s, %s, %.3f);" % (sel_js(sel), js_obj(dict({"opacity": GHOST}, **dict(extra or {}, duration=m["enter"], ease=m["enter_ease"]))), self.t_in)
+
     def idle(self, sel, t0, t1, props, every=1.6):
         """An idle back-and-forth while a scene holds (ambient: not a change): from t0 to t1, `sel` eases to `props` and
         back every `every` seconds ({"y": -8} floats; {"scale": 1.08} pulses)."""
@@ -126,6 +132,7 @@ class Ctx:
         return "tl.fromTo(%s, %s, %s, %.3f);" % (sel_js(sel), js_obj(f), js_obj(g), t)
 
 
+GHOST = 0.18      # how bright a piece of a build is before its word
 LUCIDE_INSTALL = "npm pack lucide-static@0.454.0, then copy its icons/*.svg to assets/vendor/lucide/"
 
 

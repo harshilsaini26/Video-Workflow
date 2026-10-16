@@ -287,6 +287,10 @@ def main():
         if mod.TYPE == "custom":   # it animates itself between in and out
             moments["spans"].append([round(t_in, 3), round(t_out, 3)])
         css[mod.TYPE] = mod.CSS
+        starts = [s_ for s_, _ in filter(None, map(line_span, lines))]
+        if mod.TYPE != "custom" and starts and min(starts) - t_in > 0.8:   # the scene's own first change, not its transition
+            print("WARN %s: nothing shows for %.1f s after the scene starts; put something on its first word (PLAYBOOK §E4.9)"
+                  % (sid, min(starts) - t_in))
         item_times += [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner)]
         lines = X.enter(kinds[k], sid, t_in) + lines
         if kinds[k] == "burst":

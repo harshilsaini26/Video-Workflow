@@ -98,6 +98,20 @@ class Build(unittest.TestCase):
             self.assertTrue(ctx.ambient_lines, t)
             self.assertTrue(all(l.startswith("tl.") for l in ctx.ambient_lines), t)
 
+    def test_the_structure_shows_dimmed_until_each_piece_is_said(self):
+        # the stage is never bare while a build waits for its first word: every piece is a dim ghost from the scene's in
+        ghosts = {"flow": r"#sc-n\d", "stack": r"#sc-s\d", "cards": r"#sc-c\d"}
+        t_in = 0.5 + 4 * 0.4 - E.LEAD
+        for t, sel in ghosts.items():
+            r, html = self.build(GOOD[t])
+            self.assertEqual(r.returncode, 0, r.stdout)
+            dim = re.findall(r"tl\.to\('(%s)', \{ opacity: 0\.18,[^}]* duration: [\d.]+, ease: '[\w.]+' \}, ([\d.]+)\);" % sel, html)
+            self.assertEqual(len(dim), COUNTS[t], t)
+            self.assertTrue(all(abs(float(x) - t_in) < 1e-3 for _, x in dim), t)
+        r, html = self.build(GOOD["timeline"])                     # the rail and its empty dots come in with the scene
+        self.assertIn("tl.fromTo('#sc .tm-rail, #sc .tm-dot', { opacity: 0, y: -16 }", html)
+        self.assertNotIn("WARN sc: nothing shows", r.stdout)
+
     def test_heights_are_fixed(self):
         for t, sc in GOOD.items():
             mod = REGISTRY[t]

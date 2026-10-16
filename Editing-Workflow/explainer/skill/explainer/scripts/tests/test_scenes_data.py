@@ -57,6 +57,18 @@ class ListCards(SceneCase):
         self.assertEqual(len(re.findall(r'data-at="[\d.]+" data-anchor="word(6|9|12)"', html)), 3)
 
 
+class EmptyStage(SceneCase):
+    def test_list_cards_show_their_slots_from_the_start(self):
+        html = self.ok({"type": "list-cards", "items": [{"label": "A", "at": "word:9"}, {"label": "B", "at": "word:12"}]})
+        self.assertEqual(len(re.findall(r"tl\.to\('#sc-c\d', \{ opacity: 0\.18", html)), 2)
+
+    def test_a_scene_that_shows_nothing_at_first_warns(self):
+        r, _ = self.build({"type": "bars", "source": "s1", "rows": [{"label": "A", "value": 1, "at": "word:12"},
+                                                                    {"label": "B", "value": 2, "at": "word:14"}]})
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("WARN sc: nothing shows for", r.stdout)
+
+
 class LineChart(SceneCase):
     def chart(self, **kw):
         sc = {"type": "line-chart", "label": "VALUE OF $100", "points": [100, 114, 152, 214, 2650], "x": ["Y0", "Y5", "Y10", "Y15", "Y20"],

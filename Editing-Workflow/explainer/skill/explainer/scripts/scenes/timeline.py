@@ -50,7 +50,8 @@ def render(scene, ctx, box):
     cy = lambda i: i * STEP_H + L_LINE // 2           # a step's dot centre, level with its label
     parts = ['<div class="tm-rail" style="top:%dpx;height:%dpx;background:%s"></div>' % (cy(0), cy(len(steps) - 1) - cy(0), rail),
              '<div class="tm-prog" id="%s-prog" style="top:%dpx;background:%s;box-shadow:0 0 16px %s"></div>' % (sid, cy(0), acc, acc)]
-    js, times = [], []
+    # the rail and its empty dots come in with the scene, so the plan is on screen before its first step is said
+    js, times = [ctx.enter("#%s .tm-rail, #%s .tm-dot" % (sid, sid), ctx.t_in, {"y": -16}, stagger=0.3)], []
     for i, s in enumerate(steps):
         t, attrs = ctx.item(s["at"])
         times.append(t)

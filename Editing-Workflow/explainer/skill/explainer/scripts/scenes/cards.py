@@ -2,7 +2,7 @@
 a focus can lift one card on a word (the others dim); each card floats while it holds (PLAYBOOK §E4). For "three
 certificates", "two courses": things to count and name."""
 import explainer_lib as E
-from scenes import js_obj, need
+from scenes import GHOST, js_obj, need
 
 TYPE = "cards"
 CW, CH = 250, 320                # a card
@@ -69,8 +69,9 @@ def render(scene, ctx, box):
                      'style="background:%s;color:%s"><div class="cd-tag">No. %d</div><div class="cd-n">%d</div>%s'
                      '<i class="cd-star" style="border-color:%s"></i></div></div>'
                      % (sid, i, attrs, left, top, i + 1, sid, i, fill, ink, i + 1, i + 1, bars, ink))
+        js.append(ctx.ghost("#%s-c%d" % (sid, i), {"rotation": round((i - mid) * 8, 2)}))   # its place in the fan, dimmed
         js.append("tl.fromTo('#%s-c%d', %s, %s, %.3f);" % (
-            sid, i, js_obj({"opacity": 0, "x": 320, "y": 420, "rotation": 40}),
+            sid, i, js_obj({"opacity": GHOST, "x": 320, "y": 420, "rotation": 40}),
             js_obj({"opacity": 1, "x": 0, "y": 0, "rotation": round((i - mid) * 8, 2), "duration": 0.6, "ease": mo["enter_ease"],
                     "immediateRender": False}), t))
         ty = CH + FAN + GAP

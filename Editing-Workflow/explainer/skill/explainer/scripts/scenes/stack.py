@@ -1,7 +1,7 @@
 """stack: two to five slabs drop onto a pile, the first at the bottom, each on its word; the pile bobs while it holds
 (PLAYBOOK §E4). For things that build on each other: "time value, then risk, then the cost of capital"."""
 import explainer_lib as E
-from scenes import js_obj, need
+from scenes import GHOST, js_obj, need
 
 TYPE = "stack"
 SLAB, GAP, THICK = 92, 14, 14    # a slab, the gap between two, the bottom slab's thickness shadow
@@ -48,7 +48,8 @@ def render(scene, ctx, box):
         parts.append('<div class="sk-slab" id="%s-s%d"%s style="top:%dpx;left:%dpx;right:%dpx;background:%s;color:%s;'
                      'box-shadow:0 %dpx 0 %s, 0 26px 50px rgba(0,0,0,.30)">%s</div>'
                      % (sid, i, attrs, top, i * STEP // 2, i * STEP // 2, fill, ink, THICK, edge, ctx.esc(it["label"])))
-        js.append("tl.fromTo('#%s-s%d', { opacity: 0, y: -240 }, %s, %.3f);"
-                  % (sid, i, js_obj({"opacity": 1, "y": 0, "duration": 0.55, "ease": "back.out(1.4)", "immediateRender": False}), t))
+        js.append(ctx.ghost("#%s-s%d" % (sid, i)))
+        js.append("tl.fromTo('#%s-s%d', %s, %s, %.3f);"
+                  % (sid, i, js_obj({"opacity": GHOST, "y": -240}), js_obj({"opacity": 1, "y": 0, "duration": 0.55, "ease": "back.out(1.4)", "immediateRender": False}), t))
     ctx.idle("#%s .sk" % sid, ctx.t_in + 0.6, ctx.t_out, {"y": -10})
     return '<div class="sk" style="height:%dpx">%s</div>' % (h, "".join(parts)), js

@@ -1,6 +1,6 @@
 """list-cards: two to four cards, each arriving on its word (SPEC §6.2)."""
 import explainer_lib as E
-from scenes import line_px, need, widest
+from scenes import GHOST, line_px, need, widest
 
 TYPE = "list-cards"
 SIZE, LH = 56, 1.15            # card label: DM Sans 700
@@ -42,5 +42,6 @@ def render(scene, ctx, box):
         t, attrs = ctx.item(it["at"])
         html.append('<div class="l-card" id="%s-c%d"%s style="%s;border-left-color:%s;color:%s">%s</div>'
                     % (ctx.id, i, attrs, face, c["cyan"] if not ctx.light else c["magenta"], ctx.ink, ctx.esc(it["label"])))
-        js.append(ctx.enter("#%s-c%d" % (ctx.id, i), t, {"x": -60, "scale": 0.96}))
+        js.append(ctx.ghost("#%s-c%d" % (ctx.id, i)))
+        js.append(ctx.enter("#%s-c%d" % (ctx.id, i), t, {"opacity": GHOST, "x": -60, "scale": 0.96}))
     return "".join(html), js

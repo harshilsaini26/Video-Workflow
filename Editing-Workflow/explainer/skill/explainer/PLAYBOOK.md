@@ -117,6 +117,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    numbered steps as numbers, known brands as logo cards, the rest as draft titles. The Director edits the draft
    (replacing every draft title with a picture) rather than writing scenes and anchors by hand. Custom scenes: at most
    one a reel.
+9. **Never a bare stage:** something shows on a scene's first word. The build-up scenes and list-cards show every
+   piece dimmed from the start and light each one on its word; any other scene whose first change comes over 0.8 s
+   after it starts gets a WARN from the composer (start the scene later, or put an item on its first word).
 
 ## §E5 Captions
 
