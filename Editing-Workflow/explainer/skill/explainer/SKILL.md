@@ -1,6 +1,6 @@
 ---
 name: explainer
-description: Produce a faceless animated explainer reel (1080x1920, 60 fps, 60 to 90 s) end to end as the Producer, using free tools only - a script with sources, a local AI voice (Kokoro) aligned word by word, code-animated scenes from a library plus sandboxed custom scenes, word captions, two checkpoints, render, QA, packaging and the learning loop, directing the explainer-* agents and the reused reels-* agents. Use when the creator asks for an explainer, an animated reel with a voiceover, a faceless reel, or a reel made from a topic, notes or a script rather than footage.
+description: Produce a faceless animated explainer reel (1080x1920, 60 fps, 30 to 90 s) end to end as the Producer, using free tools only - a script with sources, a local AI voice (Kokoro) aligned word by word, code-animated scenes from a library plus sandboxed custom scenes, word captions, two checkpoints, render, QA, packaging and the learning loop, directing the explainer-* agents and the reused reels-* agents. Use when the creator asks for an explainer, an animated reel with a voiceover, a faceless reel, or a reel made from a topic, notes or a script rather than footage.
 ---
 
 # Producer: Explainer
@@ -9,11 +9,13 @@ You run the explainer reel. You start every agent, hold the project's state, run
 failure and note, and you are the **only** one who talks to the creator. You never write the script, voice it,
 storyboard, compose or judge a render yourself.
 
-- `ES=.claude/skills/explainer` (this skill: PLAYBOOK.md, `tokens.json`, `lexicon.json`, `scripts/`, `assets/`,
+- `ES=.claude/skills/explainer` (this skill: PLAYBOOK.md, MOTION.md, `tokens.json`, `lexicon.json`, `scripts/`, `assets/`,
   `templates/`),
   `RS=.claude/skills/reels`, `SK=.claude/skills/youtube-edit` (the kit), agents in `.claude/agents/`,
   `W=videos/<project>`.
-- **Read `$ES/PLAYBOOK.md` at the start of every project** (§E0 to §E8). It is the doctrine you check the work against.
+- **Read `$ES/PLAYBOOK.md` and `$ES/MOTION.md` at the start of every project** (§E0 to §E8; MOTION.md is how a reel
+  looks and moves, learned from motion-graphics-skills, HyperFrames and Remotion). They are the doctrine you check the
+  work against: at Checkpoint B, a still where the picture sits small in empty space, or moves for no reason, goes back.
 - **Free tools only** (§E0): never propose a paid voice, stock, AI video, an avatar or a paid trial.
 
 ## The rules you never break
@@ -38,19 +40,25 @@ storyboard, compose or judge a render yourself.
   from the system's packages for words outside its dictionary).
 - Local libraries in `$ES/assets/vendor/` so renders work offline (the Animator fetches them once):
   `npm pack gsap@3.14.2` (→ `gsap.min.js`), `npm pack katex@0.16.11` (→ `katex/`), `npm pack lucide-static@0.454.0`
-  (→ `lucide/*.svg`), and only for custom 3D scenes `npm pack three@0.169.0` (→ `three/three.module.min.js`).
+  (→ `lucide/*.svg`), `npm pack simple-icons@13.21.0` (→ `simple-icons/icons/` and `simple-icons/_data/`, for logo
+  cards), and only for custom 3D scenes `npm pack three@0.169.0` (→ `three/three.module.min.js`). Chrome also takes the
+  page screenshots (`$ES/scripts/snap-page.py`).
 Agents load at the start of a conversation: after installing, open a new one.
 
 ## 1. Starting a reel
 
 Ask once, in one numbered message (skip what the creator already said):
 1. **The input:** a topic, notes, or a finished script (paste or file).
-2. **Who it is for** and what they should be able to do or know after 60 to 90 s.
-3. **Target length** (60 to 90 s; default 75).
-4. **The call to action** (comment a word, follow for part 2, a link in bio).
+2. **Who it is for**, the pain it solves, and what they should be able to do or know after it; and **the goal**
+   (follows, comments, saves, shares, a link click, or simply learning) and the format (a how-to, this vs that, a
+   myth busted, a mini story or case study, or a plain explainer) if the creator has one in mind (§E1).
+3. **Target length** (30 to 90 s; default 45: short wins on Reels and TikTok).
+4. **The call to action** that serves the goal (comment a word, follow for part 2, save it, a link in bio), and
+   whether this reel is part of a **series** (its name and part number) and the creator's **handle** for the frame.
 5. **Terms** to spell and say right (names, acronyms), and how they are said if unusual.
 6. **The voice:** on the first project, "you'll pick from three samples"; later, the channel's voice from the Brief.
-7. **Music:** none in the file (add it in the app) or in the file (a free licensed track).
+7. **Music:** the generated pad under the voice (the default: never silent, nothing to license), a free licensed track
+   of the creator's in the file, or none in the file (add it in the app).
 
 Create `$W`, copy `$ES/templates/{STATUS,NOTES}.md`, fill the header and **Brief** (profile `explainer`,
 version v1, the **Voice** row), log "project created".
@@ -62,8 +70,8 @@ version v1, the **Voice** row), log "project created".
 | 2 | Script | `explainer-writer` · write | E1 | A |
 | A | **Checkpoint A** | you, with the creator (script, sources, length; voice samples on the first project) | approval | 3 |
 | 3 | Voice | `explainer-voice` · voice | E2 | 4 |
-| 4 | Storyboard | `explainer-director` · plan | its self-check | 5 |
-| 5 | Compose | `explainer-animator` · build | E3, E4 (beat-check, pace-check) | B |
+| 4 | Storyboard | `explainer-director` · plan (from `plan-storyboard.py`'s draft) | its self-check | 5 |
+| 5 | Compose | `explainer-animator` · build | E3, E4 (beat-check, pace-check), E5 (layout-check: a clean picture) | B |
 | B | **Checkpoint B** | you, with the creator (a still of every scene, the voiceover) | approval | 6 |
 | 6 | Render | `reels-renderer` | file exists | 7 |
 | 7 | Verify | `reels-qa` · render | its gates | 8 |
@@ -85,18 +93,28 @@ Start agents with the Agent tool (`subagent_type` = the agent's name); update ST
     1248) is the Reels place, so ignore it and check the band instead;
   - **first frame:** frame 0 shows the background and the first scene fading in (§E1.1); the check is that the hook
     is fully on screen by 1.0 s, not 0.35 s;
-  - skip the face and footage checks; the safe zone, loudness, frame rate and bitrate apply unchanged.
-- `reels-packager`: `captions.srt` from `$W/transcript.json` (the shown words, matching the burned-in captions) with
-  the brief's terms; skip `STORYBOARD.md` (the Reels script reads Reels beats) and attach the Animator's
+  - **safe zone:** the explainer's scene area runs down to y 1420 (Instagram's clear line, MOTION.md §1), so a scene
+    reaching into the guide's bottom band above y 1420 is expected; anything below y 1420, or in the right column
+    below y 960, is a FAIL;
+  - **bitrate:** flat motion graphics average under the floor even at a 20 Mb/s target; `verify-render.py` passes them
+    when x264 was asked for the floor or more (it says "a simple picture");
+  - skip the face and footage checks; loudness and frame rate apply unchanged.
+- `reels-packager`: the music is already in the render (the composer's sound bed, §E3.7): level the reel to -14 LUFS and
+  never mix music in again (the music row of its report: "in the render"); `captions.srt` from `$W/transcript.json`
+  (the shown words, matching the burned-in captions) with the brief's terms; skip `STORYBOARD.md` (the Reels script reads Reels beats) and attach the Animator's
   `snaps/SCENES.md` instead; the posting checklist gets the AI-voice line (§E3).
 - `reels-librarian`: also keeps `$ES/lexicon.json` (new pronunciations) and promotes custom scenes the creator liked
   into `$ES/scripts/scenes/` with a test (§E6).
-- `reels-analyst`: unchanged.
+- `reels-analyst`: also compares reels by format, length and goal, so the next brief starts from what worked.
+- **Posting** (the posting checklist): post on a steady rhythm (consistency beats bursts); 3 to 5 hashtags that fit
+  (one broad such as #LearnOnInstagram or #LearnOnTikTok, one format tag such as #HowTo or #Explained, the rest the
+  topic); a trending sound only when it truly fits the reel, added in the app over the voice at a low level, never
+  instead of it; the series part in the caption.
 
 ## 3. The brief
 
 ```
-PROJECT   videos/<project> · version v<n> · profile explainer (1080x1920, 60 fps, 60 to 90 s, free tools only)
+PROJECT   videos/<project> · version v<n> · profile explainer (1080x1920, 60 fps, 30 to 90 s, free tools only)
 JOB       <the agent's job>
 INPUTS    <exact files>
 TASK      <one or two sentences>

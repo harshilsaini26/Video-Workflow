@@ -13,11 +13,11 @@ class SceneCase(unittest.TestCase):
         d = scratch(self)
         write(os.path.join(d, "transcript.json"), {"words": words30()})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
-        lead = {"type": "title", "id": "lead", "bg": "black", "in": "word:0", "out": "word:4", "text": "Lead in"}
-        sc = dict({"id": "sc", "bg": "black", "in": "word:4", "out": D}, **scene)
+        lead = {"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:4", "text": "Lead in"}
+        sc = dict({"id": "sc", "bg": "mantle", "in": "word:4", "out": D}, **scene)
         scenes = [lead, sc]
         if sc["out"] not in (D, "end"):     # a short scene under test: a closing scene covers the rest
-            scenes.append({"type": "title", "id": "tail", "bg": "black", "in": sc["out"], "out": "end", "text": "The end"})
+            scenes.append({"type": "title", "id": "tail", "bg": "mantle", "in": sc["out"], "out": "end", "text": "The end"})
         sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": scenes})
         out = os.path.join(d, "public")
         r = run("explainer-compose.py", "--spec", sp, "--out", out, "--vendor", os.path.join(d, "vendor"))
@@ -55,6 +55,18 @@ class ListCards(SceneCase):
         html = self.ok({"type": "list-cards", "items": self.items(3)})
         self.assertEqual(entrance_times(html, "#sc-c"), [at_minus_lead(6), at_minus_lead(9), at_minus_lead(12)])
         self.assertEqual(len(re.findall(r'data-at="[\d.]+" data-anchor="word(6|9|12)"', html)), 3)
+
+
+class EmptyStage(SceneCase):
+    def test_list_cards_show_their_slots_from_the_start(self):
+        html = self.ok({"type": "list-cards", "items": [{"label": "A", "at": "word:9"}, {"label": "B", "at": "word:12"}]})
+        self.assertEqual(len(re.findall(r"tl\.to\('#sc-c\d', \{ opacity: 0\.18", html)), 2)
+
+    def test_a_scene_that_shows_nothing_at_first_warns(self):
+        r, _ = self.build({"type": "bars", "source": "s1", "rows": [{"label": "A", "value": 1, "at": "word:12"},
+                                                                    {"label": "B", "value": 2, "at": "word:14"}]})
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("WARN sc: nothing shows for", r.stdout)
 
 
 class LineChart(SceneCase):
@@ -99,13 +111,13 @@ class Bars(SceneCase):
 
     def test_width_proportional_and_hi_cyan(self):
         html = self.ok(self.bars())
-        box_w = int(re.search(r'id="sc" style="left:\d+px;top:\d+px;width:(\d+)px', html).group(1))
+        box_w = int(re.search(r'id="sc-live" style="width:(\d+)px', html).group(1))
         fills = re.findall(r'<div class="b-fill" style="width:(\d+)px;background:([^;"]+)', html)
         self.assertEqual(len(fills), 3)
         for (w, col), v in zip(fills, (40, 1000, 500)):
             self.assertAlmostEqual(int(w), box_w * v / 1000, delta=1)
-        self.assertEqual(fills[1][1], TOK["colors"]["cyan"])
-        self.assertNotEqual(fills[0][1], TOK["colors"]["cyan"])
+        self.assertEqual(fills[1][1], E.theme(TOK, "mantle")["accent"])
+        self.assertNotEqual(fills[0][1], E.theme(TOK, "mantle")["accent"])
 
     def test_unbreakable_word_too_wide_fails(self):
         sc = self.bars()
@@ -122,6 +134,24 @@ class Duration(SceneCase):
             self.assertIn("weeks", html)
             self.assertIn("countUp('#sc-v', 0, 6", html)
 
+
+
+class CountsFitWhileCounting(SceneCase):
+    """DM Sans digits are proportional (0 is about twice as wide as 1), so a count is measured at its widest moment, not
+    at its final number: on the way to $1,111,111 it shows $1,000,000."""
+
+    def test_count_up(self):
+        self.fails({"type": "count-up", "value": 1111111, "prefix": "$", "source": "s1"}, "wider than the")   # final ~620 px, ~966 counting
+        self.ok({"type": "count-up", "value": 99999, "prefix": "$", "source": "s1"})
+
+    def test_line_chart_readout(self):
+        self.fails({"type": "line-chart", "points": [100, 11111111111], "x": ["Y0", "Y20"], "prefix": "$", "source": "s1"},
+                   "wider than the")
+        self.ok({"type": "line-chart", "points": [100, 2650], "x": ["Y0", "Y20"], "prefix": "$", "source": "s1"})
+
+    def test_duration_in_full_digits(self):
+        self.fails({"type": "duration", "value": 111111111, "unit": "hours", "source": "s1"}, "wider than the")
+        self.ok({"type": "duration", "value": 1000, "unit": "hours", "source": "s1"})
 
 class QAStack(SceneCase):
     def items(self, n):

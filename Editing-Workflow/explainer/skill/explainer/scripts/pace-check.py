@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """pace-check.py: gate E4's pacing half: something on screen changes at least every few seconds.
 
-  pace-check.py --index public/index.html [--moments public/moments.json] [--max 6] [--warn 4]
+  pace-check.py --index public/index.html [--moments public/moments.json] [--max 3] [--warn 2]
 
 The kit's gap-scan measures stretches with no overlay on screen; an explainer's scenes cover the whole voice by
 construction, so it can never find one. This reads `moments.json`, which explainer-compose.py writes next to the page:
 every scene's entrance and exit, every item, count, draw and highlight, each from its start to its end (a custom scene
-counts as changing from its in to its out). Captions are not counted. A stretch with no change longer than --max
-seconds fails, naming the scene on screen; one longer than --warn is listed (PLAYBOOK §E1.4: a change every 2 to 4 s).
+counts as changing from its in to its out). Captions and ambient motion (the background's glows moving with a cut, a
+scene's idle float or pulse, the hub's slow turn) are not counted: they keep the picture alive, they are not a new picture. A
+stretch with no change longer than --max seconds fails, naming the scene on screen; one longer than --warn is listed
+(PLAYBOOK §E1.4: a change every 1.5 to 3 s).
 """
 import argparse, json, os, sys
 
@@ -16,8 +18,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--index", required=True)
     ap.add_argument("--moments", help="default: moments.json next to the index")
-    ap.add_argument("--max", type=float, default=6.0)
-    ap.add_argument("--warn", type=float, default=4.0)
+    ap.add_argument("--max", type=float, default=3.0)
+    ap.add_argument("--warn", type=float, default=2.0)
     a = ap.parse_args()
     path = a.moments or os.path.join(os.path.dirname(os.path.abspath(a.index)), "moments.json")
     if not os.path.exists(path):

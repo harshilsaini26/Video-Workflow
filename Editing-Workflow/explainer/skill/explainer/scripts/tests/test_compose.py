@@ -33,10 +33,10 @@ BOARD = {
     "id": "test-01", "fps": 60, "voice": "voice.wav", "transcript": "transcript.json",
     "captions": {"emphasis": ["NPV"]},
     "scenes": [
-        {"type": "title", "id": "hook", "bg": "black", "in": "word:0", "out": "word:8",
+        {"type": "title", "id": "hook", "bg": "mantle", "in": "word:0", "out": "word:8",
          "text": "Three certificates nobody tells you about", "kicker": "IF YOU'RE NEW"},
-        {"type": "number", "id": "n1", "bg": "black", "in": "word:8", "out": "word:18", "n": 1, "name": "Coursera finance"},
-        {"type": "count-up", "id": "cu", "bg": "light", "in": "word:18", "out": D, "value": 1000, "prefix": "$",
+        {"type": "number", "id": "n1", "bg": "mantle", "in": "word:8", "out": "word:18", "n": 1, "name": "Coursera finance"},
+        {"type": "count-up", "id": "cu", "bg": "base", "in": "word:18", "out": D, "value": 1000, "prefix": "$",
          "sub": "saved a year", "source": "s1"},
     ],
 }
@@ -80,6 +80,20 @@ class Compose(unittest.TestCase):
         self.assertIn('window.__timelines["test-01"]', html)
         self.assertIn('class="clip cap-layer"', html)
 
+    def test_the_brand_and_the_series_part_sit_over_the_captions(self):
+        # a visual identity on every frame (the handle) and a series the viewer can follow (PART 2), in the safe area
+        def edit(b):
+            b["brand"] = {"handle": "@harshil", "series": "RAG in 60 s", "part": 2}
+        html, _, _ = self.ok(edit)
+        m = re.search(r'<div class="brand" id="brand" style="top:(\d+)px;height:(\d+)px;color:([^"]+)"><span>@harshil</span><span>PART 2</span></div>', html)
+        self.assertTrue(m, html[:3000])
+        top, h = int(m.group(1)), int(m.group(2))
+        self.assertGreaterEqual(top, E.L.SAFE["top"])
+        self.assertLessEqual(top + h, E.CAPTION_BAND[0])
+        self.assertEqual(m.group(3), E.theme(TOK, "mantle")["muted"])
+        html, _, _ = self.ok()
+        self.assertNotIn('id="brand"', html)                   # nothing when the storyboard names no brand
+
     def test_fonts_preloaded(self):
         html, page, _ = self.ok()   # a hidden scene's text would otherwise load its font only when shown, a frame late
         for f in sorted(os.listdir(os.path.join(os.path.dirname(page), "fonts"))):
@@ -95,7 +109,7 @@ class Compose(unittest.TestCase):
             self.assertGreaterEqual(top, E.SCENE["top"])
             self.assertLessEqual(left + width, E.SCENE["right"])
             self.assertLessEqual(top + height, E.SCENE["bottom"])
-            self.assertTrue(E.L.inside_safe(left, top, width, height))
+            self.assertTrue(E.inside_scene(left, top, width, height))
             if top + height > E.L.RIGHT_COL_TOP:
                 self.assertEqual((left, width), (150, 780))
                 narrow += 1
@@ -158,7 +172,8 @@ class Compose(unittest.TestCase):
 
     def test_background_crossfades_on_change(self):
         def edit(b):
-            b["scenes"][1]["bg"] = "light"
+            b["scenes"][1]["bg"] = "base"
+            b["scenes"][1]["transition"] = "push"     # a named transition other than wipe keeps the cross-fade
         html, _, _ = self.ok(edit)
         self.assertEqual(len(re.findall(r'class="bg"', html)), 2)
         fades = re.findall(r"tl\.to\('#bg(\d+)', \{ opacity: 1, duration: ([\d.]+)[^;]*\}, ([\d.]+)\);", html)
@@ -195,10 +210,10 @@ class Compose(unittest.TestCase):
         for tw in tweens:
             if re.search(r"ease: 'none'", tw) and re.search(r"\b(x|y|scale): ", tw):
                 self.fail("linear easing on movement: " + tw)
-            if tw.startswith("tl.fromTo(") and re.search(r"^tl\.fromTo\([^{]*\{ opacity: 0\b", tw):
+            if tw.startswith("tl.fromTo(") and re.search(r"^tl\.fromTo\([^{]*\{ opacity: 0[,} ]", tw):
                 entrances += 1
                 self.assertIn("ease: '%s'" % m["enter_ease"], tw)
-            elif tw.startswith("tl.to(") and re.search(r"\{ opacity: 0\b", tw):
+            elif tw.startswith("tl.to(") and re.search(r"\{ opacity: 0[,} ]", tw):   # to 0, not to 0.4
                 exits += 1
                 self.assertIn("ease: '%s'" % m["exit_ease"], tw)
                 self.assertLessEqual(float(re.search(r"duration: ([\d.]+)", tw).group(1)), m["exit"])
@@ -229,7 +244,7 @@ class Compose(unittest.TestCase):
 
     def test_item_on_the_first_word_with_an_early_voice(self):
         def edit(b):
-            b["scenes"][0] = {"type": "qa-stack", "id": "hook", "bg": "black", "in": "word:0", "out": "word:8",
+            b["scenes"][0] = {"type": "qa-stack", "id": "hook", "bg": "mantle", "in": "word:0", "out": "word:8",
                               "items": [{"text": "Is it cheap?", "at": "word:0"}]}
         self.ok(edit, t0=0.1)
 
@@ -241,7 +256,7 @@ class Compose(unittest.TestCase):
 
     def test_json_numbers_on_screen_need_a_source(self):
         def edit(b):
-            b["scenes"][1] = {"type": "sheet", "id": "n1", "bg": "black", "in": "word:8", "out": "word:18",
+            b["scenes"][1] = {"type": "sheet", "id": "n1", "bg": "mantle", "in": "word:8", "out": "word:18",
                               "rows": [["Year", "Revenue"], [2023, 1500000]]}
         self.fails(edit, "n1: ")
 

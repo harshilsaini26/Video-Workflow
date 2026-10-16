@@ -29,10 +29,10 @@ class Custom(unittest.TestCase):
         write(os.path.join(d, "transcript.json"), {"words": words30()})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
         write(os.path.join(d, "custom", "yield.html"), html)
-        lead = {"type": "title", "id": "lead", "bg": "black", "in": "word:0", "out": "word:4", "text": "Lead in"}
-        cu = {"type": "custom", "id": "yield", "bg": "black", "in": "word:4", "out": "word:14",
+        lead = {"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:4", "text": "Lead in"}
+        cu = {"type": "custom", "id": "yield", "bg": "mantle", "in": "word:4", "out": "word:14",
               "box": box or {"x": 65, "y": 560, "w": 950, "h": 380}, "html": "custom/yield.html", "build": "buildYield", "source": "s1"}
-        tail = {"type": "title", "id": second_id, "bg": "black", "in": "word:14", "out": D, "text": "The end"}
+        tail = {"type": "title", "id": second_id, "bg": "mantle", "in": "word:14", "out": D, "text": "The end"}
         scenes = [lead, cu, tail]
         if extra:
             extra(scenes)
@@ -60,6 +60,41 @@ class Custom(unittest.TestCase):
         for bad in ("fetch('/data.json');", "const u = 'https://example.com/x.png';", "const v = 'http://example.com';",
                     "import('https://cdn.example.com/m.js');"):
             self.fails("network", html=GOOD.replace("const bars", bad + " const bars"))
+        for bad in ("const w = '//cdn.example.com/x.js';", "root.innerHTML = '<img src=//cdn.example.com/a.png>';"):
+            self.fails("network", html=GOOD.replace("const bars", bad + " const bars"))   # protocol-relative: the web too
+        for bad in ("@import url('https://fonts.example.com/a.css');", "@import '//fonts.example.com/a.css';",
+                    "#yield .bar { background: url(//example.com/a.png); }"):
+            self.fails("network", html=GOOD.replace("<style>", "<style>\n  " + bad))
+        self.assertEqual(self.build(html=GOOD.replace("const bars", "// a comment\n    const bars"))[0].returncode, 0)
+
+    def test_the_motion_doctrine_holds_in_a_custom_scene(self):
+        # MOTION.md: no overshoot ease, no endless loop, nothing random (a render must be the same every time)
+        for bad, word in (("ease: 'back.out(1.7)'", "back"), ("ease: 'elastic.out(1, 0.3)'", "elastic"),
+                          ("ease: 'bounce.out'", "bounce"), ("repeat: -1, ease: 'power2.out'", "repeat"),
+                          ("yoyo: true, ease: 'power2.out'", "yoyo")):
+            self.fails(word, html=GOOD.replace("ease: 'power2.out'", bad))
+        self.fails("Math.random", html=GOOD.replace("const bars", "const r = Math.random(); const bars"))
+        self.fails("repeat", html=GOOD.replace("const bars", "tl.repeat(-1); const bars"))
+        self.fails("repeat", html=GOOD.replace("ease: 'power2.out'", '"repeat": -1, ease: \'power2.out\''))
+        self.fails("back", html=GOOD.replace("ease: 'power2.out'", "ease: Back.easeOut"))
+        self.fails("endless", html=GOOD.replace("#yield .bar.two, #yield svg { opacity: .5; }",
+                                                "#yield .bar.two, #yield svg { opacity: .5; animation: pulse 1s infinite; }"))
+        self.fails("Date.now", html=GOOD.replace("const bars", "const n = Date.now(); const bars"))
+        # the words alone are not motion: CSS repeat properties, a comment, a class named back, a string
+        ok = (GOOD.replace("#yield .bar.two, #yield svg { opacity: .5; }",
+                           "#yield .bar.two, #yield svg { opacity: .5; background-repeat: no-repeat; }")
+              .replace("const bars", "// repeat: never; no yoyo: here, no Math.random()\n    const label = 'bounce back'; const bars")
+              .replace('<div class="bar two"></div>', '<div class="bar two back"></div>')
+              .replace("ease: 'power2.out'", "ease: 'expo.out'"))
+        r, _ = self.build(html=ok)
+        self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_a_module_build_function_must_be_on_window(self):
+        # a module's top-level function is private to the module: window.buildYield stays undefined and the scene empty
+        module = GOOD.replace("<script>", '<script type="module">')
+        self.fails("window.buildYield = buildYield", html=module)
+        r, _ = self.build(html=module.replace("  function buildYield", "  window.buildYield = buildYield;\n  function buildYield"))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
     def test_missing_build_function_fails(self):
         self.fails("buildYield", html=GOOD.replace("function buildYield", "function buildOther"))
@@ -72,7 +107,7 @@ class Custom(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         t_in, t_out = t_word(4) - E.LEAD, t_word(14) - E.LEAD
         self.assertIn('window.buildYield(tl, document.getElementById("yield"), %.3f, %.3f)' % (t_in, t_out), html)
-        self.assertRegex(html, r'<div class="box" id="yield" style="left:65px;top:560px;width:950px;height:380px">\s*<style>')
+        self.assertRegex(html, r'<div class="box" id="yield" style="left:65px;top:560px;width:950px;height:380px"><div class="live" id="yield-live" style="width:950px;height:380px;transform:scale\(1\)">\s*<style>')
 
     def test_three_needs_its_vendor_copy(self):
         html = GOOD.replace("<script>", '<script type="module">\n  import * as THREE from "three";\n  window.buildYield = buildYield;')

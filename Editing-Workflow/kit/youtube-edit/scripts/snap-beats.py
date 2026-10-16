@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """snap-beats.py: snapshot every card moment of a composed project and tile them into one contact sheet.
-Reads the storyboard.json next to public/ (compose.py format): tag in + 0.9, every beat in + 0.9, a list or
+Reads the storyboard.json next to public/ (compose.py format): each tag in + 0.9, every beat in + 0.9, a list or
 bullets beat again 0.6 s after its last item, plus any --at extras. A snapshot is seconds; a render is a minute.
 
 Usage: python3 snap-beats.py --project videos/<p> [--at 12.3 --at 20.0]
@@ -15,8 +15,8 @@ args = ap.parse_args()
 P = args.project
 S = json.load(open(os.path.join(P, "storyboard.json")))
 moments = []
-if S.get("tag"):
-    moments.append(S["tag"]["in"] + 0.9)
+for tag in S.get("tags") or ([S["tag"]] if S.get("tag") else []):   # compose.py: one "tag" or a "tags" list
+    moments.append(float(tag["in"]) + 0.9)
 for b in S.get("beats", []):
     moments.append(float(b["in"]) + (1.5 if b["type"] == "pointer" else 0.9))
     if b["type"] in ("list", "bullets") and b.get("items"):

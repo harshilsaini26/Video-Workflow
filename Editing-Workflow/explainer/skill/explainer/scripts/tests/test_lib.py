@@ -21,9 +21,7 @@ class Lib(unittest.TestCase):
 
     def test_tokens_have_the_house_colours(self):
         t = E.load_tokens()
-        self.assertEqual(t["colors"]["cyan"], "#0AF0F0")
-        for bg in ("blue", "black", "light"):
-            self.assertIn(bg, t["backgrounds"])
+        self.assertEqual(E.theme(t, "mantle")["accent"], "#1e66f5")    # Catppuccin Latte blue (test_theme has the rest)
         self.assertLessEqual(t["motion"]["exit"], 0.7 * t["motion"]["enter"])
 
     def test_reels_lib_is_found(self):

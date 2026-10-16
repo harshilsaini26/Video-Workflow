@@ -3,7 +3,8 @@
 The storyboard names an HTML file (relative to storyboard.json) holding <style>, markup and a <script> that defines
 build(tl, root, t0, t1). The composer puts the file inside <div class="box" id="<id>"> and calls the function with the
 shared timeline, that div, and the scene's times. A lint over the file fails the build when it styles or selects
-anything outside #<id>, touches document.body, reaches the network, or lacks the function. Libraries: GSAP (always
+anything outside #<id>, touches document.body, reaches the network, breaks MOTION.md (a back, elastic or bounce ease,
+repeat, yoyo, Math.random), or lacks the function. Libraries: GSAP (always
 there), KaTeX and three.js from the local vendor folder.
 """
 import os, re
@@ -17,7 +18,28 @@ THREE_INSTALL = "npm pack three@0.169.0, then copy its build/three.module.min.js
 _IDENT = re.compile(r"^[A-Za-z_$][A-Za-z0-9_$]*$")
 _NETWORK = [(r"\bfetch\s*\(", "fetch("), (r"https?://", "a web address"), (r"\bimport\s*\(", "import()"),
             (r"\bXMLHttpRequest\b", "XMLHttpRequest"), (r"\bWebSocket\b", "WebSocket"), (r"\bsendBeacon\b", "sendBeacon"),
-            (r"<\s*(iframe|object|embed)\b", "an embedded page"), (r"\b(eval|Function)\s*\(", "eval / Function")]
+            (r"<\s*(iframe|object|embed)\b", "an embedded page"), (r"\b(eval|Function)\s*\(", "eval / Function"),
+            (r"@import\b", "CSS @import"),
+            # "//host/x" in a string, url(), or an attribute loads over the web too; a // comment follows a space or a newline
+            (r"[('\"`=]\s*//[\w-]+(\.[\w-]+)+", "a web address (//...)")]
+# MOTION.md's rules hold here too: no overshoot ease, no endless loop, nothing random (every render must be the same).
+# Checked in the scripts and styles only, comments removed, and only where the word drives motion (an ease value, a
+# repeat or yoyo key or call): a CSS background-repeat, a class named "back" or a string saying "bounce" is not motion.
+_EASE = r"(?:\bease\s*:\s*['\"`]\s*(back|elastic|bounce)\b|\b(Back|Elastic|Bounce)\s*\.\s*ease\w*)"
+_SCRIPT_RULES = [(_EASE, "a %s ease: it overshoots and reads as cheap; use power3 or expo"),
+                 (r"(?:(?<![-\w])['\"]?repeat['\"]?\s*:|\.\s*repeat\s*\()", "repeat: an endless loop is lazy motion; move only when the voice gives a reason"),
+                 (r"(?:(?<![-\w])['\"]?yoyo['\"]?\s*:|\.\s*yoyo\s*\()", "yoyo: a back-and-forth is lazy motion; move only when the voice gives a reason"),
+                 (r"\bMath\s*\.\s*random\b", "Math.random: a render must be the same every time; use fixed values"),
+                 (r"\bDate\s*\.\s*now\b", "Date.now: a render must be the same every time; use the timeline's t0 and t1")]
+_STYLE_RULES = [(r"\binfinite\b", "an endless CSS animation (infinite): it runs off the timeline; tween it on tl instead")]
+
+
+def _strip_comments(code, js=True):
+    code = re.sub(r"/\*.*?\*/", "", code, flags=re.S)
+    return re.sub(r"(^|[^:'\"`\\])//[^\n]*", r"\1", code) if js else code
+
+
+_MODULE = r"<script\b[^>]*\btype\s*=\s*['\"]?module\b[^>]*>(.*?)</script>"
 _DOC = [(r"\bdocument\s*\.\s*body\b", "document.body"), (r"\bdocument\s*\.\s*documentElement\b", "document.documentElement")]
 _DOC_SELECT = r"\bdocument\s*\.\s*(querySelector(All)?|getElementById|getElementsBy\w+)\s*\("
 _TWEEN_SELECT = r"\b(?:tl|gsap)\s*\.\s*(?:to|from|fromTo|set)\s*\(\s*(['\"`])(.*?)\1"
@@ -53,6 +75,14 @@ def lint(src, sid, build):
     for pat, what in _NETWORK:
         if re.search(pat, scan):
             errs.append("uses %s: a custom scene renders offline, with no network" % what)
+    scripts = "\n".join(_strip_comments(x) for x in re.findall(r"<script\b[^>]*>(.*?)</script>", src, re.S | re.I))
+    styles = "\n".join(_strip_comments(x, js=False) for x in re.findall(r"<style[^>]*>(.*?)</style>", src, re.S | re.I))
+    for code, rules in ((scripts, _SCRIPT_RULES), (styles, _STYLE_RULES)):
+        for pat, what in rules:
+            m = re.search(pat, code)
+            if m:
+                name = next((g for g in m.groups() if g), "") if m.groups() else ""
+                errs.append("uses " + (what % name.lower() if "%s" in what else what))
     for pat, what in _DOC:
         if re.search(pat, src):
             errs.append("touches %s: work inside root (#%s) only" % (what, sid))
@@ -74,8 +104,13 @@ def lint(src, sid, build):
                     continue
                 if not re.match(r"^#%s\b" % re.escape(sid), sel):
                     errs.append("styles %r, outside #%s: start every selector with #%s" % (sel, sid, sid))
-    if not re.search(r"\bfunction\s+%s\s*\(|\b%s\s*=\s*(function\b|\()" % (re.escape(build), re.escape(build)), src):
+    defines = r"\bfunction\s+%s\s*\(|\b%s\s*=\s*(function\b|\()" % (re.escape(build), re.escape(build))
+    if not re.search(defines, src):
         errs.append("defines no function %s(tl, root, t0, t1)" % build)
+    elif (any(re.search(defines, m) for m in re.findall(_MODULE, src, re.S | re.I))
+          and not re.search(r"\bwindow\s*\.\s*%s\s*=" % re.escape(build), src)):
+        # a module's top-level names are its own: the page calls window.<build>, which would be undefined
+        errs.append("defines %s inside a module script, where the page cannot call it: add window.%s = %s;" % (build, build, build))
     return errs
 
 

@@ -102,7 +102,8 @@ Positions: tl = left:70 top:96 (desk framing, clears the mic), tr = right:70 top
 import argparse, json, os, shutil, glob, math, struct
 from html import escape as _esc
 
-hesc = lambda s: _esc(s, quote=False)
+hesc = lambda s: _esc(str(s), quote=False)   # storyboard text shown as text: "<" and "&" never become markup
+aesc = lambda s: _esc(str(s), quote=True)    # the same inside an attribute value
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--spec", required=True)
@@ -670,7 +671,7 @@ def attr_anchor(anchor):
     """'-' marks a beat that is deliberately not tied to a spoken word (beat-check skips it)."""
     if anchor == "-":
         return ' data-unanchored="1"'
-    return ' data-anchor="%s"' % anchor.replace('"', "&quot;") if anchor else ""
+    return ' data-anchor="%s"' % aesc(anchor) if anchor else ""
 
 def host(bid, t_in, t_out, track, inner, anchor=""):
     a = attr_anchor(anchor)
@@ -736,7 +737,7 @@ def icon_svg(name, size=None):
 
 def em_spans(text, em):
     ws = text.split(" ")
-    return " ".join('<span class="em">%s</span>' % w if i in set(em or []) else w for i, w in enumerate(ws))
+    return " ".join('<span class="em">%s</span>' % hesc(w) if i in set(em or []) else hesc(w) for i, w in enumerate(ws))
 
 def image_size(path):
     """(width, height) of a PNG or JPEG without extra libraries."""
@@ -790,7 +791,7 @@ def scene_label(bid, b, t_out):
         return ""
     em = set(b.get("label_em", []))
     ws = b["label"].split(" ")
-    spans = " ".join('<span class="em">%s</span>' % w if i in em else w for i, w in enumerate(ws))
+    spans = " ".join('<span class="em">%s</span>' % hesc(w) if i in em else hesc(w) for i, w in enumerate(ws))
     t = float(b.get("label_at", b["in"]))
     js("tl.fromTo('#%s-label', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, %.3f);" % (bid, t))
     js("tl.to('#%s-label', { opacity: 0, duration: 0.3, ease: 'power2.in' }, %.3f);" % (bid, t_out - 0.34))
@@ -809,7 +810,7 @@ for ti, tag in enumerate(S.get("tags") or ([S["tag"]] if S.get("tag") else [])):
     pips = "".join('<span class="pip%s"></span>' % (" now" if i + 1 == tag["n"] else (" done" if i + 1 < tag["n"] else "")) for i in range(tag["of"]))
     pos = POS.get(tag.get("pos", "tr"), POS["tr"])
     inner = ('<div class="glass tag" id="%s-glass" style="%s"><div class="inner" id="%s-inner"><div class="pips">%s</div><div class="label">%s</div></div></div>'
-             % (tid, pos, tid, pips, tag["label"]))
+             % (tid, pos, tid, pips, hesc(tag["label"])))
     html_parts.append(host(tid, tag["in"], tag["out"], track, inner, tag.get("anchor", "")))
     track += 1
     js("glassIn('#%s-glass', %.3f, { y: -22 });" % (tid, tag["in"]))
@@ -827,7 +828,7 @@ for b in S.get("beats", []):
     if t == "line":
         cls = "lower" + (" amber" if b.get("color") == "amber" else "") + (" shine" if b.get("shimmer") else "")
         em = ",".join(str(i) for i in b.get("em", []))
-        inner = '<div class="%s" id="%s" data-text="%s" data-em="%s"></div>' % (cls, bid, b["text"].replace('"', "&quot;"), em)
+        inner = '<div class="%s" id="%s" data-text="%s" data-em="%s"></div>' % (cls, bid, aesc(b["text"]), em)
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
         js("lowerIn('%s', %.3f);" % (bid, t_in + 0.05))
         if b.get("shimmer"):    # 16. one cyan light band travels the line, twice, once the words have landed
@@ -853,8 +854,8 @@ for b in S.get("beats", []):
     elif t == "list":
         pos = POS.get(b.get("pos", "tl"), POS["tl"])
         mark = CHECK_SVG if b.get("marker") == "check" else '<div class="d"></div>'
-        items = "".join('<div class="item" id="%s-i%d"%s>%s<div class="t">%s</div></div>' % (bid, i, item_attrs(it), mark, it[0]) for i, it in enumerate(b["items"]))
-        eyebrow = ('<div class="eyebrow"%s>%s</div>' % (' style="font-size:%dpx"' % int(b["eyebrow_size"]) if b.get("eyebrow_size") else "", b["eyebrow"])) if b.get("eyebrow") else ""
+        items = "".join('<div class="item" id="%s-i%d"%s>%s<div class="t">%s</div></div>' % (bid, i, item_attrs(it), mark, hesc(it[0])) for i, it in enumerate(b["items"]))
+        eyebrow = ('<div class="eyebrow"%s>%s</div>' % (' style="font-size:%dpx"' % int(b["eyebrow_size"]) if b.get("eyebrow_size") else "", hesc(b["eyebrow"]))) if b.get("eyebrow") else ""
         extra = "width:%dpx;" % int(b["width"]) if b.get("width") else ""
         sz = ' style="font-size:%dpx"' % int(b["size"]) if b.get("size") else ""
         items = items.replace('<div class="t">', '<div class="t"%s>' % sz)
@@ -872,7 +873,7 @@ for b in S.get("beats", []):
         js("tl.set('#%s-inner', { opacity: 0 }, %.3f);" % (bid, t_out - 0.10))
     elif t == "bullets":
         mark = CHECK_SVG if b.get("marker") == "check" else '<div class="d"></div>'
-        items = "".join('<div class="b" id="%s-b%d"%s>%s<div class="t">%s</div></div>' % (bid, i, item_attrs(it), mark, it[0]) for i, it in enumerate(b["items"]))
+        items = "".join('<div class="b" id="%s-b%d"%s>%s<div class="t">%s</div></div>' % (bid, i, item_attrs(it), mark, hesc(it[0])) for i, it in enumerate(b["items"]))
         inner = '<div class="scrim" id="%s-scrim"></div><div class="bullets" id="%s-bullets">%s</div>' % (bid, bid, items)
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
         rel = float(b.get("release", t_out - 0.55))
@@ -889,7 +890,7 @@ for b in S.get("beats", []):
         js("tl.set('#%s-bullets .b, #%s-scrim', { opacity: 0 }, %.3f);" % (bid, bid, t_out - 0.01))
     elif t == "chip":
         ws = b["text"].split(" "); em = set(b.get("em", []))
-        spans = " ".join('<span class="em">%s</span>' % w if i in em else w for i, w in enumerate(ws))
+        spans = " ".join('<span class="em">%s</span>' % hesc(w) if i in em else hesc(w) for i, w in enumerate(ws))
         inner = '<div class="chip" id="%s-chip"><div class="inner" id="%s-inner">%s</div></div>' % (bid, bid, spans)
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
         js("tl.fromTo('#%s-chip', { backgroundColor: 'rgba(17,17,17,0)', y: 18 }, { backgroundColor: 'rgba(17,17,17,0.45)', y: 0, duration: 0.40, ease: 'power2.out' }, %.3f);" % (bid, t_in))
@@ -1122,7 +1123,7 @@ for b in S.get("beats", []):
         tiles = ""
         for i, it in enumerate(items):
             tiles += ('<div class="glass st-tile%s" id="%s-t%d"><div class="inner" id="%s-ti%d"><div class="st-num" id="%s-n%d">%s</div><div class="st-lab">%s</div></div></div>'
-                      % (" em" if i in em else "", bid, i, bid, i, bid, i, fmt_value(0, it.get("prefix", ""), it.get("suffix", ""), it.get("decimals", 0)), it["label"]))
+                      % (" em" if i in em else "", bid, i, bid, i, bid, i, fmt_value(0, it.get("prefix", ""), it.get("suffix", ""), it.get("decimals", 0)), hesc(it["label"])))
         if stack:
             pos = POS.get(b.get("pos", "tr"), POS["tr"])
             inner = '<div class="st-stack" style="%s">%s</div>' % (pos, tiles)
@@ -1158,13 +1159,13 @@ for b in S.get("beats", []):
             extra_svg = ('<path class="gr-area" id="%s-area" d="%s L%.1f %.1f L%.1f %.1f Z"/>' % (bid, d, pts[-1][0], H, pts[0][0], H)
                          + "".join('<circle class="gr-pt" id="%s-pt%d" cx="%.1f" cy="%.1f" r="9"/>' % ((bid, i) + p) for i, p in enumerate(pts[:-1])))
             if b.get("badge"):
-                badge = '<div class="gr-badge" id="%s-badge" style="left:%.0fpx;top:%.0fpx">%s</div>' % (bid, pts[-1][0], pts[-1][1] - 22, b["badge"])
+                badge = '<div class="gr-badge" id="%s-badge" style="left:%.0fpx;top:%.0fpx">%s</div>' % (bid, pts[-1][0], pts[-1][1] - 22, hesc(b["badge"]))
         pos = POS.get(b.get("pos", "tr"), POS["tr"])
         inner = ('<div class="glass gr" id="%s-glass" style="%s"><div class="inner" id="%s-inner"><div class="gr-eye">%s</div>'
                  '<div class="gr-num" id="%s-num">%s</div>%s<div class="gr-plot"><div class="gr-bars" id="%s-bars">%s</div>'
                  '<svg viewBox="0 0 %d %d" preserveAspectRatio="none">%s<path class="gr-line" id="%s-line" d="%s"/><circle class="gr-dot" id="%s-dot" cx="%.1f" cy="%.1f" r="11"/></svg>%s</div></div></div>'
-                 % (bid, pos, bid, b.get("eyebrow", ""), bid, fmt_value(0, b.get("prefix", ""), b.get("suffix", ""), b.get("decimals", 0)),
-                    '<div class="gr-sub">%s</div>' % b["sub"] if b.get("sub") else "", bid, bars, W, H, extra_svg, bid, d, bid, pts[-1][0], pts[-1][1], badge))
+                 % (bid, pos, bid, hesc(b.get("eyebrow", "")), bid, fmt_value(0, b.get("prefix", ""), b.get("suffix", ""), b.get("decimals", 0)),
+                    '<div class="gr-sub">%s</div>' % hesc(b["sub"]) if b.get("sub") else "", bid, bars, W, H, extra_svg, bid, d, bid, pts[-1][0], pts[-1][1], badge))
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
         tc = float(b.get("count_at", t_in + 0.35)); tb = float(b.get("bars_at", tc + 0.3)); tln = float(b.get("line_at", tb + 0.45))
         js("glassIn('#%s-glass', %.3f, { x: %d });" % (bid, t_in, -40 if b.get("pos", "tr") == "tl" else 40))
@@ -1195,7 +1196,7 @@ for b in S.get("beats", []):
             frac = max(0.012, 0.8 * float(r["value"]) / top)      # the longest bar stops at 80% so its value fits
             html_rows += ('<div class="bc-row%s" id="%s-r%d"><div class="bc-lab">%s</div><div class="bc-track"><div class="bc-fill" id="%s-f%d" style="width:%.2f%%"></div>'
                           '<div class="bc-val" id="%s-v%d" style="left:%.2f%%">%s</div></div></div>'
-                          % (" hi" if r.get("hi") else "", bid, i, r["label"], bid, i, frac * 100, bid, i, frac * 100, r.get("text", str(r["value"]))))
+                          % (" hi" if r.get("hi") else "", bid, i, hesc(r["label"]), bid, i, frac * 100, bid, i, frac * 100, hesc(r.get("text", str(r["value"])))))
         title = '<div class="st-title" id="%s-title" style="top:150px">%s</div>' % (bid, em_spans(b["title"], b.get("em"))) if b.get("title") else ""
         top_px = 300 if b.get("title") else 250
         inner = '<div class="cut"><div class="gridbg"></div>%s<div class="bc" style="top:%dpx">%s</div>%s</div>' % (title, top_px + (4 - len(rows)) * 45, html_rows, scene_label(bid, b, t_out))
@@ -1217,9 +1218,9 @@ for b in S.get("beats", []):
         for i, s in enumerate(steps):
             x = x0 + i * (NW + GAP)
             icon = ('<svg viewBox="0 0 64 64"><path class="ic" d="%s"/></svg>' % ICONS[s["icon"]]) if s.get("icon") in ICONS else ""
-            sub = '<div class="pl-sub">%s</div>' % s["sub"] if s.get("sub") else ""
+            sub = '<div class="pl-sub">%s</div>' % hesc(s["sub"]) if s.get("sub") else ""
             nodes += ('<div class="glass pl-node" id="%s-n%d" style="left:%dpx"><div class="inner" id="%s-ni%d"><div class="pl-num">%02d</div>%s<div class="pl-lab">%s</div>%s</div></div>'
-                      % (bid, i, x, bid, i, i + 1, icon, s["label"], sub))
+                      % (bid, i, x, bid, i, i + 1, icon, hesc(s["label"]), sub))
             if i:
                 lx = x - GAP + 12
                 links += '<div class="pl-link" id="%s-l%d" style="left:%dpx;width:%dpx"></div><div class="pl-run" id="%s-p%d" style="left:%dpx"></div>' % (bid, i, lx, GAP - 24, bid, i, lx)
@@ -1260,10 +1261,10 @@ for b in S.get("beats", []):
             x2, y2 = cx + (RX * math.cos(a)) * 0.74, cy + (RY * math.sin(a)) * 0.74
             lines += '<line class="hb-spoke" id="%s-s%d" x1="%.0f" y1="%.0f" x2="%.0f" y2="%.0f"/>' % (bid, i, x1, y1, x2, y2)
             pills += ('<div class="glass hb-pill" id="%s-p%d" style="left:%.0fpx;top:%.0fpx;translate:-50%% -50%%"><div class="inner" id="%s-pi%d">%s</div></div>'
-                      % (bid, i, px, py, bid, i, sp[0]))
+                      % (bid, i, px, py, bid, i, hesc(sp[0])))
         svg = ('<svg class="hb-svg" viewBox="0 0 1920 1080">%s<circle class="hb-ring" id="%s-ring" cx="%d" cy="%d" r="164" transform="rotate(-90 %d %d)"/></svg>'
                % (lines, bid, cx, cy, cx, cy))
-        center = '<div class="glass hb-c" id="%s-c"><div class="inner" id="%s-ci">%s</div></div>' % (bid, bid, b["center"])
+        center = '<div class="glass hb-c" id="%s-c"><div class="inner" id="%s-ci">%s</div></div>' % (bid, bid, hesc(b["center"]))
         title = '<div class="pl-title" id="%s-title" style="top:90px">%s</div>' % (bid, em_spans(b["title"], b.get("em"))) if b.get("title") else ""
         inner = '<div class="cut"><div class="gridbg"></div>%s%s%s%s%s</div>' % (title, svg, center, pills, scene_label(bid, b, t_out))
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
@@ -1293,7 +1294,7 @@ for b in S.get("beats", []):
         toks = ""
         for i, tk in enumerate(b["terms"]):
             style = tk[2] if len(tk) > 2 else ("op" if tk[0] in ("+", "=", "-", "x", "×", "→", "/") else "")
-            toks += '<span class="tk %s" id="%s-k%d">%s</span>' % (style, bid, i, tk[0])
+            toks += '<span class="tk %s" id="%s-k%d">%s</span>' % (style, bid, i, hesc(tk[0]))
         where = "bottom:80px;" if b.get("pos", "bottom") == "bottom" else "top:96px;"
         inner = '<div class="glass eq" id="%s-glass" style="%s"><div class="inner">%s</div></div>' % (bid, where, toks)
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
@@ -1311,7 +1312,7 @@ for b in S.get("beats", []):
         cells = ""
         for i, s in enumerate(slots):
             cls = "wl-slot" + (" done" if i < filled and i != now else "")
-            cells += '<div class="%s" id="%s-s%d"><div class="n">%02d</div><div class="fill"></div><div class="t">%s</div></div>' % (cls, bid, i, i + 1, s)
+            cells += '<div class="%s" id="%s-s%d"><div class="n">%02d</div><div class="fill"></div><div class="t">%s</div></div>' % (cls, bid, i, i + 1, hesc(s))
         thread = '<div class="wl-thread" id="%s-thread"></div>' % bid if b.get("recap") else ""
         inner = '<div class="glass wl" id="%s-glass"><div class="inner" id="%s-inner">%s%s</div></div>' % (bid, bid, cells, thread)
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
@@ -1334,8 +1335,8 @@ for b in S.get("beats", []):
         # 3c. glass pop-out (a left glass pop-out, on our 3b move): the footage pushes right, a light glass panel
         # carries a short title and the items on the left, each on its word. The camera releases after the panel leaves.
         mark = CHECK_SVG if b.get("marker") == "check" else '<div class="d"></div>'
-        items = "".join('<div class="item" id="%s-i%d"%s>%s<div class="t">%s</div></div>' % (bid, i, item_attrs(it), mark, it[0]) for i, it in enumerate(b["items"]))
-        ttl = '<div class="ttl">%s</div>' % b["title"] if b.get("title") else ""
+        items = "".join('<div class="item" id="%s-i%d"%s>%s<div class="t">%s</div></div>' % (bid, i, item_attrs(it), mark, hesc(it[0])) for i, it in enumerate(b["items"]))
+        ttl = '<div class="ttl">%s</div>' % hesc(b["title"]) if b.get("title") else ""
         inner = '<div class="glass po" id="%s-glass"><div class="inner" id="%s-inner">%s%s</div></div>' % (bid, bid, ttl, items)
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
         rel = float(b.get("release", t_out - 0.3))
@@ -1380,7 +1381,7 @@ for b in S.get("beats", []):
                 pulses += '<div class="fl-pulse pay" id="%s-U%d"></div>' % (bid, i)
         def node(nid, x, y, label):
             return ('<div class="glass fl-node" id="%s" style="left:%dpx;top:%dpx"><div class="fl-ring" id="%s-r"></div><div class="inner" id="%s-i"><span class="dot" id="%s-d"></span><span class="lab">%s</span></div></div>'
-                    % (nid, x, y, nid, nid, nid, label))
+                    % (nid, x, y, nid, nid, nid, hesc(label)))
         nodes = node(bid + "-src", SX, 540, src["label"]) + "".join(node("%s-o%d" % (bid, i), MX, y, o["label"]) for i, (o, y) in enumerate(zip(outs, ys)))
         if res:
             nodes += node(bid + "-res", RX, 540, res["label"])
@@ -1488,7 +1489,7 @@ for b in S.get("beats", []):
         def rows_html(cls):
             return "".join('<div class="ln-row %s"><span data-layout-allow-overlap>%s</span><span class="v" data-layout-allow-overlap>%s</span></div>'
                            % (cls, r[0], r[1]) for r in rows)
-        ttl = '<div class="ln-ttl">%s</div>' % b["title"] if b.get("title") else ""
+        ttl = '<div class="ln-ttl">%s</div>' % hesc(b["title"]) if b.get("title") else ""
         lens = ('<div class="ln-lens" id="%s-lens"><div class="ln-win" id="%s-win"><div class="ln-fr c">%s</div><div class="ln-fr m">%s</div><div class="ln-sharp">%s</div></div>'
                 '<div class="ln-hl"></div></div>' % (bid, bid, rows_html(""), rows_html(""), rows_html("")))
         inner = ('<div class="cut"><div class="gridbg"></div><div class="glass ln-card" id="%s-glass"><div class="inner" id="%s-inner">%s'
@@ -1515,7 +1516,7 @@ for b in S.get("beats", []):
         for i, r in enumerate(b.get("results", [])[:4]):
             sq = ('<div class="sr-sq" style="background:#fff"><img src="%s" alt="" /></div>' % r["logo"]) if r.get("logo") else '<div class="sr-sq" style="background:%s"></div>' % tints.get(r.get("color", "cyan"), r.get("color", "var(--cyan)"))
             rows += ('<div class="glass sr-row" id="%s-r%d"><div class="inner" id="%s-ri%d">%s<div><div class="sr-t">%s</div>%s</div></div></div>'
-                     % (bid, i, bid, i, sq, r["title"], '<div class="sr-s">%s</div>' % r["sub"] if r.get("sub") else ""))
+                     % (bid, i, bid, i, sq, hesc(r["title"]), '<div class="sr-s">%s</div>' % hesc(r["sub"]) if r.get("sub") else ""))
         mag = '<svg viewBox="0 0 50 50"><circle class="ic" cx="21" cy="21" r="14"/><path class="ic" d="M31 31 L44 44"/></svg>'
         inner = ('<div class="cut"><div class="gridbg"></div><div class="sr"><div class="glass sr-bar" id="%s-bar">%s<span class="sr-ph" id="%s-ph">%s</span>'
                  '<span class="sr-q" id="%s-q"></span><span class="sr-caret" id="%s-caret"></span></div><div class="sr-res">%s</div></div>%s</div>'
@@ -1593,8 +1594,8 @@ for b in S.get("beats", []):
                '<text x="960" y="%d" text-anchor="middle" class="mt-t mt-o" style="font-size:%dpx">%s</text>'
                '<g clip-path="url(#%s-clip)"><rect id="%s-fill" x="0" y="%d" width="1920" height="330" fill="%s"/></g>'
                '<g id="%s-edge"><line x1="%.0f" y1="%d" x2="%.0f" y2="%d" class="mt-edge"/><rect x="%.0f" y="%d" width="16" height="16" rx="4" class="mt-hd"/></g></svg>'
-               % (bid, base, size, word, base, size, word, bid, bid, bot_y, fill, bid, x0, bot_y, x1, bot_y, x1 - 8, bot_y - 8))
-        eye = '<div class="mt-eye" id="%s-eye">%s</div>' % (bid, b["eyebrow"]) if b.get("eyebrow") else ""
+               % (bid, base, size, hesc(word), base, size, hesc(word), bid, bid, bot_y, fill, bid, x0, bot_y, x1, bot_y, x1 - 8, bot_y - 8))
+        eye = '<div class="mt-eye" id="%s-eye">%s</div>' % (bid, hesc(b["eyebrow"])) if b.get("eyebrow") else ""
         sub = ('<div class="mt-subm"><div class="mt-sub" id="%s-sub">%s</div></div><div class="mt-rule2"></div>' % (bid, em_spans(b["sub"], b.get("sub_em")))) if b.get("sub") else ""
         inner = '<div class="cut"><div class="gridbg"></div><div class="mt">%s%s%s</div></div>' % (eye, svg, sub)
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
@@ -1620,7 +1621,7 @@ for b in S.get("beats", []):
                  '<div class="meta"><div class="ttl">%s</div><div class="tm" id="%s-tm">%s / %s</div></div>'
                  '<div class="track"><div class="fillx" id="%s-fill"></div><div class="knob" id="%s-knob"></div></div></div>'
                  '<div class="pv-fly" id="%s-fly" style="%s:254px"><div class="disc" id="%s-disc"></div><span class="ptri" id="%s-ptri"></span><span class="pz" id="%s-pz"><i></i><i></i></span></div></div>'
-                 % (bid, pos, bid, b.get("label", "Watch this next"), bid, b["thumb"], b["title"], bid, mm(total * p0), mm(total), bid, bid, bid, side, bid, bid, bid))
+                 % (bid, pos, bid, hesc(b.get("label", "Watch this next")), bid, aesc(b["thumb"]), hesc(b["title"]), bid, mm(total * p0), mm(total), bid, bid, bid, side, bid, bid, bid))
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
         tm = float(b.get("morph_at", t_in + 1.2))
         js("glassIn('#%s-glass', %.3f, { y: -20 });" % (bid, t_in))
@@ -1689,7 +1690,7 @@ for b in S.get("beats", []):
                 card = '<div class="ly-card"><img src="%s" alt="" /></div>' % L["src"]
             else:
                 bg, blks = fake(k % 3); card = '<div class="ly-card" style="%s">%s</div>' % (bg, blks)
-            ws += '<div class="ly-w" id="%s-w%d">%s<div class="ly-lab" id="%s-l%d" style="top:%dpx"><span class="d"></span>%s</div></div>' % (bid, k, card, bid, k, -250 + 200 * k, L["label"])
+            ws += '<div class="ly-w" id="%s-w%d">%s<div class="ly-lab" id="%s-l%d" style="top:%dpx"><span class="d"></span>%s</div></div>' % (bid, k, card, bid, k, -250 + 200 * k, hesc(L["label"]))
         title = '<div class="fx-title" id="%s-title" style="top:70px">%s</div>' % (bid, em_spans(b["title"], b.get("em"))) if b.get("title") else ""
         inner = '<div class="cut"><div class="gridbg"></div>%s<div class="ly-stage"><div class="ly-rig" id="%s-rig">%s</div></div>%s</div>' % (title, bid, ws, scene_label(bid, b, t_out))
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
@@ -1729,7 +1730,7 @@ for b in S.get("beats", []):
             at = float(nd.get("at", t_in))
             a_attr = (' data-at="%.3f"%s' % (at, attr_anchor(nd["anchor"]))) if nd.get("anchor") else ""
             style = "left:%.0fpx;top:%.0fpx" % (x, y)
-            lab = '<div class="wd-lab">%s</div>' % nd["label"] if nd.get("label") else ""
+            lab = '<div class="wd-lab">%s</div>' % hesc(nd["label"]) if nd.get("label") else ""
             sub = '<div class="wd-sub">%s</div>' % nd["sub"] if nd.get("sub") else ""
             ic = icon_svg(nd.get("icon"))
             glass = k in ("card", "pill", "orb", "stat")
@@ -1867,8 +1868,8 @@ for b in S.get("beats", []):
         cxs = [x0 + i * (CW + GAP) + CW / 2.0 for i in range(n)]
         cam = lambda i: (960 - Z * cxs[i], 540 - Z * 540)
         cards_html = "".join('<div class="glass dq-card" id="%s-c%d" style="left:%.0fpx"><div class="inner" id="%s-ci%d"><div class="no">%d</div>%s<div class="ttl">%s</div></div></div>'
-                             % (bid, i, x0 + i * (CW + GAP), bid, i, i + 1, icon_svg(c_.get("icon")), c_["title"]) for i, c_ in enumerate(cards))
-        head = '<div class="dq-head" id="%s-head">%s</div>' % (bid, b["head"]) if b.get("head") else ""
+                             % (bid, i, x0 + i * (CW + GAP), bid, i, i + 1, icon_svg(c_.get("icon")), hesc(c_["title"])) for i, c_ in enumerate(cards))
+        head = '<div class="dq-head" id="%s-head">%s</div>' % (bid, hesc(b["head"])) if b.get("head") else ""
         inner = '<div class="cut"><div class="gridbg"></div><div class="dq-cam" id="%s-cam" data-layout-allow-overflow>%s%s</div>%s</div>' % (bid, head, cards_html, scene_label(bid, b, t_out))
         html_parts.append(host(bid, t_in, t_out, track, inner, anchor))
         k = now - 1
@@ -1918,7 +1919,7 @@ for b in S.get("beats", []):
             side = "row" if layout == "row" else ("l" if layout == "left" else ("r" if layout == "right" else ("l" if i % 2 == 0 else "r")))
             badge = '<div class="x" id="%s-x%d">&times;</div>' % (bid, i) if it.get("mark") == "x" else ""
             cols[side].append('<div class="glass pls %s" id="%s-p%d" style="visibility:hidden"%s><div class="inner" id="%s-pi%d">%s<span class="t">%s</span></div>%s</div>'
-                              % (it.get("tone", ""), bid, i, item_attrs([it["text"], it["at"], it.get("anchor", it["text"])]), bid, i, icon_svg(it.get("icon")), it["text"], badge))
+                              % (it.get("tone", ""), bid, i, item_attrs([it["text"], it["at"], it.get("anchor", it["text"])]), bid, i, icon_svg(it.get("icon")), hesc(it["text"]), badge))
             it["side"] = side
         body = ""
         if cols["l"]:
@@ -1951,7 +1952,7 @@ for b in S.get("beats", []):
             else:
                 msgs.append({"from": m[0], "text": m[1], "at": float(m[2]), "anchor": m[3] if len(m) > 3 else "-"})
         bub = "".join('<div class="ch-b %s" id="%s-m%d"%s>%s</div>' % ("me" if m.get("from") == "me" else "them", bid, i,
-                      item_attrs([m["text"], m["at"], m.get("anchor", "-")]), m["text"]) for i, m in enumerate(msgs))
+                      item_attrs([m["text"], m["at"], m.get("anchor", "-")]), hesc(m["text"])) for i, m in enumerate(msgs))
         if frame == "float":
             side = "r" if b.get("pos", "tl") == "tr" else "l"
             body = '<div class="ch-float %s" style="%s">%s</div>' % (side, "right:70px" if side == "r" else "left:70px", bub)
@@ -2057,7 +2058,7 @@ for b in S.get("beats", []):
             lst = ""
             if b.get("items"):
                 mark = CHECK_SVG if b.get("marker", "check") == "check" else '<div class="d"></div>'
-                its = "".join('<div class="item" id="%s-i%d"%s>%s<div class="t">%s</div></div>' % (bid, i, item_attrs(it), mark, it[0]) for i, it in enumerate(b["items"]))
+                its = "".join('<div class="item" id="%s-i%d"%s>%s<div class="t">%s</div></div>' % (bid, i, item_attrs(it), mark, hesc(it[0])) for i, it in enumerate(b["items"]))
                 lst = '<div class="glass cl-list" id="%s-glass"><div class="inner" id="%s-inner">%s</div></div>' % (bid, bid, its)
             html_parts.append(host(bid + "-over", t_in, t_out, track, lst + scene_label(bid, b, t_out), "-").replace('class="card-host clip"', 'class="card-host clip clip-over"', 1))
             if b.get("items"):

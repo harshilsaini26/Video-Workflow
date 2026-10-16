@@ -23,13 +23,14 @@ class Manifest(unittest.TestCase):
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
         write(os.path.join(d, "custom", "yield.html"), CUSTOM)
         board = copy.deepcopy(BOARD)
-        board["scenes"][1] = {"type": "custom", "id": "yield", "bg": "black", "in": "word:8", "out": "word:18",
+        board["scenes"][1] = {"type": "custom", "id": "yield", "bg": "mantle", "in": "word:8", "out": "word:18",
                               "box": {"x": 65, "y": 560, "w": 950, "h": 380}, "html": "custom/yield.html", "build": "buildYield"}
         sp = write(os.path.join(d, "storyboard.json"), board)
         r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"))
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         m = load(os.path.join(d, "public", "moments.json"))
         self.assertEqual([s["id"] for s in m["scenes"]], ["hook", "yield", "cu"])
-        r = run("pace-check.py", "--index", os.path.join(d, "public", "index.html"))
+        # this test is about what pace-check reads, not the threshold: the BOARD's last scene holds 5 s on purpose
+        r = run("pace-check.py", "--index", os.path.join(d, "public", "index.html"), "--max", "6", "--warn", "6")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("3 scenes", r.stdout)

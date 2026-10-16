@@ -4,9 +4,9 @@
   explainer-compose.py --spec videos/<p>/storyboard.json --out videos/<p>/public [--vendor DIR] [--kit DIR]
 
 The page has three layers (SPEC §6.1): a background that cross-fades when a scene's `bg` changes, one scene at a time
-centred in the scene area (x 65 to 1015, y 520 to 1248; 780 px wide when it reaches below y 960), and word captions in
+scaled up to fill the scene area (x 65 to 1015, y 520 to 1420; 780 px wide when it reaches below y 960), and word captions in
 the band at y 330 to 470. Scene times are word anchors ("word:N" in transcript.json); an entrance lands 0.2 s before
-its word. Each scene exits on its `out` while the next one enters, overlapping by the exit's 0.28 s.
+its word. Each scene exits on its `out` while the next one enters (a 0.2 s exit; the host stays 0.28 s).
 
 The markup is the kit's: card-host clips with data-anchor, items with data-at, the caption layer marked cap-layer, the
 voice as an <audio> clip, one paused GSAP timeline in window.__timelines, so beat-check.py, gap-scan.py, snap-beats.py
@@ -17,22 +17,26 @@ has a word wider than its column, an anchor that does not resolve or runs backwa
 number with no source, more than 0.3 s with no scene (at the start, between scenes or at the end), or two scenes
 overlapping by more than 0.3 s.
 """
-import argparse, html, json, os, re, shutil, sys, wave
+import argparse, html, json, math, os, random, re, shutil, sys, wave
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import explainer_lib as E
+import sound
+import transitions as X
 from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 
 L = E.L
 WIDE = (L.SAFE["left"], L.SAFE["right"] - L.SAFE["left"])          # 65, 950
 NARROW = (L.NARROW["left"], L.NARROW["right"] - L.NARROW["left"])  # 150, 780
-CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 884
+CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 970: a narrow-column scene centres here
+WIDE_CENTRE = (E.SCENE["top"] + L.RIGHT_COL_TOP) // 2               # 740: a full-width scene stays above y 960
 GAP_MAX = 0.3
 GSAP_CDN = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
 FONTS = os.path.join(HERE, "..", "assets", "fonts")
 FONT_FILES = ("DMSans-500.woff2", "DMSans-700.woff2", "JetBrainsMono-500.woff2")
 CAP_SIZE = 64
+BRAND_TOP, BRAND_H = 281, 40           # the handle and the series part: inside the safe area, above the caption band
 
 
 def fail(msg):
@@ -42,7 +46,8 @@ def fail(msg):
 
 RESERVED = re.compile(r"^(stage|captions|voice|bg\d+|cap\d+)$")
 NOT_SHOWN = {"type", "id", "bg", "in", "out", "at", "source", "icon", "html", "build", "tex", "style", "unit",
-             "n", "size", "decimals", "point", "row", "cell", "box", "hi", "value", "points"}   # settings and step numbers
+             "n", "size", "decimals", "point", "row", "cell", "box", "hi", "value", "points",
+             "card", "side", "transition", "badge", "logo", "src", "screenshot", "focus"}   # settings, indexes, step numbers, files
 BAD_DATA = (TypeError, ValueError, KeyError, AttributeError, IndexError)
 
 
@@ -75,31 +80,76 @@ def line_span(line):
     return None
 
 
+IDLE_ROOM = 12                       # a holding scene floats up to this far: keep it clear of the area's edges
+SCALE_MAX, SCALE_STEP = 1.8, 0.05   # how far a template scene is blown up to fill the scene area (MOTION.md: fill the frame)
+
+
 def place(sid, mod, scene):
-    """(left, top, width, height): centred in the scene area, narrow when it reaches the action column band.
-    A scene that brings its own box (custom) is only checked."""
+    """(left, top, width, height, inner width, inner height, scale): the scene laid out at inner width and scaled by
+    `scale` to fill the scene area, the largest scale (up to SCALE_MAX, or the module's MAX_SCALE) that keeps it inside
+    the area, every word inside its column, and its box in the narrow column wherever it reaches below y 960.
+    A scene that brings its own box (custom) is only checked, and never scaled."""
+    sa = E.SCENE
     if hasattr(mod, "place"):
         left, top, width, h = mod.place(scene)
-        sa = E.SCENE
-        if left < sa["left"] or top < sa["top"] or left + width > sa["right"] or top + h > sa["bottom"] or not L.inside_safe(left, top, width, h):
+        if not E.inside_scene(left, top, width, h):
             fail("%s: the box %d,%d %dx%d is outside the scene area (x %d to %d, y %d to %d; x %d to %d below y %d)"
                  % (sid, left, top, width, h, sa["left"], sa["right"], sa["top"], sa["bottom"], L.NARROW["left"], L.NARROW["right"], L.RIGHT_COL_TOP))
-        return left, top, width, h
-    left, width = WIDE
-    h = mod.height(scene, width)
-    if CENTRE + h / 2 > L.RIGHT_COL_TOP:
-        left, width = NARROW
-        h = mod.height(scene, width)
-    top = int(round(CENTRE - h / 2))
-    if h > E.SCENE["bottom"] - E.SCENE["top"]:
-        fail("%s: the scene is %d px tall, taller than the scene area (%d px); use less text or split it"
-             % (sid, h, E.SCENE["bottom"] - E.SCENE["top"]))
-    if not L.inside_safe(left, top, width, h):
-        fail("%s: the box %d,%d %dx%d is outside the safe zone" % (sid, left, top, width, h))
+        return left, top, width, h, width, h, 1.0
+    area_h = sa["bottom"] - sa["top"] - 2 * IDLE_ROOM
     need = mod.min_width(scene)
+    cap = min(SCALE_MAX, mod.max_scale(scene) if hasattr(mod, "max_scale") else getattr(mod, "MAX_SCALE", SCALE_MAX))
+    cap = math.floor(cap * 100 + 1e-6) / 100.0          # the page draws scale(%.2f): size the box with exactly that
+    steps = int(math.floor((cap - 1.0) / SCALE_STEP + 1e-9))
+    for s in [cap] + [round(1.0 + SCALE_STEP * k, 2) for k in range(steps, -1, -1) if 1.0 + SCALE_STEP * k < cap - 1e-9]:
+        for col_left, col_w in (WIDE, NARROW):
+            iw = int(col_w / s)
+            if need > iw:
+                continue
+            ih = mod.height(scene, iw)
+            w, h = int(math.floor(iw * s)), int(math.ceil(ih * s))
+            if col_w == WIDE[1]:    # the full width only above the action column: centred in y 520 to 960
+                top = int(round(WIDE_CENTRE - h / 2.0))
+                if h > L.RIGHT_COL_TOP - sa["top"] - 2 * IDLE_ROOM:
+                    continue
+            else:
+                top = int(round(CENTRE - h / 2.0))
+            if h > area_h:
+                continue
+            left = col_left + (col_w - w) // 2
+            if E.inside_scene(left, top - IDLE_ROOM, w, h + 2 * IDLE_ROOM):
+                return left, top, w, h, iw, ih, round(s, 2)
+    # nothing fits even unscaled: say why, as before
+    left, width = NARROW
     if need > width:
-        fail("%s: a word in it is about %d px wide, wider than the %d px column; shorten it or use a smaller size" % (sid, need, width))
-    return left, top, width, h
+        fail("%s: a word or a number in it (at its widest as it counts) is about %d px wide, wider than the %d px column; "
+             "shorten it or use a smaller size" % (sid, need, width))
+    fail("%s: the scene is %d px tall, taller than the scene area (%d px); use less text or split it"
+         % (sid, mod.height(scene, width), area_h))
+
+
+def glows(i, bg, tok, cuts, bg_js):
+    """The glows inside background layer i (tokens.ambient.glows: each background's own). They hold still while a scene
+    holds and move only on a cut, travelling with it (expo.out over ambient.shift.duration): motion with a reason, not
+    lazy breathing (MOTION.md). Each move is to a seeded spot around the glow's home, so every render is the same.
+    Ambient: never a change for pace-check."""
+    amb = tok["ambient"]
+    sh = amb["shift"]
+    out = []
+    for k, g in enumerate(amb["glows"][bg]):
+        rng = random.Random(97 * i + 7 + k)
+        size, (cx, cy) = int(g["size"]), g["at"]
+        out.append('<i class="orb" id="bg%d-o%d" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;'
+                   'background:radial-gradient(circle, %s 0%%, transparent 65%%)"></i>' % (i, k, cx - size // 2, cy - size // 2, size, size, E.rgba(tok["palette"][g["color"]], g["alpha"])))
+        at = (0, 0)   # each move starts where the last one ended, written out: a seek into an overlap draws the same frame
+        for n, t in enumerate(cuts):
+            sign = 1 if (n + k) % 2 == 0 else -1
+            to = (sign * int(round(rng.uniform(0.5, 1.0) * sh["x"])), int(round(rng.uniform(-1.0, 1.0) * sh["y"])))
+            bg_js.append("tl.fromTo('#bg%d-o%d', %s, %s, %.3f);" % (i, k, js_obj({"x": at[0], "y": at[1]}),
+                                                                   js_obj({"x": to[0], "y": to[1], "duration": sh["duration"],
+                                                                           "ease": "expo.out", "immediateRender": False}), t))
+            at = to
+    return "".join(out)
 
 
 def main():
@@ -118,7 +168,7 @@ def main():
     out = a.out
     os.makedirs(out, exist_ok=True)
     tok = E.load_tokens()
-    mo = tok["motion"]
+    mo, amb = tok["motion"], tok["ambient"]
 
     tpath, vpath = rel(S.get("transcript", "transcript.json")), rel(S.get("voice", "voice.wav"))
     spath = rel(S.get("script", "script.json"))
@@ -135,6 +185,15 @@ def main():
         voice_len = round(w.getnframes() / float(w.getframerate()), 3)
     D = round(voice_len + E.TAIL, 3)
     shutil.copy(vpath, os.path.join(out, "voice.wav"))
+
+    # ---- the sound bed (sound.py): the pad or the creator's music, ducked under the voice, plus sound effects -----
+    snd = S.get("sound") or {}
+    music = snd.get("music", "pad")
+    if music not in (None, "none", "pad"):
+        if not os.path.isfile(rel(music)):
+            fail("sound: no music file at %s (paths are relative to storyboard.json)" % music)
+        music = rel(music)
+    want_sfx = bool(snd.get("sfx", True))
 
     # ---- fonts and GSAP -------------------------------------------------------------------------------------------
     # DM Sans 500/700 and JetBrains Mono 500 ship with the skill (OFL, assets/fonts/): the scene heights are measured
@@ -176,9 +235,11 @@ def main():
         mod = REGISTRY.get(sc.get("type"))
         if not mod:
             fail("%s: unknown scene type %r (one of: %s)" % (sid, sc.get("type"), ", ".join(sorted(REGISTRY))))
-        bg = sc.get("bg", bg or "blue")
+        bg = sc.get("bg", bg or next(iter(tok["backgrounds"])))
         if bg not in tok["backgrounds"]:
             fail("%s: unknown bg %r (one of: %s)" % (sid, bg, ", ".join(tok["backgrounds"])))
+        if sc.get("transition") is not None and sc["transition"] not in X.KINDS:
+            fail("%s: unknown transition %r (one of: %s)" % (sid, sc["transition"], ", ".join(X.KINDS)))
         if (getattr(mod, "NEEDS_SOURCE", False) or shows_number(sc)) and not sc.get("source"):
             fail("%s: the %s scene shows a number or a claim and needs a source (a key in SOURCES.md)" % (sid, sc["type"]))
         if sc.get("source") and source_keys is not None and sc["source"] not in source_keys:
@@ -214,6 +275,19 @@ def main():
             fail("no scene from %.2f to %.2f s (between %s and %s); every moment of the voice needs a scene" % (e1, s2, a1["id"], a2["id"]))
         if e1 - s2 > GAP_MAX + 1e-6:
             fail("%s and %s overlap by %.2f s (at most %.1f): end %s earlier" % (a1["id"], a2["id"], e1 - s2, GAP_MAX, a1["id"]))
+    # a title that says what the voice is saying adds nothing the captions don't (PLAYBOOK §E5.5); the hook is meant to
+    for sc, _, _, t_in, t_out, _ in timed[1:]:      # be read, so the first scene may
+        if sc["type"] != "title" or t_out - t_in <= 2.0:
+            continue
+        said = {L.norm(w["text"]) for w in words if t_in - 0.3 <= w["start"] <= t_out}
+        mine = [L.norm(w) for w in str(sc.get("text", "")).split() if L.norm(w)]
+        if len(mine) >= 2 and sum(w in said for w in mine) >= 0.8 * len(mine):
+            print("WARN %s: the title repeats what the voice is saying for %.1f s; show a picture of it instead (PLAYBOOK §E5.5)"
+                  % (sc["id"], t_out - t_in))
+    for (a1, m1, _, _, _, _), (a2, m2, _, _, _, _) in zip(timed, timed[1:]):   # no two beats with the same layout (MOTION.md)
+        if m1.TYPE == m2.TYPE and m1.TYPE != "custom":
+            print("WARN %s: the same layout (%s) as the scene before; change the picture, or merge the two into one build"
+                  % (a2["id"], m2.TYPE))
     if timed[0][3] > GAP_MAX:
         fail("no scene from 0.00 to %.2f s: the first scene starts late" % timed[0][3])
     if timed[-1][5] < D - GAP_MAX:
@@ -222,44 +296,69 @@ def main():
     # fonts load up front: a scene's text is hidden until its time, and a hidden face would load a frame late
     head = ['<link rel="preload" href="fonts/%s" as="font" type="font/woff2" crossorigin />' % f
             for f in sorted(os.listdir(os.path.join(out, "fonts")))] if os.path.isdir(os.path.join(out, "fonts")) else []
-    css, hosts, js = {}, [], []
+    css, hosts, js, tx_html, item_times = {}, [], [], [], []
     moments = {"duration": D, "scenes": [], "spans": []}   # every change on screen, for pace-check.py (gate E4)
+    kinds, prev = [], None    # how each scene comes in (transitions.py): the storyboard's choice or the composer's
+    for k, (sc, _, sbg, _, _, _) in enumerate(timed):
+        kinds.append(X.pick(k, prev, sbg, sc.get("transition")))
+        prev = sbg
     for k, (sc, mod, sbg, t_in, t_out, end) in enumerate(timed):
         sid = sc["id"]
         ctx = Ctx(sc, t_in, t_out, words, tok, a.vendor, out, sbg, head, spec_dir)
         try:
-            left, top, width, h = place(sid, mod, sc)
-            inner, lines = mod.render(sc, ctx, (left, top, width))
+            left, top, width, h, iw, ih, scale = place(sid, mod, sc)
+            inner, lines = mod.render(sc, ctx, (left, top, iw))
         except SceneError as e:
             fail("%s: %s" % (sid, e))
         except BAD_DATA as e:
             fail("%s: bad data in the %s scene (%s: %s)" % (sid, sc["type"], type(e).__name__, e))
-        moments["scenes"].append({"id": sid, "type": mod.TYPE, "in": round(t_in, 3), "out": round(t_out, 3)})
+        moments["scenes"].append({"id": sid, "type": mod.TYPE, "in": round(t_in, 3), "out": round(t_out, 3),
+                                  "box": [left, top, width, h], "scale": scale})
         if mod.TYPE == "custom":   # it animates itself between in and out
             moments["spans"].append([round(t_in, 3), round(t_out, 3)])
         css[mod.TYPE] = mod.CSS
+        starts = [s_ for s_, _ in filter(None, map(line_span, lines))]
+        if mod.TYPE != "custom" and starts and min(starts) - t_in > 0.8:   # the scene's own first change, not its transition
+            print("WARN %s: nothing shows for %.1f s after the scene starts; put something on its first word (PLAYBOOK §E4.9)"
+                  % (sid, min(starts) - t_in))
+        item_times += [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner)]
+        lines = X.enter(kinds[k], sid, t_in) + lines
+        if kinds[k] == "burst":
+            spray, spray_js = X.burst(k, t_in, [f for f, _ in E.theme(tok, sbg)["series"]])
+            tx_html.append(spray)
+            lines += spray_js
         word = E.anchor_text(sc["in"], words)
         anchor = ' data-unanchored="1"' if word == "-" else ' data-anchor="%s"' % html.escape(word, quote=True)
         hosts.append('    <div class="card-host clip" id="host-%s" data-start="%.3f" data-duration="%.3f" data-track-index="%d"%s\n'
                      '      style="left:0;top:0;width:1080px;height:1920px;visibility:hidden;">'
-                     '<div class="box" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx">%s</div></div>\n'
-                     % (sid, t_in, end - t_in, 3 + k, anchor, sid, left, top, width, h, inner))
+                     '<div class="box" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx"><div class="live" id="%s-live"%s style="width:%dpx;height:%dpx;transform:scale(%s)">%s</div></div></div>\n'
+                     % (sid, t_in, end - t_in, 3 + k, anchor, sid, left, top, width, h, sid, ' data-baked="1"' if getattr(mod, "BAKED", False) else "", iw, ih, ("%.2f" % scale).rstrip("0").rstrip(".") if scale != 1 else "1", inner))
         js.append("// %s (%s) %.2f to %.2f s" % (sid, mod.TYPE, t_in, t_out))
         js.extend(lines)
+        js.extend(ctx.ambient_lines)
         if t_out < D - 1e-6:
-            lines = lines + ["tl.to('#%s', %s, %.3f);" % (sid, js_obj({"opacity": 0, "y": -24, "duration": mo["exit"], "ease": mo["exit_ease"]}), t_out)]
-            js.append(lines[-1])
+            gone = X.exit(kinds[k + 1] if k + 1 < len(kinds) else "fade", sid, t_out)
+            lines = lines + gone
+            js.extend(gone)
         moments["spans"] += [[round(a_, 3), round(b_, 3)] for a_, b_ in filter(None, map(line_span, lines))]
 
     # ---- backgrounds ----------------------------------------------------------------------------------------------
     bgs, bg_js = [], []
-    for sc, _, sbg, t_in, _, _ in timed:
+    for k, (sc, _, sbg, t_in, _, _) in enumerate(timed):
         if not bgs or bgs[-1][0] != sbg:
-            if bgs:
+            if bgs and kinds[k] == "wipe":     # the new background opens as a circle
+                bg_js += X.wipe_bg("bg%d" % len(bgs), t_in)
+            elif bgs:
                 bg_js.append("tl.to('#bg%d', { opacity: 1, duration: %.3f, ease: 'power1.inOut' }, %.3f);" % (len(bgs), E.BG_FADE, t_in))
             bgs.append((sbg, t_in))
-    bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d"></div>\n' % (i, tok["backgrounds"][b], 0 if i else 1)
-                      for i, (b, _) in enumerate(bgs))
+    layer_of, cuts = [], {}
+    for k, (sc, _, sbg, t_in, _, _) in enumerate(timed):     # the layer each scene is on, and the cuts inside each layer
+        i = max(j for j, (_, t0) in enumerate(bgs) if t0 <= t_in + 1e-6)
+        if k and layer_of[-1] == i:
+            cuts.setdefault(i, []).append(t_in)
+        layer_of.append(i)
+    bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d">%s</div>\n'
+                      % (i, E.theme(tok, b)["bg"], 0 if i else 1, glows(i, b, tok, cuts.get(i, []), bg_js)) for i, (b, _) in enumerate(bgs))
 
     def bg_at(t):
         cur = timed[0][2]
@@ -271,13 +370,13 @@ def main():
     # ---- captions -------------------------------------------------------------------------------------------------
     C = S.get("captions", {}) or {}
     em = {L.norm(x) for x in C.get("emphasis", [])}
-    hl = tok["highlight"]
+    hl = E.theme(tok, timed[0][2])["highlight"]
     chunks = L.chunk_words([w for w in words if w["start"] < D], 4, 24)
     caps, cap_js = [], []
     for i, ch in enumerate(chunks):
         b = bg_at(ch["start"])
-        dim = tok["colors"]["dim_light" if b == "light" else "dim"]
-        on = tok["text_on"][b]
+        th = E.theme(tok, b)
+        dim, on = th["muted"], th["ink"]      # a word not yet said, a word said
         spans = []
         for j, w in enumerate(ch["words"]):
             cid = "cw%d-%d" % (i, j)
@@ -288,32 +387,38 @@ def main():
             else:
                 spans.append('<span class="cw" id="%s">%s</span>' % (cid, html.escape(w["text"])))
                 cap_js.append("tl.set('#%s', { color: '%s' }, %.3f);" % (cid, on, w["start"]))
-        caps.append('      <div class="cap%s" id="cap%d" style="color:%s">%s</div>\n' % (" on-light" if b == "light" else "", i, dim, " ".join(spans)))
+        caps.append('      <div class="cap" id="cap%d" style="color:%s">%s</div>\n' % (i, dim, " ".join(spans)))
         cap_js.append("tl.set('#cap%d', { visibility: 'visible' }, %.3f);" % (i, ch["start"]))
         cap_js.append("tl.fromTo('#cap%d', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.12, ease: '%s', immediateRender: false }, %.3f);"
                       % (i, mo["enter_ease"], ch["start"]))
         cap_js.append("tl.set('#cap%d', { visibility: 'hidden' }, %.3f);" % (i, ch["end"]))
 
     band_top, band_bottom = E.CAPTION_BAND
+    stage_bg = E.theme(tok, timed[0][2])["bg"]
     CSS = """
   @font-face { font-family: "DM Sans"; src: url("fonts/DMSans-500.woff2") format("woff2"); font-weight: 500; font-display: block; }
   @font-face { font-family: "DM Sans"; src: url("fonts/DMSans-700.woff2") format("woff2"); font-weight: 700; font-display: block; }
   @font-face { font-family: "JetBrains Mono"; src: url("%s") format("woff2"); font-weight: 500; font-display: block; }
   * { box-sizing: border-box; }
-  html, body { margin:0; padding:0; width:100%%; height:100%%; overflow:hidden; background:#000; }
-  #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:#000; font-family: %s; --label: %s; }
-  .bg { position:absolute; inset:0; }
+  html, body { margin:0; padding:0; width:100%%; height:100%%; overflow:hidden; background:%s; }
+  #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:%s; font-family: %s; --label: %s; }
+  .bg { position:absolute; inset:0; overflow:hidden; }
+  .orb { position:absolute; border-radius:50%%; pointer-events:none; will-change:transform; }
+  .live { position:absolute; left:0; top:0; transform-origin:0 0; display:flex; flex-direction:column; align-items:center; justify-content:center; will-change:transform; }
   .card-host { position:absolute; pointer-events:none; overflow:hidden; z-index:10; }
+  .tx-layer { position:absolute; inset:0; z-index:20; pointer-events:none; overflow:hidden; }
+  .tx-p { position:absolute; opacity:0; border-radius:5px; will-change:transform; }
   .box { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .brand { position:absolute; left:%dpx; width:%dpx; z-index:31; display:flex; align-items:center; justify-content:space-between;
+    font-family: var(--label); font-weight:500; font-size:30px; letter-spacing:.06em; pointer-events:none; }
   .cap-layer { position:absolute; left:0; top:0; width:1080px; height:1920px; z-index:30; pointer-events:none; }
   .cap { position:absolute; left:%dpx; width:%dpx; top:%dpx; height:%dpx; display:flex; align-items:center; justify-content:center;
     flex-wrap:wrap; gap:0 .26em; visibility:hidden; font-weight:700; font-size:%dpx; line-height:1.1; letter-spacing:-.01em;
-    text-align:center; text-shadow: 0 2px 10px rgba(0,0,0,.45); }
-  .cap.on-light { text-shadow:none; }
+    text-align:center; }
   .cap .cw { position:relative; display:inline-block; padding:0 .14em; border-radius:6px; }
   .cap .hd { position:absolute; width:14px; height:14px; background:%s; border:3px solid %s; opacity:0; }
   .cap .hd.a { left:-7px; top:-7px; } .cap .hd.b { right:-7px; bottom:-7px; }
-%s""" % (tok["fonts"]["label_file"], tok["fonts"]["display"], tok["fonts"]["label"], WIDE[0], WIDE[1], band_top,
+%s""" % (tok["fonts"]["label_file"], stage_bg, stage_bg, tok["fonts"]["display"], tok["fonts"]["label"], WIDE[0], WIDE[1], WIDE[0], WIDE[1], band_top,
          band_bottom - band_top, CAP_SIZE, hl["handle"], hl["handle_border"], "".join(css.values()))
 
     HELPERS = """
@@ -325,6 +430,28 @@ def main():
 
     cap_html = ('    <div class="clip cap-layer" id="captions" data-start="0" data-duration="%.3f" data-track-index="2">\n%s    </div>\n'
                 % (D, "".join(caps)))
+    bed = ""
+    if music in (None, "none") and not want_sfx:
+        pass
+    elif music not in (None, "none") and not shutil.which("ffmpeg"):
+        print("WARN no ffmpeg on PATH: the reel has no music bed (install FFmpeg, or set \"sound\": {\"music\": \"none\"})")
+    else:
+        chimes = [E.resolve(sc["in"], words) for sc, _, _, _, _, _ in timed if sc.get("chime")]    # on the word itself
+        evs = sound.events([(kinds[k], timed[k][3]) for k in range(1, len(timed))], item_times, chimes) if want_sfx else []
+        moments["sounds"] = [[t, kind] for t, kind in evs]
+        sound.mix_bed(os.path.join(out, "voice.wav"), None if music in (None, "none") else (sound.pad_file() if music == "pad" else music),
+                      evs, D, os.path.join(out, "bed.wav"), float(snd.get("music_db", -22)))
+        bed = ('    <audio id="bed" src="bed.wav" data-start="0" data-duration="%.3f" data-track-index="40" data-volume="1"></audio>\n' % D)
+    brand = S.get("brand") or {}
+    if brand.get("handle") or brand.get("part"):
+        # a visual identity on every frame and a series the viewer can follow: the handle left, "PART n" right, quiet,
+        # in the safe area above the caption band
+        part = ("PART %s" % brand["part"]) if brand.get("part") else ""
+        cap_html = ('    <div class="brand" id="brand" style="top:%dpx;height:%dpx;color:%s"><span>%s</span><span>%s</span></div>\n'
+                    % (BRAND_TOP, BRAND_H, E.theme(tok, timed[0][2])["muted"], html.escape(str(brand.get("handle", ""))),
+                       html.escape(part))) + cap_html
+    if tx_html:   # transition sprays sit above the scenes, under the captions
+        cap_html = '    <div class="tx-layer" id="tx">%s</div>\n' % "".join(tx_html) + cap_html
     page = """<!doctype html>
 <html lang="en">
 <head>
@@ -334,7 +461,7 @@ def main():
 <body>
   <div id="stage" data-composition-id="%s" data-start="0" data-duration="%.3f" data-fps="60" data-width="1080" data-height="1920">
 %s    <audio id="voice" src="voice.wav" data-start="0" data-duration="%.3f" data-track-index="1" data-volume="1"></audio>
-%s%s
+%s%s%s
     <script src="%s"></script>
     <script>
       (function () {
@@ -357,7 +484,7 @@ def main():
   </div>
 </body>
 </html>
-""" % (CSS, "".join(h + "\n" for h in head), html.escape(str(S["id"]), quote=True), D, bg_html, voice_len, "".join(hosts), cap_html, gsap_src, HELPERS,
+""" % (CSS, "".join(h + "\n" for h in head), html.escape(str(S["id"]), quote=True), D, bg_html, voice_len, bed, "".join(hosts), cap_html, gsap_src, HELPERS,
        "\n        ".join(bg_js), "\n        ".join(js), "\n        ".join(cap_js), D, js_str(S["id"]))
     with open(os.path.join(out, "index.html"), "w") as f:
         f.write(page)

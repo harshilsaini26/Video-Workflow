@@ -8,11 +8,12 @@ Chromium (`/opt/pw-browsers/chromium`, or `CHROME=<path>`).
 1. **Glyph widths** (shared with the explainer skill): `node measure-glyphs.mjs <fonts> > ../glyphs.json`, where
    `<fonts>` holds DMSans-500/700 and JetBrainsMono-500 (`Editing-Workflow/explainer/skill/explainer/assets/fonts`).
    `reels_lib.text_lines` wraps text with these widths, word by word.
-2. **Block heights:**
+2. **Block and caption heights:**
    ```
    python3 make-cases.py /tmp/rcases
    node measure-blocks.mjs /tmp/rcases > /tmp/rmeasured.jsonl
    python3 make-cases.py /tmp/rcases --merge /tmp/rmeasured.jsonl
    ```
    This writes `../tests/fixtures/heights.json`. Then `python3 -m unittest tests.test_heights` from `scripts/`: each
-   prediction must be 0 to 4 px over what Chromium lays out, never under.
+   prediction (a block's from the composer, a caption chunk's from `reels_lib.caption_height`) must be 0 to 4 px
+   over what Chromium lays out, never under.

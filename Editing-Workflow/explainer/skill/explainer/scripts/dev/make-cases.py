@@ -7,7 +7,7 @@
 
 Three text lengths per scene type (custom excluded: it brings its own box). A developer tool, not part of a video run.
 """
-import argparse, json, os, subprocess, sys, wave
+import argparse, json, os, struct, subprocess, sys, wave, zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.dirname(HERE)
@@ -32,7 +32,7 @@ CASES = {
     "number": lengths({"n": 1}, {"n": 2, "name": "Coursera finance"},
                       {"n": 3, "name": "The Corporate Finance Institute's financial modelling certificate"}),
     "count-up": lengths({"value": 1000, "prefix": "$", "source": "s"}, {"value": 2.5, "decimals": 1, "suffix": "%", "sub": "a year", "source": "s"},
-                        {"value": 125000, "prefix": "$", "sub": "the median starting salary for an analyst in New York", "source": "s"}),
+                        {"value": 25000, "prefix": "$", "sub": "the median starting salary for an analyst in New York", "source": "s"}),
     "list-cards": lengths({"items": [{"label": "Free", "at": at(2)}, {"label": "Fast", "at": at(4)}]},
                           {"items": [{"label": "Learn Excel first", "at": at(2)}, {"label": "Then the three statements", "at": at(4)},
                                      {"label": "Then valuation", "at": at(6)}]},
@@ -76,7 +76,56 @@ CASES = {
                                    {"icon": "send", "label": "Apply", "at": at(6)}]},
                         {"items": [{"icon": "book", "label": "Read the annual report", "at": at(2)}, {"icon": "calculator", "label": "Build the model", "at": at(4)},
                                    {"icon": "file-text", "label": "Write the memo", "at": at(6)}, {"icon": "send", "label": "Send it to ten people", "at": at(8)}]}),
+    # the build-up scenes have fixed heights: the cases vary the counts, not the text
+    "flow": lengths({"nodes": [{"label": "Ask", "at": at(2)}, {"label": "Answer", "at": at(4)}]},
+                    {"nodes": [{"label": "Retrieve", "icon": "book", "at": at(2)}, {"label": "Augment", "at": at(4)}, {"label": "Generate", "at": at(6)}]},
+                    {"nodes": [{"label": "Search the documents", "icon": "book", "at": at(2)}, {"label": "Rank", "at": at(4)},
+                               {"label": "Prompt", "icon": "send", "at": at(6)}, {"label": "Answer", "at": at(8)}]}),
+    "stack": lengths({"items": [{"label": "Base", "at": at(2)}, {"label": "Top", "at": at(4)}]},
+                     {"items": [{"label": "Time value", "at": at(2)}, {"label": "Risk", "at": at(4)}, {"label": "Budgeting", "at": at(6)}]},
+                     {"items": [{"label": "Time value of money", "at": at(2)}, {"label": "Risk and return", "at": at(4)}, {"label": "Cost of capital", "at": at(6)},
+                                {"label": "Budgeting", "at": at(8)}, {"label": "Valuation", "at": at(10)}]}),
+    "compare": lengths({"left": {"title": "A", "items": [{"text": "x", "at": at(2)}]}, "right": {"title": "B", "items": [{"text": "y", "at": at(4)}]}},
+                       {"left": {"title": "Memory", "items": [{"text": "Guesses", "at": at(2)}, {"text": "Dated", "at": at(4)}]},
+                        "right": {"title": "RAG", "items": [{"text": "Looks up", "at": at(6)}]}, "winner": {"side": "right", "at": at(8)}},
+                       {"left": {"title": "Old way", "items": [{"text": "Manual", "at": at(2)}, {"text": "Slow", "at": at(3)}, {"text": "Costly", "at": at(4)},
+                                                               {"text": "Risky", "at": at(5)}]},
+                        "right": {"title": "New way", "items": [{"text": "Automatic", "at": at(6)}, {"text": "Fast", "at": at(7)}]}}),
+    "timeline": lengths({"steps": [{"label": "Start", "at": at(2)}, {"label": "Finish", "at": at(4)}]},
+                        {"steps": [{"label": "Learn", "sub": "Excel basics", "at": at(2)}, {"label": "Build", "at": at(4)}, {"label": "Ship", "sub": "Your model", "at": at(6)}]},
+                        {"steps": [{"label": "Read", "sub": "the annual report", "at": at(2)}, {"label": "Model", "at": at(4)}, {"label": "Value", "at": at(6)},
+                                   {"label": "Write", "sub": "a one page memo", "at": at(8)}, {"label": "Send", "at": at(10)}]}),
+    "cards": lengths({"cards": [{"title": "One", "at": at(2)}]},
+                     {"cards": [{"title": "Corporate Finance", "sub": "Coursera", "at": at(2)}, {"title": "Valuation", "at": at(4)}]},
+                     {"cards": [{"title": "Corporate Finance", "at": at(2)}, {"title": "Valuation", "at": at(4)}, {"title": "Engineering", "at": at(6)},
+                                {"title": "Modelling", "sub": "the hardest one", "at": at(8)}], "focus": {"card": 2, "at": at(10)}}),
+    "logo-card": lengths({"logo": "coursera"}, {"logo": "github", "badge": "1", "sub": "Where the code lives"},
+                         {"src": "logo.png", "name": "The Wharton School", "badge": "12", "sub": "University of Pennsylvania"}),
+    "hub": lengths({"center": "RAG", "items": [{"label": "In", "at": at(2)}, {"label": "Out", "at": at(4)}]},
+                   {"center": "Model", "items": [{"label": "Search", "at": at(2)}, {"label": "Rank", "at": at(4)}, {"label": "Answer", "at": at(6)}]},
+                   {"center": "You", "items": [{"label": "Budgeting", "at": at(2)}, {"label": "Risk", "at": at(3)}, {"label": "Valuation", "at": at(4)},
+                                               {"label": "Markets", "at": at(5)}, {"label": "Data", "at": at(6)}, {"label": "Models", "at": at(7)}]}),
+    "kinetic": lengths({"words": [{"text": "STOP", "at": at(2)}]},
+                       {"big": {"text": "3", "at": at(1)}, "words": [{"text": "STEP", "at": at(2)}, {"text": "TRICK", "at": at(3)}], "source": "s"},
+                       {"big": {"text": "90%", "at": at(1)}, "words": [{"text": "OF", "at": at(2)}, {"text": "SCRIPTS", "at": at(3)}],
+                        "line": {"text": "AI WRITES", "at": at(5)}, "strike": {"word": "WRITES", "at": at(7)},
+                        "punch": {"text": "FAIL", "at": at(8)}, "source": "s"}),
 }
+
+
+# the browser with a real page in it: the view is fixed, so only the title under the window changes the height
+SHOTS = [("shot-short", {"title": "Coursera", "domain": "coursera.org", "screenshot": "shot.png"}),
+         ("shot-long", {"title": "Introduction to Corporate Finance", "subtitle": "The Wharton School",
+                        "domain": "coursera.org", "screenshot": "shot.png"})]
+CASES["browser"] = CASES["browser"] + SHOTS
+
+
+def png(path, w, h):
+    raw = b"".join(b"\x00" + b"\x30\x60\xc0" * w for _ in range(h))
+    chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
+    with open(path, "wb") as f:
+        f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) +
+                chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 
 
 def compose(root, vendor):
@@ -91,7 +140,10 @@ def compose(root, vendor):
             with wave.open(os.path.join(d, "voice.wav"), "wb") as w:
                 w.setnchannels(1); w.setsampwidth(2); w.setframerate(8000)
                 w.writeframes(b"\x00\x00" * int((D - 0.5) * 8000))
-            scene = dict({"type": typ, "id": "sc", "bg": "black", "in": "word:0", "out": D}, **data)
+            for key in ("screenshot", "src"):
+                if data.get(key):
+                    png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
+            scene = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:0", "out": D}, **data)
             with open(os.path.join(d, "storyboard.json"), "w") as f:
                 json.dump({"id": case, "scenes": [scene]}, f)
             r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "explainer-compose.py"), "--spec", os.path.join(d, "storyboard.json"),

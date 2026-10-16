@@ -6,7 +6,8 @@ long stretches and the sheet passed). This reads the encoded MP4 itself and writ
   black       blackdetect pix_th=0.08 on a downscaled decode. Any black run is a FAIL: an interval of 0.1 s or more
               (the usual rule) and a shorter flash too (d=0.1 alone misses a 2-frame flash, 0.067 s at 30 fps)
   probe       width x height (--res, default 3840x2160); color_primaries / color_transfer / color_space all bt709;
-              video bitrate >= 40 Mb/s at 4K (floor scaled by pixel count); video duration within one frame of the
+              video bitrate >= 40 Mb/s at 4K (floor scaled by pixel count; under it passes only when x264 was asked
+              for the floor or more, i.e. the picture was simple, not the encode starved); video duration within one frame of the
               composition's data-duration (--index); video vs audio stream durations within 0.12 s
   sheet       render-sheet.png from the MP4 at the beat moments (first frame, every card-host data-start + 0.9 s,
               last frame), 4 columns at 480 px, each tile's time written on it when ffmpeg has drawtext
@@ -73,7 +74,26 @@ vbr = num(v.get("bit_rate"))
 if vbr is None and num(fmt.get("size")) and vdur:     # no per-stream rate (some muxers): file rate minus the audio
     vbr = num(fmt["size"]) * 8 / vdur - ((num(a.get("bit_rate")) or 0) if a else 0)
 floor = args.min_mbps * 1e6 * (W * Hh) / (3840 * 2160)
-check("Video bitrate", vbr is not None and vbr >= floor, "%.1f Mb/s" % (vbr / 1e6) if vbr else "unknown", ">= %.1f Mb/s" % (floor / 1e6))
+def asked_rate(path):
+    """The bitrate x264 was asked for (its options string, written into the stream), in b/s, or None: an ABR or a
+    capped encode's target. A simple picture (flat motion graphics) spends far less than its target, and that is not a
+    starved encode; an encode asked for less than the floor is."""
+    with open(path, "rb") as f:
+        head = f.read(4 << 20)
+    m = re.search(rb"x264 - core .{0,4000}?options: ([^\x00]{0,4000})", head, re.S)
+    if not m:
+        return None
+    opts = dict(o.split(b"=", 1) for o in m.group(1).split() if b"=" in o)
+    for k in (b"bitrate", b"vbv_maxrate"):
+        if opts.get(b"rc") in (b"abr", b"cbr", b"2pass") and num(opts.get(k, b"").decode()):
+            return float(opts[k]) * 1000
+    return None
+
+asked = asked_rate(R) if vbr is not None and vbr < floor else None
+if asked is not None and asked >= floor:
+    check("Video bitrate", True, "%.1f Mb/s (asked for %.1f Mb/s; a simple picture)" % (vbr / 1e6, asked / 1e6), ">= %.1f Mb/s" % (floor / 1e6))
+else:
+    check("Video bitrate", vbr is not None and vbr >= floor, "%.1f Mb/s" % (vbr / 1e6) if vbr else "unknown", ">= %.1f Mb/s" % (floor / 1e6))
 
 comp_d, hosts = None, []
 if os.path.exists(index):

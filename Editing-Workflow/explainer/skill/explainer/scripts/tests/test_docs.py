@@ -60,6 +60,11 @@ class Docs(unittest.TestCase):
             for ref in re.findall(r"§E\d+", read(p)):
                 self.assertIn(ref, heads, "%s cites %s" % (p, ref))
 
+    def test_the_motion_doctrine_is_read_first(self):
+        self.assertTrue(os.path.exists(os.path.join(ES, "MOTION.md")))
+        for p in [SKILL, PLAYBOOK, AGENTS[2], AGENTS[3]]:          # the skill, the playbook, the director, the animator
+            self.assertIn("MOTION.md", read(p), p)
+
     def test_reused_reels_agents_named(self):
         text = read(SKILL)
         for a in ("reels-renderer", "reels-qa", "reels-packager", "reels-librarian", "reels-analyst"):

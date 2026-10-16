@@ -116,7 +116,8 @@ for n, seg in enumerate(M["segments"]):
 lst = os.path.join(work, "concat.txt")
 joined = os.path.join(work, "joined.mp4")
 written += [lst, joined]
-open(lst, "w").write("".join("file '%s'\n" % c.replace("'", "'\\''") for c in conformed))
+# absolute: ffmpeg reads each name relative to concat.txt, so a relative --work would be counted twice
+open(lst, "w").write("".join("file '%s'\n" % os.path.abspath(c).replace("'", "'\\''") for c in conformed))
 subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", "-movflags", "+faststart", joined], check=True)
 
 final_src = joined

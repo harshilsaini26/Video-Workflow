@@ -1,13 +1,12 @@
 """icon-row: two to four Lucide icons (ISC, inlined from the local copy) pop in with their labels (SPEC §6.2)."""
-import os, re
+import re
 import explainer_lib as E
-from scenes import line_px, need, widest
+from scenes import js_obj, line_px, need, widest
 
 TYPE = "icon-row"
 TILE, ICON = 150, 84
 L_SIZE, L_LH, L_GAP = 36, 1.2, 20
 COL_GAP = 24
-INSTALL = "npm pack lucide-static@0.454.0, then copy its icons/*.svg to assets/vendor/lucide/"
 _NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 CSS = """
@@ -48,23 +47,23 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.tokens["colors"]
     sid = ctx.id
-    acc = c["magenta"] if ctx.light else c["cyan"]
-    tile_bg = "#FFFFFF" if ctx.light else "rgba(255,255,255,.10)"
+    acc = ctx.c["accent"]
     cols, js = [], []
     for i, it in enumerate(scene["items"]):
-        name = "lucide/%s.svg" % it["icon"]
-        if not os.path.exists(os.path.join(ctx.vendor_dir, name)):
-            ctx.fail("unknown icon %r: no vendor/%s (browse lucide.dev/icons; get the set with: %s)" % (it["icon"], name, INSTALL))
-        with open(os.path.join(ctx.vendor_dir, name)) as f:
-            svg = re.sub(r"^(\s*<!--.*?-->)*\s*", "", f.read(), flags=re.S).strip()   # Lucide files open with a licence comment
-        if not svg.startswith("<svg") or re.search(r"<script|on\w+=", svg, re.I):
-            ctx.fail("vendor/%s is not a plain SVG icon" % name)
+        svg = ctx.icon(it["icon"])
         t, attrs = ctx.item(it["at"])
-        cols.append('<div class="ic-col"%s><div class="ic-tile" id="%s-i%d" style="background:%s;color:%s">%s</div>'
+        cols.append('<div class="ic-col"%s><div class="ic-tile" id="%s-i%d" style="%s;color:%s">%s</div>'
                     '<div class="ic-label" id="%s-l%d" style="color:%s">%s</div></div>'
-                    % (attrs, sid, i, tile_bg, acc, svg, sid, i, ctx.ink, ctx.esc(it["label"])))
+                    % (attrs, sid, i, ctx.card(), acc, svg, sid, i, ctx.ink, ctx.esc(it["label"])))
         js.append(ctx.enter("#%s-i%d" % (sid, i), t, {"scale": 0.5}))
         js.append(ctx.enter("#%s-l%d" % (sid, i), t + 0.1, {"y": 16}))
+        # the arrived icons stay centred: the row starts shifted right and slides left by half a column per arrival
+        n, mo = len(scene["items"]), ctx.tokens["motion"]
+        pitch = (box[2] + COL_GAP) / float(n)
+        x = round((n - 1 - i) * pitch / 2.0, 3)
+        if i == 0:
+            js.append("tl.set('#%s .ic-row', %s, %.3f);" % (sid, js_obj({"x": x}), ctx.t_in))
+        else:
+            js.append("tl.to('#%s .ic-row', %s, %.3f);" % (sid, js_obj({"x": x, "duration": mo["enter"], "ease": mo["enter_ease"]}), t))
     return '<div class="ic-row">%s</div>' % "".join(cols), js

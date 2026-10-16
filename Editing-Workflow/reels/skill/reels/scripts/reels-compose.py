@@ -145,6 +145,13 @@ def hl_word_check(bid, text, size, w, boxed=False):
             fail("%s: %r is about %d px wide at %d px, wider than the %d px column; use a smaller size or a shorter word"
                  % (bid, word, ww, size, room))
 
+def word_check(bid, text, size, room):
+    """A word never breaks: one wider than the room it gets would run out of its card instead of wrapping."""
+    for word in text.split():
+        if text_width(word, size) > room:
+            fail("%s: %r is about %d px wide at %d px, wider than the %d px column; use a shorter word"
+                 % (bid, word, text_width(word, size), size, room))
+
 def hl_height(text, size, w, boxed=False):
     return math.ceil(hl_lines(text, size, w, boxed) * size * 1.08) + (36 if boxed else 0)
 
@@ -316,6 +323,9 @@ for b in S.get("beats", []):
     if "anchor" not in b:
         fail("%s: every beat needs an anchor (the spoken words, or \"-\" for a deliberate unanchored beat)" % bid)
     anchor = b["anchor"]
+    def within(what, at):   # an item, a count or a pop after the beat's out never shows, and beat-check would not see it
+        if not t_in <= float(at) < t_out:
+            fail("%s: %s at %.2f s is outside the beat (%.2f to %.2f s)" % (bid, what, float(at), t_in, t_out))
 
     if t in ("hook", "headline"):
         text = b["text"]
@@ -362,9 +372,13 @@ for b in S.get("beats", []):
         if not 1 <= len(items) <= 5:
             fail("%s: steps take 1 to 5 items" % bid)
         for it in items:
+            within("item %r" % it["text"], it["at"])
             if len(it["text"]) > 22:
                 fail("%s: step %r is over 22 characters" % (bid, it["text"]))
         left, top, width = place(bid, b.get("pos", "top"), lambda w: h_steps(b.get("title"), [it["text"] for it in items], w))
+        word_check(bid, b.get("title") or "", 48, width - 86)                    # inside the card's padding and border
+        for it in items:
+            word_check(bid, it["text"], 60, width - 172)                         # and beside the 64 px number and its gap
         rows = "".join('<div class="it" id="%s-i%d"%s><div class="n">%d</div><div class="t">%s</div></div>' % (
             bid, i, item_attrs(it["text"], it["at"], it["anchor"]), i + 1, esc(it["text"])) for i, it in enumerate(items))
         ttl = '<div class="ttl">%s</div>' % esc(b["title"]) if b.get("title") else ""
@@ -384,6 +398,8 @@ for b in S.get("beats", []):
         if not 1 <= len(items) <= 5:
             fail("%s: pills take 1 to 5 items" % bid)
         left, top, width = place(bid, b.get("pos", "top"), h_pills(len(items)))
+        for it in items:
+            within("item %r" % it["text"], it["at"])
         for it in items:   # a pill never wraps (white-space: nowrap), so a long one would run past the column
             if text_width(it["text"], 48) + 74 > width:
                 fail("%s: pill %r is about %d px wide, wider than the %d px column; shorten it" % (bid, it["text"], text_width(it["text"], 48) + 74, width))
@@ -409,12 +425,14 @@ for b in S.get("beats", []):
         js("tl.to('#%s-inner', { opacity: 0, duration: 0.28, ease: 'power2.in' }, %.3f);" % (bid, t_out - 0.38))
         js("glassOut('#%s-glass', %.3f, 0.33);" % (bid, t_out - 0.34))
         if b.get("pop") is not None:
+            within("the pop", b["pop"])
             audio_parts.append('    <audio id="sfx-pop-%s" src="sfx/pop.mp3" data-start="%.3f" data-duration="0.72" data-track-index="%d" data-volume="0.34"></audio>\n'
                                % (bid, float(b["pop"]), audio_track))
             audio_track += 1
 
     elif t == "chip":
         left, top, width = place(bid, b.get("pos", "low"), lambda w: h_chip(b["text"], w))
+        word_check(bid, b["text"], 72, width - 68)
         em = set(b.get("em", []))
         spans = " ".join('<span class="em">%s</span>' % esc(w) if i in em else esc(w) for i, w in enumerate(b["text"].split(" ")))
         inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx"><div class="chip" id="%s-chip"><div class="inner" id="%s-inner">%s</div></div></div>' % (
@@ -430,14 +448,18 @@ for b in S.get("beats", []):
         col = b.get("color", "white")
         dec = int(b.get("decimals", 0))
         final = L.full_digits(float(b["value"]), b.get("prefix", ""), b.get("suffix", ""), dec)
-        if text_width(final, 150, spacing=-0.02) > width:   # a number never wraps: it would run past the column
-            fail("%s: %r is about %d px wide at 150 px, wider than the %d px column; use a shorter number or a headline"
-                 % (bid, final, text_width(final, 150, spacing=-0.02), width))
+        # a number never wraps, so it must fit the column at every value it counts through: digits are proportional, and
+        # on the way to $11,111,111 it shows $10,000,000, about 1.6x as wide
+        widest = L.count_width(float(b["value"]), 150, b.get("prefix", ""), b.get("suffix", ""), dec, spacing=-0.02)
+        if widest > width:
+            fail("%s: counting up to %r, the number is about %d px wide at 150 px while it counts, wider than the %d px column; "
+                 "use a shorter number or a headline" % (bid, final, widest, width))
         lab = '<div class="sn-l shadow" id="%s-l">%s</div>' % (bid, esc(b["label"])) if b.get("label") else ""
         inner = '<div class="box" style="left:%dpx;top:%dpx;width:%dpx"><div class="sn-v shadow %s" id="%s-v">%s</div>%s</div>' % (
             left, top, width, col, bid, esc(final), lab)
         html_parts.append(host(bid, t_in, t_out, inner, anchor))
         cat = float(b.get("count_at", t_in + 0.1))
+        within("count_at", cat)
         js("tl.fromTo('#%s-v', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out', immediateRender: false }, %.3f);" % (bid, t_in))
         js("countUp('#%s-v', %s, %.3f, %.3f, %s, %s, %d);" % (bid, json.dumps(float(b["value"])), cat, float(b.get("count_dur", 1.2)),
                                                             json.dumps(b.get("prefix", "")), json.dumps(b.get("suffix", "")), dec))
@@ -514,6 +536,11 @@ if C is not False:
                 cap_js.append("tl.set('#cw%d-%d', { color: '#0AF0F0' }, %.3f);" % (i, j, w["start"]))
                 nxt = ch["words"][j + 1]["start"] if j + 1 < len(ch["words"]) else end
                 cap_js.append("tl.set('#cw%d-%d', { color: '#FFFFFF' }, %.3f);" % (i, j, max(w["start"] + 0.05, nxt)))
+        said = " ".join(w["text"].upper() if upper else w["text"] for w in ch["words"])
+        if L.CAPTION_TOP + L.caption_height(said, size) > L.SAFE["bottom"]:   # the slot holds two lines at 84 px, not at 100
+            fail("captions: %r wraps to %d px at %d px and ends at y %d, past the safe zone (bottom %d). Use a smaller "
+                 "\"size\" or a lower \"max_chars\"" % (said, L.caption_height(said, size), size,
+                                                         L.CAPTION_TOP + L.caption_height(said, size), L.SAFE["bottom"]))
         parts.append('      <div class="cap" id="cap%d" style="font-size:%dpx">%s</div>\n' % (i, size, "".join(spans)))
         cap_js.append("tl.set('#cap%d', { visibility: 'visible' }, %.3f);" % (i, ch["start"]))
         cap_js.append("tl.fromTo('#cap%d', { y: 10, opacity: 0.6 }, { y: 0, opacity: 1, duration: 0.12, ease: 'power2.out', immediateRender: false }, %.3f);" % (i, ch["start"]))
@@ -554,7 +581,7 @@ for op in S.get("camera", []):
         cam.append("tl.to('#video-zoom', { scale: 1.00, duration: %.3f, ease: 'power2.inOut' }, %.3f);" % (float(op[2]), float(op[1])))
     else:
         fail("unknown camera op %r (set, creep, punch, release)" % (op,))
-    if op[0] in ("creep", "punch") and float(op[-1]) > 1.6:
+    if op[0] in ("set", "creep", "punch") and float(op[-1]) > 1.6:
         fail("camera scale %.2f is over 1.6 (a 4K vertical source holds about 2.0; 1080p only about 1.12)" % float(op[-1]))
 
 page = """<!doctype html>

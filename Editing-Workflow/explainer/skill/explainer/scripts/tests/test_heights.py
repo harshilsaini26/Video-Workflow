@@ -22,7 +22,8 @@ class Heights(unittest.TestCase):
         for t in sorted(set(REGISTRY) - {"custom"}):
             self.assertIn(t, seen, "no measured cases for %s" % t)
             self.assertGreaterEqual(len({c for c, _ in seen[t]}), 3, t)
-            self.assertEqual({w for _, w in seen[t]}, {950, 780}, t)
+            if not getattr(REGISTRY[t], "BAKED", False):   # a baked scene is measured at the width it was composed at
+                self.assertEqual({w for _, w in seen[t]}, {950, 780}, t)
 
     def test_module_heights_match_chromium(self):
         bad = []

@@ -1,15 +1,18 @@
 """Block heights against Chromium: the composer places every block by its predicted height (layout.json), so a
-prediction under the real height could push a block past the safe zone, and one far over refuses layouts that fit.
+prediction under the real height could push a block (or a caption) past the safe zone, and one far over refuses layouts that fit.
 Each prediction must be 0 to 4 px over what Chromium lays out with DM Sans. The fixture comes from dev/make-cases.py and
 dev/measure-blocks.mjs; rerun them after changing a format's CSS, the fonts or the text measuring."""
 import json, os, unittest
 from .helpers import run, scratch, write
+import reels_lib as L
 
 FIX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "heights.json")
 
 
 class Heights(unittest.TestCase):
     def predicted(self, beat):
+        if "caption" in beat:   # a caption chunk: the composer checks it against the safe zone with reels_lib.caption_height
+            return L.caption_height(beat["caption"], beat["size"]), ""
         d = scratch(self)
         b = dict(beat, id="b", **{"in": 0.0, "out": 4.0, "anchor": "-"})
         sp = write(os.path.join(d, "storyboard.json"), {"id": "h", "duration": 5.0, "fps": 60, "captions": False, "beats": [b]})

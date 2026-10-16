@@ -60,10 +60,10 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.tokens["colors"]
+    c = ctx.c
     sid, width = ctx.id, box[2]
     ncol = _cols(scene)
-    grid_bg, head_bg, line = ("#FFFFFF", "#EEF0F6", "rgba(11,12,16,.10)") if ctx.light else ("rgba(255,255,255,.06)", "rgba(255,255,255,.12)", "rgba(255,255,255,.10)")
+    grid_bg, head_bg, line = c["card"], c["bg"], c["line"]
     rows = []
     for i, r in enumerate(scene["rows"]):
         cells = "".join('<div class="sh-cell" style="border-right:1px solid %s">%s</div>' % (line, ctx.esc(r[k]) if k < len(r) else "")
@@ -85,7 +85,7 @@ def render(scene, ctx, box):
         else:
             x, y, w = hl["cell"][1] * cw, hl["cell"][0] * ROW, cw
         hl_html = ('<div class="sh-hl" id="%s-hl" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;border-color:%s;background:%s"></div>'
-                   % (sid, x, y, w, ROW, c["amber"], "rgba(255,185,4,.16)"))
+                   % (sid, x, y, w, ROW, c["accent"], c["accent_soft"]))
         js.append(ctx.enter("#%s-hl" % sid, t, {"scale": 1.08}))
     html = '<div class="sh">%s<div class="sh-grid" style="background:%s">%s%s</div></div>' % (fx, grid_bg, "".join(rows), hl_html)
     return html, js

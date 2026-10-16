@@ -13,7 +13,8 @@ a render takes minutes.
 ## Paths
 
 - `ES=.claude/skills/explainer`, `RS=.claude/skills/reels`, `SK=.claude/skills/youtube-edit`, `W=videos/<project>`
-- **Read before every job:** `$ES/PLAYBOOK.md` (§E4 to §E6, with the custom-scene contract in §E6.5, and §E8),
+- **Read before every job:** `$ES/MOTION.md` (the look and the motion rules; §4 for custom scenes, §5 for the
+  design-director check), `$ES/PLAYBOOK.md` (§E4 to §E6, with the custom-scene contract in §E6.5, and §E8),
   `$ES/tokens.json`, the project's `STATUS.md` and `NOTES.md`.
 
 ## Your brief gives you
@@ -26,12 +27,15 @@ a render takes minutes.
 
 1. **Local libraries, once per machine** (renders must work offline): in `$ES/assets/vendor/`, `gsap.min.js`
    (`npm pack gsap@3.14.2`), `katex/` (`npm pack katex@0.16.11`: its `dist/` katex.min.js, katex.min.css, fonts/),
-   `lucide/*.svg` (`npm pack lucide-static@0.454.0`: its `icons/`), and for a 3D custom scene
-   `three/three.module.min.js` (`npm pack three@0.169.0`).
+   `lucide/*.svg` (`npm pack lucide-static@0.454.0`: its `icons/`), `simple-icons/` (`npm pack simple-icons@13.21.0`:
+   its `icons/` and `_data/`, for logo cards), and for a 3D custom scene `three/three.module.min.js`
+   (`npm pack three@0.169.0`).
 2. **Custom scenes** (from `$W/custom/<id>.md`): write `$W/custom/<id>.html` with a `<style>` whose every selector
    starts with `#<id>`, the markup, and a `<script>` defining `function build<Id>(tl, root, t0, t1)` that adds its
    tweens to `tl` between `t0` and `t1`, selecting only through `root.querySelector(...)` or `'#<id> ...'`. No
-   `document.body`, no `fetch`, no web addresses; the motion rules of §E6.
+   `document.body`, no `fetch`, no web addresses; the motion rules of §E6 and MOTION.md (the lint refuses a `back`,
+   `elastic` or `bounce` ease, `repeat`, `yoyo` and `Math.random`). The hero fills its box: a custom scene's box is
+   the whole scene area unless the spec says otherwise.
 3. **Compose (gate E3):**
    `python3 "$ES/scripts/explainer-compose.py" --spec "$W/storyboard.json" --out "$W/public"`
    It fails on a scene outside the scene area, a word wider than its column, a hole over 0.3 s or an overlap over
@@ -42,17 +46,29 @@ a render takes minutes.
 5. **Gate E4, beats:** `python3 "$SK/scripts/beat-check.py" --index "$W/public/index.html" --transcript "$W/transcript.json"`
    clean (every entrance 0.15 to 0.25 s before its word).
 6. **Gate E4, pacing:** `python3 "$ES/scripts/pace-check.py" --index "$W/public/index.html"`: no still stretch over
-   6 s (warnings over 4 s go to the Director). The kit's gap-scan finds nothing here (scenes cover the voice).
-7. **Stills with the safe zone:**
+   3 s (warnings over 2 s go to the Director). The kit's gap-scan finds nothing here (scenes cover the voice).
+   **The sound bed:** the composer writes `public/bed.wav` (the pad or the creator's music, ducked under the voice,
+   with a whoosh on each moving transition and a pop as items land); listen to the start, a scene change and the end
+   once. No FFmpeg means no bed: the composer warns.
+7. **Gate E5, a clean picture:** `python3 "$ES/scripts/layout-check.py" --index "$W/public/index.html"`: no text
+   over text, nothing crossing a label, nothing out of its card or outside the safe area, no text under 28 px, no
+   clipped text, every colour pair at WCAG AA. It runs in Chromium on this machine (HyperFrames' own puppeteer and
+   Chrome) and costs no tokens. A failure names the scene and the text: shorten the words in the storyboard (the
+   Director's) or fix a custom file (yours), compose again, and re-run until it prints E5 PASS.
+8. **Stills with the safe zone:**
    ```bash
    python3 "$SK/scripts/snap-beats.py" --project "$W" --at 0.35 --at <each scene's in + 0.6> --at <duration - 0.1>
    python3 "$RS/scripts/reels-safezone.py" --dir "$W/snaps" --out "$W/snaps/guides" --sheet
    ```
    (the composer prints the snapshot moments). Custom scenes: also at their middle and out. **Open the sheet and every
-   guided still:** nothing in a red band; the scene inside its area; captions in the band at y 330 to 470 (the guide's
+   guided still:** nothing in a red band, except the bottom band's top strip down to y 1420 (the explainer's scene
+   area runs to Instagram's clear line, lower than the Reels guide's all-platform line at 1248); the scene inside its
+   area; captions in the band at y 330 to 470 (the guide's
    cyan slot is the Reels caption place, lower down: ignore it); text readable on its background; counts at their
-   final values by the next scene; no half-faded scene where a full one should be.
-8. **`$W/snaps/SCENES.md`:** one row a scene: id, type, from and to (s), the words it covers, what is on screen, its
+   final values by the next scene; no half-faded scene where a full one should be. Then **judge them as a design
+   director** (MOTION.md §5), full size and at 200 px wide: the hero big and clear, nothing small in empty space, no
+   on-screen sentence repeating the voice. A still that fails goes back to its owner before any render.
+9. **`$W/snaps/SCENES.md`:** one row a scene: id, type, from and to (s), the words it covers, what is on screen, its
    source. The Producer shows it at Checkpoint B and the Packager attaches it.
 
 ### Job `rebuild`

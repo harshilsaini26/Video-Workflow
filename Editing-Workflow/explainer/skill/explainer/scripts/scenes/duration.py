@@ -44,14 +44,14 @@ def height(scene, width):
 
 
 def min_width(scene):
-    return max(FACE, int(E.text_width(str(scene["value"]), V_SIZE) + E.text_width(" " + scene["unit"], V_SIZE / 2)) + 1)
+    # the number as it counts, in full digits (1,000), at its widest moment on the way up
+    count = E.L.count_width(scene["value"], V_SIZE, decimals=decimals(scene["value"]))
+    return max(FACE, int(count + E.text_width(" " + scene["unit"], V_SIZE / 2)) + 1)
 
 
 def render(scene, ctx, box):
-    c = ctx.tokens["colors"]
     sid = ctx.id
-    acc = c["magenta"] if ctx.light else c["cyan"]
-    ring = "rgba(11,12,16,.12)" if ctx.light else "rgba(255,255,255,.16)"
+    acc, ring = ctx.c["accent"], ctx.c["line"]
     r = FACE / 2 - 14
     circ = round(2 * 3.14159265 * r, 1)
     lead = min(0.2, (ctx.t_out - ctx.t_in) / 4)

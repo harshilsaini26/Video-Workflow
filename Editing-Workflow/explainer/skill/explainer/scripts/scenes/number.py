@@ -3,6 +3,7 @@ import explainer_lib as E
 from scenes import line_px, need, widest
 
 TYPE = "number"
+MAX_SCALE = 1.3                  # the badge is already 200 px
 BADGE, B_SIZE = 200, 112       # the badge circle and its digits
 N_SIZE, N_LH, N_GAP = 72, 1.1, 32   # the name under it
 
@@ -32,8 +33,7 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.tokens["colors"]
-    badge = '<div class="n-badge" style="background:%s;color:%s">%s</div>' % (c["cyan"], c["ink"], ctx.esc(scene["n"]))
+    badge = '<div class="n-badge" style="background:%s;color:%s">%s</div>' % (ctx.c["accent"], ctx.c["on_accent"], ctx.esc(scene["n"]))
     js = [ctx.enter("#%s .n-badge" % ctx.id, ctx.t_in, {"scale": 0.6})]
     name = ""
     if scene.get("name"):

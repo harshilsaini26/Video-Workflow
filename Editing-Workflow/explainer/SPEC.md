@@ -9,7 +9,7 @@ A third profile next to [`longform/`](../longform/README.md) and [`reels/`](../r
 explainer reels**. The video is code-drawn animated graphics, an AI voiceover and burned-in captions, with no camera
 footage. The model is the reference reel "Most finance bros gatekeep these exact certificates" (section 3).
 
-**Success:** from a topic, notes or a finished script, the team delivers a 60 to 90 s vertical reel (1080x1920, 60 fps)
+**Success:** from a topic, notes or a finished script, the team delivers a 30 to 90 s vertical reel (1080x1920, 60 fps)
 that:
 - is accurate (every on-screen fact has a source the creator approved);
 - keeps changing on screen every 2 to 4 s, in time with the voice;
@@ -70,7 +70,7 @@ Structure of the reference:
 
 | Agent | Job | Writes |
 |---|---|---|
-| **explainer-writer** | Turns a topic, notes or a script into a 60 to 90 s script (160 to 240 words): hook first, a payoff, a call to action. Each line is kept in two forms, spoken and shown. Every fact gets a source. Marks emphasis words. | `SCRIPT.md`, `script.json`, `SOURCES.md` |
+| **explainer-writer** | Turns a topic, notes or a script into a 30 to 90 s script (81 to 240 words; 30 to 60 s for most): hook first, a payoff, a call to action. Each line is kept in two forms, spoken and shown. Every fact gets a source. Marks emphasis words. | `SCRIPT.md`, `script.json`, `SOURCES.md` |
 | **explainer-voice** | Generates the voice line by line with Kokoro, applies pronunciations and pauses, cleans and levels it, and aligns the word timings | `voice.wav`, `transcript.json` (display words with times), `VOICE.md` |
 | **explainer-director** | Plans the storyboard: scenes on word anchors, backgrounds, caption emphasis, custom-scene requests | `storyboard.json`, `ASSET-REQUESTS.md` (only for supplied logos or screenshots) |
 | **explainer-animator** | Composes from the library, writes custom scenes, runs the checks and the guided snapshots | `public/index.html`, `snaps/` |
@@ -100,7 +100,8 @@ skipped; a maker never grades its own work; a second failure of the same check g
 
 1. **Background:** `blue` (gradient with a violet glow), `black` (with a blue glow) or `light` (off-white with a dot
    grid). It cross-fades in 0.4 s when a scene's `bg` changes.
-2. **Scene:** one at a time, inside the scene area (x 65 to 1015, y 520 to 1248; narrower below y 960, as in Reels).
+2. **Scene:** one at a time, inside the scene area (x 65 to 1015, y 520 to 1420 since the craft pass, Instagram's clear
+   line; narrower below y 960, as in Reels), scaled up to fill it.
    Scenes hand over with an overlap of at most 0.3 s: the old one exits (ease-in, shorter) while the new one enters
    (ease-out, longer).
 3. **Captions:** the band from y 330 to 470.
@@ -211,7 +212,7 @@ given width**, so placement is checked by construction (the lesson from Reels' c
 
 | Gate | Fails when |
 |---|---|
-| E1 Script | the length is outside the target (2.7 words a second; 60 to 90 s is 160 to 240 words); the hook's first line is over 12 words; a fact has no source; there is no payoff or no call to action |
+| E1 Script | the length is outside the target (2.7 words a second; 30 to 90 s is 81 to 240 words); the hook's first line is over 12 words; a fact has no source; there is no payoff or no call to action |
 | E2 Voice | under 98% of words align; a gap inside a sentence is over 1.2 s; the peak is over -1 dBTP; the length is more than 10% off the target |
 | E3 Compose | a scene is outside the scene area or in the caption band; a number on screen has no source; an anchor doesn't resolve; scenes overlap more than 0.3 s; the custom-scene contract (6.4) is broken |
 | E4 Pacing | the kit's `beat-check` (entrances 0.15 to 0.25 s before their word) and `gap-scan` (no stretch over about 4 s without a change; the caption layer is excluded) |

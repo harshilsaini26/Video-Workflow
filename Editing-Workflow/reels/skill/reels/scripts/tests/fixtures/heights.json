@@ -50,5 +50,12 @@
 {"case": "steps-notitle-5-top", "height": 484, "beat": {"type": "steps", "items": [["OBS", 0.5], ["Parakeet", 0.5], ["HyperFrames", 0.5], ["Auto editor tool", 0.5], ["Free music library", 0.5]], "pos": "top"}},
 {"case": "steps-5-mid", "height": 569, "beat": {"type": "steps", "title": "Free tools I use daily", "items": [["OBS", 0.5], ["Parakeet", 0.5], ["HyperFrames", 0.5], ["Auto editor tool", 0.5], ["Free music library", 0.5]], "pos": "mid"}},
 {"case": "steps-notitle-5-mid", "height": 484, "beat": {"type": "steps", "items": [["OBS", 0.5], ["Parakeet", 0.5], ["HyperFrames", 0.5], ["Auto editor tool", 0.5], ["Free music library", 0.5]], "pos": "mid"}},
-{"case": "pills-5", "height": 605, "beat": {"type": "pills", "items": [["OBS", 0.5], ["Parakeet", 0.5], ["HyperFrames", 0.5], ["Auto editor tool", 0.5], ["Free music library", 0.5]], "pos": "top"}}
+{"case": "pills-5", "height": 605, "beat": {"type": "pills", "items": [["OBS", 0.5], ["Parakeet", 0.5], ["HyperFrames", 0.5], ["Auto editor tool", 0.5], ["Free music library", 0.5]], "pos": "top"}},
+{"case": "caption-0-64", "height": 70, "beat": {"caption": "Free tools", "size": 64}},
+{"case": "caption-1-100", "height": 110, "beat": {"caption": "Free tools", "size": 100}},
+{"case": "caption-2-84", "height": 92, "beat": {"caption": "Stop paying for", "size": 84}},
+{"case": "caption-3-100", "height": 110, "beat": {"caption": "Stop paying for", "size": 100}},
+{"case": "caption-4-84", "height": 185, "beat": {"caption": "HyperFrames rocks", "size": 84}},
+{"case": "caption-5-64", "height": 141, "beat": {"caption": "Every free tool I use daily", "size": 64}},
+{"case": "caption-6-84", "height": 185, "beat": {"caption": "Every free tool I use daily", "size": 84}}
 ]

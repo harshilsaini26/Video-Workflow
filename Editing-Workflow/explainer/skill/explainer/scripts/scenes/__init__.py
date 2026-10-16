@@ -13,7 +13,7 @@ Each module has
 Every entrance is an opacity 0 -> 1 fromTo with the enter ease (ctx.enter); exits belong to the composer. Staggers
 are written as { amount: total } and never pass tokens.motion.stagger_total_max.
 """
-import html as _html, importlib, json, math, os, re, shutil
+import html as _html, importlib, json, math, os, re, shutil, struct
 
 import explainer_lib as E
 
@@ -33,8 +33,18 @@ class Ctx:
         self.words, self.tokens = words, tokens
         self.vendor_dir, self.out_dir = vendor_dir, out_dir
         self.bg = bg
-        self.ink = tokens["text_on"][bg]
-        self.light = bg == "light"
+        self.c = E.theme(tokens, bg)          # the colours, by role (explainer_lib.theme)
+        self.ink = self.c["ink"]
+        self.ambient_lines = []   # idle motion (a float, a pulse, a slow turn): on the page, but not a change for pace-check
+
+    def card(self):
+        """The style of a card on this background: the card fill, a hairline (an inset ring, so no height changes) and a
+        soft shadow."""
+        c = self.c
+        return "background:%s;box-shadow:inset 0 0 0 2px %s, %s" % (c["card"], c["card_line"], c["shadow"])
+
+    def ambient(self, line):
+        self.ambient_lines.append(line)
 
     def fail(self, msg):
         raise SceneError(msg)
@@ -72,6 +82,45 @@ class Ctx:
             shutil.copy(src, dst)
         return "vendor/" + name
 
+    def icon(self, name):
+        """A Lucide icon's SVG, inlined from vendor/lucide/<name>.svg (ISC), or fail naming the icon and the install."""
+        if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", str(name)):
+            self.fail("icon %r is not a Lucide icon name (lowercase words joined by -)" % (name,))
+        path = os.path.join(self.vendor_dir, "lucide", "%s.svg" % name)
+        if not os.path.exists(path):
+            self.fail("unknown icon %r: no vendor/lucide/%s.svg (browse lucide.dev/icons; get the set with: %s)" % (name, name, LUCIDE_INSTALL))
+        with open(path) as f:
+            svg = re.sub(r"^(\s*<!--.*?-->)*\s*", "", f.read(), flags=re.S).strip()   # Lucide files open with a licence comment
+        if not svg.startswith("<svg") or re.search(r"<script|on\w+=", svg, re.I):
+            self.fail("vendor/lucide/%s.svg is not a plain SVG icon" % name)
+        return svg
+
+    def ghost(self, sel, extra=None):
+        """Show `sel` dimmed (opacity GHOST) from the scene's in, so a build that waits for its words never leaves the
+        stage bare; its entrance then starts from GHOST (ctx.enter(sel, t, {"opacity": GHOST, ...}))."""
+        m = self.tokens["motion"]
+        return "tl.to(%s, %s, %.3f);" % (sel_js(sel), js_obj(dict({"opacity": GHOST}, **dict(extra or {}, duration=m["enter"], ease=m["enter_ease"]))), self.t_in)
+
+    def idle(self, sel, t0, t1, props, every=1.6):
+        """An idle back-and-forth while a scene holds (ambient: not a change): from t0 to t1, `sel` eases to `props` and
+        back every `every` seconds ({"y": -8} floats; {"scale": 1.08} pulses)."""
+        t, k = t0, 0
+        rest = {p: (1 if p == "scale" else 0) for p in props}
+        while t + every <= t1 + 1e-6:
+            self.ambient("tl.to(%s, %s, %.3f);" % (sel_js(sel), js_obj(dict(props if k % 2 == 0 else rest, duration=every, ease="sine.inOut")), t))
+            t, k = t + every, k + 1
+
+    def asset(self, rel):
+        """Copy a project file (a path relative to storyboard.json) next to the page as assets/<id>-<name>; returns
+        (the page's relative path, the source's full path), or fails naming the missing file."""
+        src = rel if os.path.isabs(rel) else os.path.join(self.spec_dir, rel)
+        if not os.path.isfile(src):
+            self.fail("no file at %s (paths are relative to storyboard.json: %s)" % (rel, src))
+        name = "%s-%s" % (self.id, os.path.basename(src))
+        os.makedirs(os.path.join(self.out_dir, "assets"), exist_ok=True)
+        shutil.copy(src, os.path.join(self.out_dir, "assets", name))
+        return "assets/" + name, src
+
     def add_head(self, tag):
         if tag not in self.head:
             self.head.append(tag)
@@ -87,6 +136,10 @@ class Ctx:
             g["stagger"] = {"amount": round(min(stagger, m["stagger_total_max"]), 3)}
         g["immediateRender"] = False
         return "tl.fromTo(%s, %s, %s, %.3f);" % (sel_js(sel), js_obj(f), js_obj(g), t)
+
+
+GHOST = 0.18      # how bright a piece of a build is before its word
+LUCIDE_INSTALL = "npm pack lucide-static@0.454.0, then copy its icons/*.svg to assets/vendor/lucide/"
 
 
 def js_str(s):
@@ -110,6 +163,15 @@ def js_obj(d):
         else:
             parts.append("%s: '%s'" % (k, str(v).replace("\\", "\\\\").replace("'", "\\'")))
     return "{ " + ", ".join(parts) + " }"
+
+
+def png_size(path):
+    """(width, height) from a PNG's header, or None when the file is not a PNG."""
+    with open(path, "rb") as f:
+        head = f.read(24)
+    if len(head) < 24 or head[:8] != b"\x89PNG\r\n\x1a\n" or head[12:16] != b"IHDR":
+        return None
+    return struct.unpack(">II", head[16:24])
 
 
 def stagger_for(n, each=0.06):
@@ -141,7 +203,8 @@ def need(scene, keys):
 
 
 _MODULES = ["title", "number", "count_up", "list_cards", "line_chart", "bars", "duration", "qa_stack",
-            "browser", "sheet", "formula", "icon_row", "custom"]
+            "browser", "sheet", "formula", "icon_row", "custom",
+            "flow", "stack", "compare", "timeline", "cards", "hub", "logo_card", "kinetic"]
 REGISTRY = {}
 for _m in _MODULES:
     _mod = importlib.import_module("scenes." + _m)

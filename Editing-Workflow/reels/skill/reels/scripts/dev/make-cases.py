@@ -39,15 +39,30 @@ for n in (1, 3, 5):
         case("steps-notitle-%d-%s" % (n, pos), {"type": "steps", "items": [[w, 0.5] for w in WORDS[:n]], "pos": pos})
     case("pills-%d" % n, {"type": "pills", "items": [[w, 0.5] for w in WORDS[:n]], "pos": "top"})
 
+CAPS = [("Free tools", 64), ("Free tools", 100), ("Stop paying for", 84), ("Stop paying for", 100), ("HyperFrames rocks", 84),
+        ("Every free tool I use daily", 64), ("Every free tool I use daily", 84)]
+for k, (t, size) in enumerate(CAPS):   # one caption chunk; tests/test_heights.py predicts it with reels_lib.caption_height
+    case("caption-%d-%d" % (k, size), {"caption": t, "size": size})
+
+
+def spec(name, b, d):
+    if "caption" in b:   # a caption case: the whole text is one chunk, on screen from 0.2 s
+        words = [{"text": w, "start": 0.2 + 0.3 * i, "end": 0.45 + 0.3 * i} for i, w in enumerate(b["caption"].split())]
+        with open(os.path.join(d, "transcript.json"), "w") as f:
+            json.dump({"words": words}, f)
+        return {"id": name, "duration": 5.0, "fps": 60, "beats": [],
+                "captions": {"transcript": "transcript.json", "size": b["size"], "max_words": 99, "max_chars": 99}}
+    beat = dict(b, id="b", **{"in": 0.0, "out": 4.0, "anchor": "-"})
+    return {"id": name, "duration": 5.0, "fps": 60, "captions": False, "beats": [beat]}
+
 
 def compose(root):
     out = []
     for name, b in cases:
         d = os.path.join(root, name)
         os.makedirs(d, exist_ok=True)
-        beat = dict(b, id="b", **{"in": 0.0, "out": 4.0, "anchor": "-"})
         with open(os.path.join(d, "storyboard.json"), "w") as f:
-            json.dump({"id": name, "duration": 5.0, "fps": 60, "captions": False, "beats": [beat]}, f)
+            json.dump(spec(name, b, d), f)
         r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "reels-compose.py"), "--spec", os.path.join(d, "storyboard.json"),
                             "--out", os.path.join(d, "public")], capture_output=True, text=True)
         if r.returncode:

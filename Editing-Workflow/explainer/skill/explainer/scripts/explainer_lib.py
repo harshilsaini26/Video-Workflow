@@ -23,7 +23,17 @@ def find_reels_lib():
 
 L = find_reels_lib()
 
-SCENE = {"left": 65, "top": 520, "right": 1015, "bottom": 1248}   # inside L.SAFE; narrower below L.RIGHT_COL_TOP
+# The scene area runs down to y 1420, Instagram's clear line (motion-graphics-skills' reel-export: y 360 to 1420, out of the
+# right 120 px), below the Reels skill's all-platform SAFE bottom (1248): an explainer is made for Instagram first, and a
+# picture that stops at 1248 leaves a third of the frame empty. Below RIGHT_COL_TOP it keeps the narrow column.
+SCENE = {"left": 65, "top": 520, "right": 1015, "bottom": 1420}
+
+
+def inside_scene(left, top, width, height):
+    """True when a box sits inside the scene area, and inside the narrow column wherever it reaches below y 960."""
+    if left < SCENE["left"] or top < SCENE["top"] or left + width > SCENE["right"] or top + height > SCENE["bottom"]:
+        return False
+    return top + height <= L.RIGHT_COL_TOP or (left >= L.NARROW["left"] and left + width <= L.NARROW["right"])
 CAPTION_BAND = (330, 470)
 LEAD = 0.2          # an entrance starts this long before its word (beat-check's 0.15 to 0.25 s window)
 MAX_OVERLAP = 0.3   # scenes hand over with at most this much overlap
@@ -69,8 +79,32 @@ def apply_lexicon(text, lex):
     return text
 
 
+def rgba(hexcol, alpha):
+    """A palette colour at an alpha, as CSS: rgba(r,g,b,a)."""
+    return "rgba(%d,%d,%d,%s)" % (int(hexcol[1:3], 16), int(hexcol[3:5], 16), int(hexcol[5:7], 16), ("%.3f" % alpha).rstrip("0").rstrip("."))
+
+
+def theme(tokens, bg):
+    """The colours a scene on background `bg` uses, by role (tokens.json: palette, backgrounds, roles, series):
+    bg, card, card_line, ink, dim, muted, line, accent, on_accent, accent2, good, bad, warn, accent_soft, track,
+    shadow, series [(fill, text on it)], highlight {fill, text, handle, handle_border}. One colour means one thing:
+    accent is "what the voice is talking about now"; good, bad and warn are signals, always beside a label."""
+    p = tokens["palette"]
+    b = tokens["backgrounds"][bg]
+    c = {k: p[v] for k, v in tokens["roles"].items()}
+    c.update(bg=p[b["fill"]], card=p[b["card"]], card_line=p[b["card_line"]])
+    c["accent_soft"] = rgba(c["accent"], 0.12)
+    c["track"] = rgba(c["ink"], 0.08)
+    sh = tokens["shadow"]
+    c["shadow"] = sh["card"] % rgba(p[sh["color"]], sh["alpha"])
+    c["series"] = [(p[f], p[o]) for f, o in tokens["series"]]
+    c["highlight"] = {k: p[v] for k, v in tokens["highlight"].items()}
+    return c
+
+
 def load_tokens(path=None):
-    """The look: fonts, colours, backgrounds, the highlight box, motion timing (tokens.json next to scripts/)."""
+    """The look: fonts, the Catppuccin Latte palette and its roles, backgrounds, motion timing (tokens.json next to
+    scripts/). Scenes read colours through theme(), never from the palette directly."""
     with open(path or os.path.join(HERE, "..", "tokens.json")) as f:
         return json.load(f)
 

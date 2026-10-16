@@ -227,5 +227,53 @@ class ComposeReel(unittest.TestCase):
         self.assertIn("wider than the", r.stderr)
 
 
+    def test_captions_that_wrap_past_the_safe_zone_fail(self):
+        # captions sit at y 1050; at 100 px a two-line caption ends at y 1270, under the app's buttons (SAFE bottom 1248)
+        said = "Honestly@0.20 it's@0.60 free.@0.90 Totally@2.00 free.@2.40"
+        hook = {"type": "hook", "id": "h1", "text": "Free", "in": 0.0, "out": 1.5, "anchor": "-"}
+        big = dict(ALL, beats=[hook], camera=[], sounds=[], captions={"transcript": "transcript.json", "size": 100, "max_chars": 24})
+        r, _, _ = self.build(big, transcript=said)
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("Honestly it's free", r.stderr)
+        self.assertIn("safe zone", r.stderr)
+        r, _, _ = self.build(dict(big, captions=dict(big["captions"], size=84)), transcript=said)   # one line at 84 px fits
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_a_stat_wider_while_it_counts_fails(self):
+        # the final $111,111,111 is about 620 px at 150 px, but on the way the count shows $100,000,000 (about 1,028 px),
+        # wider than the 950 px column: digits are proportional, so the check measures every value the count passes
+        stat = {"type": "stat", "id": "sn", "value": 111111111, "prefix": "$", "count_at": 0.5, "in": 0.2, "out": 2.0, "anchor": "-", "pos": "mid"}
+        r, _, _ = self.build(dict(ALL, beats=[stat], captions=False), transcript=None)
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("while it counts", r.stderr)
+        r, _, _ = self.build(dict(ALL, beats=[dict(stat, value=11111111)], captions=False), transcript=None)   # about 925 px: fits
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_a_step_or_chip_word_wider_than_its_column_fails(self):
+        # a word never breaks: "WWWWWWWWWWWWWWWW" (16 characters, about 977 px at 60 px) would run out of its glass card
+        step = {"type": "steps", "id": "st", "items": [["WWWWWWWWWWWWWWWW", 0.6]], "in": 0.2, "out": 2.0, "anchor": "-", "pos": "top"}
+        chip = {"type": "chip", "id": "ch", "text": "WWWWWWWWWWWWW now", "in": 0.2, "out": 2.0, "anchor": "-", "pos": "mid"}
+        for beat in (step, chip, dict(step, items=[["OBS", 0.6]], title="WWWWWWWWWWWWWWWWWWWW")):
+            r, _, _ = self.build(dict(ALL, beats=[beat], captions=False), transcript=None)
+            self.assertNotEqual(r.returncode, 0, beat)
+            self.assertIn("wider than the", r.stderr)
+
+    def test_an_item_timed_outside_its_beat_fails(self):
+        # an item after its beat's out never appears, and beat-check would still pass it: refuse it at compose time
+        base = {"in": 1.0, "out": 3.0, "anchor": "-"}
+        late = [dict(base, type="steps", id="st", items=[["OBS", 1.2], ["Parakeet", 3.4]]),
+                dict(base, type="pills", id="pl", items=[["Free", 0.5]]),
+                dict(base, type="stat", id="sn", value=10, count_at=3.2),
+                dict(base, type="logo", id="lg", src="img/obs.svg", pop=3.5)]
+        for beat in late:
+            r, _, _ = self.build(dict(ALL, beats=[beat], captions=False), transcript=None)
+            self.assertNotEqual(r.returncode, 0, beat["type"])
+            self.assertIn("outside the beat", r.stderr)
+
+    def test_a_set_camera_step_is_capped_too(self):
+        r, _, _ = self.build(dict(ALL, camera=[["set", 0, 2.0]]))
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("over 1.6", r.stderr)
+
 if __name__ == "__main__":
     unittest.main()
