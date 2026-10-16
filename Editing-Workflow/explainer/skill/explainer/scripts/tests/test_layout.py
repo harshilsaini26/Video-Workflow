@@ -59,6 +59,38 @@ class Gate(unittest.TestCase):
             self.assertIn("E5 FAIL: sc:", r.stdout, word)
             self.assertIn(word, r.stdout, word)
 
+    @unittest.skipUnless(have_browser(), "needs node, puppeteer and Chrome (npx hyperframes browser ensure)")
+    def test_every_scene_case_is_clean(self):
+        # every library scene, three lengths of text each (dev/make-cases.py), composed and looked at in Chromium
+        from .test_theme import make_cases
+        from .test_assets import COURSERA, png
+        from .test_scenes_ui import stub_vendor
+        from .test_compose import silent_wav
+        mc = make_cases()
+        root = scratch(self)
+        vendor = os.environ.get("EXPLAINER_VENDOR")
+        if not vendor or not os.path.isdir(os.path.join(vendor, "katex")) or not os.path.isdir(os.path.join(vendor, "lucide")):
+            self.skipTest("needs the real vendor folder (EXPLAINER_VENDOR: gsap, katex, lucide, simple-icons)")
+        pages = []
+        for typ, variants in sorted(mc.CASES.items()):
+            for name, data in variants:
+                d = os.path.join(root, "%s-%s" % (typ, name))
+                write(os.path.join(d, "transcript.json"), {"words": [{"text": "word%d" % i, "start": 0.5 + i * 0.4, "end": 0.8 + i * 0.4}
+                                                                      for i in range(40)]})
+                silent_wav(os.path.join(d, "voice.wav"), 15.5)
+                for key in ("screenshot", "src"):
+                    if data.get(key):
+                        png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
+                sc = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:0", "out": 16.0}, **data)
+                sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [sc], "sound": {"music": "none", "sfx": False}})
+                r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", vendor)
+                self.assertEqual(r.returncode, 0, "%s-%s: %s" % (typ, name, r.stdout))
+                with open(os.path.join(d, "public", "moments.json")) as f:
+                    pages.append({"index": os.path.join(d, "public", "index.html"), "samples": LC.samples(json.load(f))})
+        issues = LC.probe_pages(pages)
+        self.assertEqual([], ["%s: %s %s" % (os.path.basename(os.path.dirname(os.path.dirname(i["page"]))), i["text"], i["detail"])
+                              for i in issues])
+
     def test_hyperframes_findings_that_matter_are_kept(self):
         self.assertTrue(LC, "layout_check.py is missing")
         report = {"layout": {"issues": [

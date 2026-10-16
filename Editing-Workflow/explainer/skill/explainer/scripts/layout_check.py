@@ -75,15 +75,20 @@ def samples(moments):
 
 
 def probe(index, smp):
+    return probe_pages([{"index": index, "samples": smp}])
+
+
+def probe_pages(pages):
+    """The probe over several pages in one Chromium: [{index, samples}] -> issues, each with its page."""
     pdir, chrome = find_puppeteer(), find_chrome()
     if not (shutil.which("node") and pdir and chrome):
         raise RuntimeError("needs node, puppeteer and Chrome: install HyperFrames (npx hyperframes browser ensure), or set "
                            "PUPPETEER_DIR and CHROME")
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
-        json.dump({"index": index, "samples": smp, "area": area(), "min_px": MIN_PX, "puppeteer_dir": pdir, "chrome": chrome}, f)
+        json.dump({"pages": pages, "area": area(), "min_px": MIN_PX, "puppeteer_dir": pdir, "chrome": chrome}, f)
         job = f.name
     try:
-        r = subprocess.run(["node", os.path.join(HERE, "layout-probe.mjs"), job], capture_output=True, text=True, timeout=600)
+        r = subprocess.run(["node", os.path.join(HERE, "layout-probe.mjs"), job], capture_output=True, text=True, timeout=1800)
     finally:
         os.unlink(job)
     if r.returncode:

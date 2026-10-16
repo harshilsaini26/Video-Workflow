@@ -1,28 +1,28 @@
-"""hub: one idea in the middle and two to six around it; each spoke draws and its node pops on its word, and the ring
-turns slowly while it holds, its labels staying upright (PLAYBOOK §E4). For "the parts of X", "what X connects"."""
+"""hub: one idea in the middle and two to six around it; each spoke draws and its node lands on its word (PLAYBOOK §E4).
+For "the parts of X", "what X connects".
+
+The geometry is computed, never drawn by eye (layout()): the nodes sit on the smallest circle where every node clears the
+middle disc and every other node by GAP, and the scene is as tall and as wide as that circle needs, so nothing overlaps,
+crosses a label or leaves the box. Nothing spins; the middle keeps one slow pulse while it holds."""
 import math
 import explainer_lib as E
 from scenes import GHOST, js_obj, need
 
 TYPE = "hub"
-H = 680                          # the scene's height
-R = 230                          # node centres from the middle
-CENTRE_D = 200                   # the middle disc
-C_SIZE, C_ROOM = 44, 176         # the middle label (DM Sans 700) and the room it has inside the disc
-N_SIZE, N_H, N_PAD = 36, 76, 26  # a node: label (DM Sans 700, one line), height, padding a side
-SPIN = 2.4                       # degrees a second the ring turns
+DISC = 220                       # the middle disc
+GAP = 30                         # the least space between a node and the disc, and between two nodes
+C_SIZE, C_ROOM = 52, 190         # the middle label (DM Sans 700) and the room it has inside the disc
+N_SIZE, N_H, N_PAD = 44, 88, 30  # a node: label (DM Sans 700, one line), height, padding a side
+PAD = 8                          # room above and below the drawing
 
 CSS = """
   .hb { position:relative; width:100%%; }
-  .hb-ring { position:absolute; inset:0; }
-  .hb-ring svg { position:absolute; inset:0; width:100%%; height:100%%; overflow:visible; }
-  .hb-pos { position:absolute; width:0; height:0; }
-  .hb-node { position:absolute; transform:translate(-50%%, -50%%); }
-  .hb-pill { height:%dpx; padding:0 %dpx; border-radius:%dpx; display:flex; align-items:center; font-weight:700; font-size:%dpx;
-    line-height:1; white-space:nowrap; opacity:0; }
-  .hb-centre { position:absolute; width:%dpx; height:%dpx; margin:-%dpx 0 0 -%dpx; border-radius:50%%; display:flex; align-items:center;
+  .hb svg { position:absolute; left:0; top:0; }
+  .hb-pill { position:absolute; height:%dpx; padding:0 %dpx; border-radius:%dpx; display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:%dpx; line-height:1; white-space:nowrap; opacity:0; }
+  .hb-centre { position:absolute; width:%dpx; height:%dpx; border-radius:50%%; display:flex; align-items:center;
     justify-content:center; font-weight:700; font-size:%dpx; line-height:1; white-space:nowrap; opacity:0; }
-""" % (N_H, N_PAD, N_H // 2, N_SIZE, CENTRE_D, CENTRE_D, CENTRE_D // 2, CENTRE_D // 2, C_SIZE)
+""" % (N_H, N_PAD, N_H // 2, N_SIZE, DISC, DISC, C_SIZE)
 
 
 def validate(scene):
@@ -38,52 +38,85 @@ def validate(scene):
     return errs
 
 
-def height(scene, width):
-    return H
-
-
 def pill_w(label):
-    return E.text_width(label, N_SIZE) + 2 * N_PAD
+    return math.ceil(E.text_width(label, N_SIZE)) + 2 * N_PAD
+
+
+def _ring(scene):
+    """(radius, [(dx, dy, w, h)] node centres from the middle): the smallest radius where every node clears the disc
+    and every other node by GAP. Node k sits at -90 + 360k/n degrees: the first one straight above."""
+    items = scene["items"]
+    n = len(items)
+    sizes = [(pill_w(it["label"]), N_H) for it in items]
+    angles = [math.radians(-90 + 360.0 * k / n) for k in range(n)]
+    r = DISC / 2.0 + GAP + N_H / 2.0
+    while True:
+        cs = [(r * math.cos(a), r * math.sin(a), w, h) for a, (w, h) in zip(angles, sizes)]
+        ok = True
+        for i, (x, y, w, h) in enumerate(cs):
+            dx, dy = max(abs(x) - w / 2.0, 0), max(abs(y) - h / 2.0, 0)
+            if math.hypot(dx, dy) < DISC / 2.0 + GAP:
+                ok = False
+                break
+            for x2, y2, w2, h2 in cs[:i]:
+                if max(abs(x - x2) - (w + w2) / 2.0, abs(y - y2) - (h + h2) / 2.0) < GAP:
+                    ok = False
+                    break
+            if not ok:
+                break
+        if ok:
+            return r, cs
+        r += 2
+
+
+def _extent(scene):
+    r, cs = _ring(scene)
+    half_w = max([abs(x) + w / 2.0 for x, y, w, h in cs] + [DISC / 2.0])
+    half_h = max([abs(y) + h / 2.0 for x, y, w, h in cs] + [DISC / 2.0])
+    return r, cs, half_w, half_h
+
+
+def height(scene, width):
+    return int(math.ceil(2 * _extent(scene)[3])) + 2 * PAD
 
 
 def min_width(scene):
-    return 2 * R + int(max(pill_w(it["label"]) for it in scene["items"])) + 20
+    return int(math.ceil(2 * _extent(scene)[2])) + 2
+
+
+def layout(scene, width):
+    """([(x, y, w, h)] each node's box, cx, cy) in the scene box of this width."""
+    _, cs, _, _ = _extent(scene)
+    cx, cy = width / 2.0, height(scene, width) / 2.0
+    return [(cx + x - w / 2.0, cy + y - h / 2.0, w, h) for x, y, w, h in cs], cx, cy
 
 
 def render(scene, ctx, box):
     c, mo = ctx.c, ctx.tokens["motion"]
     sid, items, W = ctx.id, scene["items"], box[2]
-    acc, face, line = c["accent"], ctx.card(), c["line"]
-    cx, cy = W / 2.0, H / 2.0
-    n = len(items)
-    spokes = ['<circle cx="%.0f" cy="%.0f" r="%d" fill="none" stroke="%s" stroke-width="2" stroke-dasharray="4 10"/>' % (cx, cy, R, line)]
-    nodes, js = [], []
-    for k, it in enumerate(items):
+    H = height(scene, W)
+    nodes, cx, cy = layout(scene, W)
+    spokes, pills, js = [], [], []
+    for k, (it, (x, y, w, h)) in enumerate(zip(items, nodes)):
         t, attrs = ctx.item(it["at"])
-        a = math.radians(-90 + 360.0 * k / n)
-        x, y = cx + R * math.cos(a), cy + R * math.sin(a)
-        x1, y1 = cx + (CENTRE_D / 2.0 + 8) * math.cos(a), cy + (CENTRE_D / 2.0 + 8) * math.sin(a)
-        length = int(round(math.hypot(x - x1, y - y1)))
-        spokes.append('<line id="%s-k%d" x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="5" stroke-linecap="round" '
-                      'stroke-dasharray="%d" stroke-dashoffset="%d"/>' % (sid, k, x1, y1, x, y, acc, length, length))
-        nodes.append('<div class="hb-pos" style="left:%.1fpx;top:%.1fpx"><div class="hb-node"><div class="hb-pill" id="%s-n%d"%s '
-                     'style="%s;color:%s">%s</div></div></div>' % (x, y, sid, k, attrs, face, ctx.ink, ctx.esc(it["label"])))
+        nx, ny = x + w / 2.0, y + h / 2.0
+        a = math.atan2(ny - cy, nx - cx)
+        x1, y1 = cx + (DISC / 2.0 + 6) * math.cos(a), cy + (DISC / 2.0 + 6) * math.sin(a)
+        length = int(math.ceil(math.hypot(nx - x1, ny - y1)))
+        # the spoke runs from the disc's edge to the node's middle; the node, drawn on top, hides its end
+        spokes.append('<line id="%s-k%d" x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="6" stroke-linecap="round" '
+                      'stroke-dasharray="%d" stroke-dashoffset="%d"/>' % (sid, k, x1, y1, nx, ny, c["accent"], length, length))
+        pills.append('<div class="hb-pill" id="%s-n%d"%s style="left:%.1fpx;top:%.1fpx;width:%dpx;%s;color:%s">%s</div>'
+                     % (sid, k, attrs, x, y, w, ctx.card(), ctx.ink, ctx.esc(it["label"])))
+        js.append(ctx.ghost("#%s-n%d" % (sid, k), {"scale": 0.85}))     # the empty spot shows dimmed until its word
         js.append("tl.fromTo('#%s-k%d', { strokeDashoffset: %d }, %s, %.3f);"
                   % (sid, k, length, js_obj({"strokeDashoffset": 0, "duration": 0.35, "ease": "power2.out", "immediateRender": False}),
                      max(ctx.t_in, t - 0.2)))
-        js.append(ctx.ghost("#%s-n%d" % (sid, k), {"scale": 0.85}))     # the empty spot shows dimmed until its word
         js.append(ctx.enter("#%s-n%d" % (sid, k), t, {"opacity": GHOST, "scale": 0.85}))
-    centre = '<div class="hb-centre" id="%s-c" style="left:%.0fpx;top:%.0fpx;background:%s;color:%s;box-shadow:0 0 0 16px %s">%s</div>' % (
-        sid, cx, cy, acc, c["on_accent"], c["accent_soft"], ctx.esc(scene["center"]))
+    centre = ('<div class="hb-centre" id="%s-c" style="left:%.1fpx;top:%.1fpx;background:%s;color:%s;box-shadow:0 0 0 14px %s">%s</div>'
+              % (sid, cx - DISC / 2.0, cy - DISC / 2.0, c["accent"], c["on_accent"], c["accent_soft"], ctx.esc(scene["center"])))
     js.append(ctx.enter("#%s-c" % sid, ctx.t_in, {"scale": 0.5}))
-    # while it holds: the ring turns slowly (its labels turn back, so they stay upright) and the middle breathes
-    dur = round(ctx.t_out - ctx.t_in, 3)
-    spin = round(SPIN * dur, 2)
-    ctx.ambient("tl.fromTo('#%s-ring', { rotation: 0 }, %s, %.3f);"
-                % (sid, js_obj({"rotation": spin, "duration": dur, "ease": "none", "immediateRender": False}), ctx.t_in))
-    ctx.ambient("tl.fromTo('#%s .hb-pos', { rotation: 0 }, %s, %.3f);"
-                % (sid, js_obj({"rotation": -spin, "duration": dur, "ease": "none", "immediateRender": False}), ctx.t_in))
-    ctx.idle("#%s-c" % sid, ctx.t_in + 0.6, ctx.t_out, {"scale": 1.06}, every=1.2)
-    html = ('<div class="hb" style="height:%dpx"><div class="hb-ring" id="%s-ring"><svg viewBox="0 0 %d %d">%s</svg>%s</div>%s</div>'
-            % (H, sid, W, H, "".join(spokes), "".join(nodes), centre))
+    ctx.idle("#%s-c" % sid, ctx.t_in + 0.6, ctx.t_out, {"scale": 1.04}, every=1.2)    # the one alive thing while it holds
+    html = ('<div class="hb" style="height:%dpx"><svg width="%d" height="%d" viewBox="0 0 %d %d">%s</svg>%s%s</div>'
+            % (H, W, H, W, H, "".join(spokes), centre, "".join(pills)))
     return html, js

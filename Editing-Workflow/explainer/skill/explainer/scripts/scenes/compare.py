@@ -85,7 +85,6 @@ def render(scene, ctx, box):
         t = ctx.at(w["at"])
         k = SIDES.index(w["side"])
         win = '<div class="cp-win" id="%s-w" style="background:%s;color:%s">&#10003;</div>' % (sid, acc, c["on_accent"])
-        js.append("tl.to('#%s-c%d', %s, %.3f);" % (sid, k, js_obj({"scale": 1.04, "duration": mo["enter"], "ease": mo["enter_ease"]}), t))
         js.append("tl.to('#%s-h%d', %s, %.3f);" % (sid, k, js_obj({"backgroundColor": acc, "color": c["on_accent"],
                                                                    "duration": 0.3, "ease": mo["enter_ease"]}), t))
         js.append("tl.to('#%s-c%d', %s, %.3f);" % (sid, 1 - k, js_obj({"opacity": 0.45, "duration": 0.4, "ease": mo["enter_ease"]}), t))

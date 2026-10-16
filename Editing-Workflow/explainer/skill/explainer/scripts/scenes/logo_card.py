@@ -48,11 +48,9 @@ CSS = """
   .lc-mark svg, .lc-mark img { width:100%%; height:100%%; object-fit:contain; display:block; }
   .lc-badge { position:absolute; right:-24px; top:-%dpx; width:%dpx; height:%dpx; border-radius:50%%; display:flex; align-items:center;
     justify-content:center; font-weight:700; font-size:46px; line-height:1; opacity:0; }
-  .lc-glow { position:absolute; left:50%%; top:%dpx; width:%dpx; height:%dpx; margin:-%dpx 0 0 -%dpx; border-radius:50%%; opacity:.55; }
   .lc-name { margin-top:%dpx; height:%dpx; font-weight:700; font-size:%dpx; line-height:%dpx; white-space:nowrap; opacity:0; }
   .lc-sub { height:%dpx; font-weight:500; font-size:%dpx; line-height:%dpx; white-space:nowrap; opacity:0; }
-""" % (CARD, CARD, TOP, RADIUS, MARK, MARK, TOP, BADGE, BADGE, TOP + CARD // 2, CARD + 260, CARD + 260, (CARD + 260) // 2,
-       (CARD + 260) // 2, N_GAP, N_LINE, N_SIZE, N_LINE, S_LINE, S_SIZE, S_LINE)
+""" % (CARD, CARD, TOP, RADIUS, MARK, MARK, TOP, BADGE, BADGE, N_GAP, N_LINE, N_SIZE, N_LINE, S_LINE, S_SIZE, S_LINE)
 
 
 def validate(scene):
@@ -108,10 +106,9 @@ def render(scene, ctx, box):
              % (sid, c["accent"], c["on_accent"], ctx.esc(scene["badge"])) if scene.get("badge") is not None else "")
     sub = '<div class="lc-sub" id="%s-s" style="color:%s">%s</div>' % (sid, c["dim"], ctx.esc(scene["sub"])) \
         if scene.get("sub") else '<div class="lc-sub"></div>'
-    html = ('<div class="lc"><i class="lc-glow" id="%s-g" style="background:radial-gradient(circle, %s 0%%, transparent 62%%)"></i>'
-            '<div class="lc-card" id="%s-card" style="%s"><div class="lc-mark">%s</div>%s</div>'
+    html = ('<div class="lc"><div class="lc-card" id="%s-card" style="%s"><div class="lc-mark">%s</div>%s</div>'
             '<div class="lc-name" id="%s-n" style="color:%s">%s</div>%s</div>'
-            % (sid, c["accent_soft"], sid, ctx.card(), mark, badge, sid, ctx.ink, ctx.esc(title), sub))
+            % (sid, ctx.card(), mark, badge, sid, ctx.ink, ctx.esc(title), sub))
     t = ctx.t_in
     js = ["tl.fromTo('#%s-card', %s, %s, %.3f);" % (sid, js_obj({"opacity": 0, "scale": 0.6, "y": 60, "rotation": -8}),
                                                     js_obj({"opacity": 1, "scale": 1, "y": 0, "rotation": 0, "duration": 0.6,
@@ -123,5 +120,4 @@ def render(scene, ctx, box):
         js.append("tl.fromTo('#%s-b', %s, %s, %.3f);" % (sid, js_obj({"opacity": 0, "scale": 0}), js_obj(
             {"opacity": 1, "scale": 1, "duration": mo["enter"], "ease": "expo.out", "immediateRender": False}), t + 0.45))
     ctx.idle("#%s-card" % sid, t + 0.7, ctx.t_out, {"y": -12, "rotation": 2}, every=1.8)
-    ctx.idle("#%s-g" % sid, t + 0.3, ctx.t_out, {"scale": 1.12}, every=1.2)
     return html, js

@@ -55,4 +55,12 @@ def render(scene, ctx, box):
                   % (js_str(p["tex"]), js_str("%s-p%d" % (sid, i))))
         t = ctx.at(p["at"]) if p.get("at") is not None else ctx.t_in
         js.append(ctx.enter("#%s-p%d" % (sid, i), t, {"y": 24}))
+    # KaTeX's width is only known in the browser: if the set formula is wider than its row, shrink it to fit (on load and
+    # again once KaTeX's fonts are in), so it can never run off the frame
+    # (measured from the parts' own boxes: a centred row that overflows spills both ways, and scrollWidth misses the left)
+    js.append("(function () { var row = document.querySelector(%s); var fit = function () { row.style.transform = ''; "
+              "var ps = row.querySelectorAll('.f-part'); if (!ps.length) return; var r = row.getBoundingClientRect(); "
+              "var a = ps[0].getBoundingClientRect().left, b = ps[ps.length - 1].getBoundingClientRect().right, w = b - a; "
+              "if (w > r.width * 0.98) row.style.transform = 'scale(' + (r.width * 0.96 / w).toFixed(4) + ')'; }; "
+              "fit(); if (document.fonts) document.fonts.ready.then(fit); })();" % js_str("#%s .f-row" % sid))
     return '<div class="f-row" style="color:%s">%s</div>' % (ctx.ink, "".join(spans)), js

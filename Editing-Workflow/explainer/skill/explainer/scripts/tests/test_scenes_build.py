@@ -124,5 +124,40 @@ class Build(unittest.TestCase):
             self.assertEqual(r.returncode, 0, "%s: %s" % (t, r.stdout))
 
 
+class Hub(unittest.TestCase):
+    """The hub's geometry is computed, not drawn by eye: every node clears the middle disc and every other node, and
+    everything sits inside the box, for two to six labels short or long (gate E5 checks the drawn page too)."""
+    SETS = [["In", "Out"], ["Search", "Rank", "Answer"], ["Retrieval", "Augmented", "Generation"],
+            ["Budgeting", "Risk", "Valuation", "Markets", "Data", "Models"], ["Time value of money", "Cost of capital"],
+            ["Search", "Rank", "Prompt", "Answer"], ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"]]
+
+    def test_nodes_clear_the_disc_each_other_and_the_box(self):
+        from scenes import hub
+        for labels in self.SETS:
+            sc = {"center": "RAG", "items": [{"label": l, "at": W(6)} for l in labels]}
+            width = max(hub.min_width(sc), 600)
+            h = hub.height(sc, width)
+            nodes, cx, cy = hub.layout(sc, width)
+            for i, (x, y, w, hh) in enumerate(nodes):
+                self.assertGreaterEqual(x, 0, labels)
+                self.assertGreaterEqual(y, 0, labels)
+                self.assertLessEqual(x + w, width + 0.01, labels)
+                self.assertLessEqual(y + hh, h + 0.01, labels)
+                dx = max(abs(cx - (x + w / 2.0)) - w / 2.0, 0)
+                dy = max(abs(cy - (y + hh / 2.0)) - hh / 2.0, 0)
+                self.assertGreaterEqual((dx * dx + dy * dy) ** 0.5, hub.DISC / 2.0 + hub.GAP - 0.01, (labels, i))
+                for j, (x2, y2, w2, h2) in enumerate(nodes[:i]):
+                    apart = max(x2 - (x + w), x - (x2 + w2), y2 - (y + hh), y - (y2 + h2))
+                    self.assertGreaterEqual(apart, hub.GAP - 0.01, (labels, i, j))
+
+    def test_labels_are_large_and_nothing_spins(self):
+        from scenes import hub
+        self.assertGreaterEqual(hub.N_SIZE, 44)
+        sc = dict(GOOD["hub"], id="sc", **{"in": "word:4", "out": D})
+        ctx = Ctx(sc, 1.9, D, words30(), TOK, stub_vendor(scratch(self)), scratch(self), "mantle")
+        html, js = hub.render(sc, ctx, (150, 600, 700))
+        self.assertNotRegex("\n".join(js + ctx.ambient_lines), r"rotation")
+
+
 if __name__ == "__main__":
     unittest.main()

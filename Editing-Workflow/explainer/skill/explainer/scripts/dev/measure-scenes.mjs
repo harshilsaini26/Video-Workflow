@@ -17,11 +17,15 @@ for (const c of cases) {
     box.closest(".card-host").style.visibility = "visible";
     await Promise.all([...document.fonts].map((f) => f.load()));   // every face, not only those already in view
     await document.fonts.ready;
+    // the scene is laid out inside its .live wrapper (which the composer scales to fill the frame): measure that,
+    // unscaled, at each column width
+    const live = document.getElementById(id + "-live");
+    live.style.transform = "none";
     const out = [];
     for (const w of [950, 780]) {
-      box.style.width = w + "px";
-      box.style.height = "auto";
-      out.push({ width: w, height: box.offsetHeight });
+      live.style.width = w + "px";
+      live.style.height = "auto";
+      out.push({ width: w, height: live.offsetHeight });
     }
     return out;
   }, c.scene.id);
