@@ -6,10 +6,12 @@
 
 Writes a PNG of exactly --width x --height (the top of the page; the browser scene scrolls down it while it holds).
 Chrome is found at --chrome, $CHROME, the usual install paths, or on PATH. A fresh profile is used every time, so you
-are never signed in and nothing personal is captured. Check the result before using it: a cookie banner or a sign-in
-wall can cover the page (try a longer --wait, or crop it out).
+are never signed in and nothing personal is captured. The page is loaded once first: when Chrome shows its own error
+page instead ("This site can't be reached"), nothing is written and the error is named. A proxy in HTTPS_PROXY is passed
+to Chrome. Check the result before using it: a cookie banner or a sign-in wall can cover the page (try a longer
+--wait, or crop it out).
 """
-import argparse, os, shutil, struct, subprocess, sys, tempfile
+import argparse, os, re, shutil, struct, subprocess, sys, tempfile
 
 PATHS = ["/opt/pw-browsers/chromium",
          "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -46,13 +48,20 @@ def main():
     if os.path.exists(out):
         os.remove(out)
     profile = tempfile.mkdtemp(prefix="snap-page-")
-    cmd = [chrome, "--headless=new", "--hide-scrollbars", "--disable-gpu", "--mute-audio", "--no-first-run", "--disable-extensions",
-           "--force-device-scale-factor=1", "--user-data-dir=%s" % profile, "--window-size=%d,%d" % (a.width, a.height),
-           "--virtual-time-budget=%d" % a.wait, "--screenshot=%s" % out, a.url]
+    base = [chrome, "--headless=new", "--hide-scrollbars", "--disable-gpu", "--mute-audio", "--no-first-run", "--disable-extensions",
+            "--force-device-scale-factor=1", "--user-data-dir=%s" % profile, "--window-size=%d,%d" % (a.width, a.height),
+            "--virtual-time-budget=%d" % a.wait]
     if hasattr(os, "geteuid") and os.geteuid() == 0:
-        cmd.insert(1, "--no-sandbox")          # Chrome refuses to run as root with its sandbox (containers)
+        base.insert(1, "--no-sandbox")         # Chrome refuses to run as root with its sandbox (containers)
+    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    if proxy and a.url.startswith("http"):
+        base.append("--proxy-server=%s" % proxy)   # Chrome on Linux ignores the environment's proxy otherwise
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        dom = subprocess.run(base + ["--dump-dom", a.url], capture_output=True, text=True, timeout=120).stdout
+        if 'id="main-frame-error"' in dom:     # Chrome's own error page, not the page asked for
+            code = re.search(r"\b(ERR_[A-Z_]+)", dom)
+            sys.exit("the page did not load (%s): %s; nothing written" % (code.group(1) if code else "Chrome's error page", a.url))
+        r = subprocess.run(base + ["--screenshot=%s" % out, a.url], capture_output=True, text=True, timeout=120)
     except subprocess.TimeoutExpired:
         sys.exit("Chrome took over 120 s on %s" % a.url)
     finally:

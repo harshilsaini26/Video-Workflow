@@ -91,6 +91,16 @@ class Assets(unittest.TestCase):
         self.assertEqual(head[:8], b"\x89PNG\r\n\x1a\n")
         self.assertEqual(struct.unpack(">II", head[16:24]), (1000, 1400))
 
+    @unittest.skipUnless(CHROME, "no Chrome or Chromium found")
+    def test_snap_page_fails_on_a_page_that_does_not_load(self):
+        # Chrome draws its own "This site can't be reached" page; a screenshot of that must never reach a reel
+        d = scratch(self)
+        out = os.path.join(d, "shots", "down.png")
+        r = run("snap-page.py", "--url", "http://127.0.0.1:9/", "--out", out, "--width", "800", "--height", "600", "--wait", "1000")
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("did not load", r.stdout + r.stderr)
+        self.assertFalse(os.path.exists(out))
+
     def test_snap_page_needs_chrome(self):
         r = run("snap-page.py", "--url", "file:///x.html", "--out", "/tmp/x.png", "--chrome", "/no/such/chrome")
         self.assertNotEqual(r.returncode, 0)
