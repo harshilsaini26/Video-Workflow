@@ -978,7 +978,7 @@ come from, and a few rules.
 | Cards | sized to the face-safe zone | inside the platforms' safe zone (65 / 269 / 672 px), narrower near the button column | the same safe zone; one scene at a time, anchored to its words |
 | Keep clear | your face | your face, the top 14 %, the bottom 35 %, 6 % each side, the button column | the top 14 %, the bottom 35 %, 6 % each side, the button column |
 | Music | ducked bed on the master | none in the file (added in the app) or a free licensed track, about 18 dB under the voice | as Reels |
-| Tools | free only: the kit without its Tella, Epidemic Sound and AI B-roll routes | free only: no Tella, no Epidemic Sound, no paid stock, no AI generation | free only: Kokoro (Apache-2.0), KaTeX, Lucide, no paid voice or avatar |
+| Tools | free only: the kit without its Tella, Epidemic Sound and AI B-roll routes | free only: no Tella, no Epidemic Sound, no paid stock, no AI generation | free only: Kokoro (Apache-2.0), KaTeX, Lucide, Simple Icons, the Catppuccin Latte palette, no paid voice or avatar |
 | Team | [`longform/`](longform/README.md): Producer + 13 agents | [`reels/`](reels/README.md): Producer + 11 agents | [`explainer/`](explainer/README.md): Producer + 4 agents + 5 from Reels |
 
 ### How the Reels profile is built
@@ -1022,10 +1022,10 @@ flowchart LR
 
 | Stage | Explainer |
 |---|---|
-| Script | `explainer-writer`; `script-check.py` (gate E1: 81 to 240 words, a hook of 12 words at most, every number sourced) |
+| Script | `explainer-writer`; `script-check.py` (gate E1: 81 to 240 words, a hook of 12 words at most, every number sourced; warnings when the script is not aimed at one viewer, has no example, skips its format's shape, or ends with a call to action that doesn't match the goal) |
 | Voice | `explainer-voice`; `tts-kokoro.py` line by line, -16 LUFS; Parakeet + `align-script.py` (gate E2: 98% of words heard) |
 | Plan | `explainer-director`: `storyboard.json`, every scene and item anchored to a word |
-| Compose | `explainer-animator`; `explainer-compose.py` (gate E3: fits by construction, no holes, sources), then the kit's beat-check and `pace-check.py` (E4: something changes at least every 3 s) |
+| Compose | `explainer-animator`; `explainer-compose.py` (gate E3: fits by construction, no holes, sources), then the kit's beat-check and `pace-check.py` (E4: something changes at least every 3 s), then `layout-check.py` (E5: every scene opened in Chromium, no overlap, spill, unsafe, small or clipped text, WCAG contrast) |
 | Render, verify, package, learn | `reels-renderer`, `reels-qa`, `reels-packager`, `reels-librarian`, `reels-analyst` |
 
 ---
@@ -1068,12 +1068,12 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 | GSAP (optional local copy) | `assets/vendor/gsap.min.js` | ✅ |
 | yt-dlp (optional, Analyst only) | `yt-dlp --version` | ✅ |
 
-3. The tests, from the skill's scripts folder: `python3 -m unittest tests` → 51 tests, `OK` (and 48 in the Reels skill's scripts folder).
+3. The tests, from the skill's scripts folder: `python3 -m unittest tests` → 53 tests, `OK` (and 48 in the Reels skill's scripts folder).
 4. `new` The agent team for your profile. **YouTube long-form:** install the Producer skill, the playbook, the
    templates and the 13 agent files as in [`longform/README.md`](longform/README.md) § 2. **Reels:** the Producer
    skill, the playbook, the scripts, the templates and the 11 agent files as in [`reels/README.md`](reels/README.md) § 2.
    **Explainer:** the Reels team first, then the explainer skill, its 4 agent files, Kokoro and the local libraries as
-   in [`explainer/README.md`](explainer/README.md) § 2 (its tests: 148, `OK`).
+   in [`explainer/README.md`](explainer/README.md) § 2 (its tests: 190, `OK`).
 5. Open a **new** conversation: skills and agents load at the start of a conversation.
 
 ---
