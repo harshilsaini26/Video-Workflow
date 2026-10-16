@@ -10,7 +10,7 @@ It makes three kinds of video:
 |---|---|---|---|
 | **YouTube long-form** | your raw talking-head clips and screen recordings | an edited 8 to 25 minute video: tight cuts, on-screen text and graphics, B-roll, sound, music, chapters, captions | 16:9, 4K, 30 fps |
 | **Reels** | a vertical clip, or a long video to cut reels from | a 15 to 60 second reel: hook first, word captions, graphics kept clear of the app's buttons, cover frames, a post caption | 9:16, 1080x1920, 60 fps |
-| **Explainer** | a topic, notes or a script (no camera) | a 60 to 90 second animated explainer: a free local AI voice, code-drawn scenes on every word, captions, sources for every number | 9:16, 1080x1920, 60 fps |
+| **Explainer** | a topic, notes or a script (no camera) | a 30 to 90 second animated explainer: a free local AI voice, a kinetic-type hook, diagrams that build on every word, captions, a sound bed, sources for every number, in a soft Catppuccin Latte look | 9:16, 1080x1920, 60 fps |
 
 This page walks you through everything: what you need, how to set it up, and what happens, step by step, when you
 make your first video of each kind. The detailed design lives in [`Editing-Workflow/README.md`](Editing-Workflow/README.md).
@@ -125,7 +125,7 @@ Every profile builds on the kit's `youtube-edit` skill (its scripts, rules and f
 > check everything it needs, install what's missing, and run its tests.
 
 Claude copies the skill, installs FFmpeg, HyperFrames, auto-editor, Parakeet and the Python packages, and runs the
-kit's tests. You should see **51 tests, OK**.
+kit's tests. You should see **53 tests, OK**.
 
 ### 3.4 Install the team for the videos you make
 
@@ -164,9 +164,10 @@ pip install kokoro soundfile            # the voice; also install espeak-ng from
 npx hyperframes models install parakeet
 ```
 
-The explainer also needs local copies of GSAP, KaTeX (formulas), Lucide (icons) and, for 3D scenes, three.js. The
-exact commands are in [its README](Editing-Workflow/explainer/README.md#2-install); or tell Claude *"set up the
-explainer's vendor folder as its README says"*.
+The explainer also needs local copies of GSAP, KaTeX (formulas), Lucide (icons), Simple Icons (brand logos) and, for
+3D scenes, three.js. The exact commands are in [its README](Editing-Workflow/explainer/README.md#2-install); or tell
+Claude *"set up the explainer's vendor folder as its README says"*. Its layout check opens every scene in the Chrome
+HyperFrames uses; if Chrome is missing, run `npx hyperframes browser ensure`.
 
 ### 3.5 Check everything works
 
@@ -174,9 +175,9 @@ From each installed skill's `scripts` folder:
 
 | Skill | Command | Expect |
 |---|---|---|
-| kit | `cd .claude/skills/youtube-edit/scripts && python3 -m unittest tests` | 51 tests, OK |
+| kit | `cd .claude/skills/youtube-edit/scripts && python3 -m unittest tests` | 53 tests, OK |
 | Reels | `cd .claude/skills/reels/scripts && python3 -m unittest tests` | 48 tests, OK |
-| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 148 tests, OK (a few skip without Kokoro or a local GSAP) |
+| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 190 tests, OK (a few skip without Kokoro, Chrome or the local vendor folder) |
 
 ### 3.6 Open a new conversation
 
@@ -347,26 +348,45 @@ More detail: [`Editing-Workflow/reels/README.md`](Editing-Workflow/reels/README.
 
 ## 6. Walkthrough: your first explainer reel
 
-No camera. A voice explains one idea while code-drawn scenes land on its words: titles, numbered steps, count-ups,
-charts, bars, lists, a mock browser or spreadsheet, formulas, icons, and custom scenes when nothing in the library fits.
+No camera. A voice explains one idea while code-drawn scenes land on its words:
+- **the hook** as kinetic type: a big number or word, a claim, a word struck through, a punch line;
+- **diagrams that build** piece by piece as each one is said: a flow, a stack, a comparison, a timeline, cards, a hub;
+- titles, numbered steps, count-ups, charts, bars, lists, formulas and icons;
+- **real brand logos and real page screenshots**, which can zoom in on one line;
+- custom scenes, only when nothing in the library fits.
+
+Scenes move from one to the next with transitions. A soft sound bed sits under the voice, with a whoosh on each
+transition, a pop as each item lands and a chime on the payoff. The look is
+[Catppuccin Latte](https://github.com/catppuccin/catppuccin): light, soft backgrounds with calm accents.
 
 ### Step 1. Start
 
-> Make an explainer reel about what a P/E ratio is, for people new to investing. About 75 seconds, ending with
+> Make an explainer reel about what a P/E ratio is, for people new to investing. About 45 seconds, ending with
 > "follow for part 2".
 
 You can also paste notes or a finished script instead of a topic.
 
 ### Step 2. Answer the brief
 
-The input (topic, notes or script), who it is for, the length (60 to 90 s), the call to action, terms to say and
-spell right, and music (none in the file, or a free track in it).
+The Producer asks for:
+- the input: a topic, notes or a script;
+- **who it is for**: one viewer, described in a line;
+- **the goal**: follow, comment, save, share, a link, or simply teach;
+- **the format**: a how-to, a versus, a myth and its truth, a story or a plain explainer;
+- the length: 30 to 90 s, with 30 to 60 s recommended;
+- for a series, its name and the part number, and your handle (both shown quietly above the captions);
+- terms to say and spell right;
+- music: none in the file, or a free track in it.
 
 ### Step 3. Wait while the Writer writes
 
-A 160 to 240 word script: a hook of at most 12 words, one idea, a payoff and a call to action. Every line is kept
-twice: **what the voice says** ("one thousand dollars") and **what the screen shows** ("$1,000"). **Every number and
-claim gets a source** you can open, listed in `SOURCES.md`.
+A script of 81 to 240 words. It has a hook of at most 12 words, one idea, a concrete example, a payoff and a call to
+action that asks for **your goal**. It is written to one viewer, using "you" and asking a question, and it follows its
+format's shape: steps for a how-to, the myth before the truth, the problem before the answer.
+
+Every line is kept twice: **what the voice says** ("one thousand dollars") and **what the screen shows** ("$1,000").
+**Every number and claim gets a source** you can open, listed in `SOURCES.md`. The writer also gives each line a short
+hint for its picture, so planning the scenes costs few tokens.
 
 ### Step 4. ✋ Checkpoint A: the script (and, the first time, the voice)
 
@@ -382,10 +402,29 @@ listens back and every word gets its exact time. A word it can't say ("WACC") ge
 
 ### Step 6. Wait while the scenes are built
 
-The Director picks a scene for what each stretch of words does (a claim → a title, a number → a count-up, a list → cards,
-change over time → a line chart...) and anchors every scene and item to a word, so nothing drifts from the voice. The
-Animator builds it; checks make sure every scene fits the screen, something changes every few seconds, and every number
-on screen has its source.
+A planner script turns the writer's hints into a draft storyboard. For each stretch of words it picks a scene that
+matches what the words do:
+- a claim → a title;
+- a number → a count-up;
+- a list → cards;
+- change over time → a line chart;
+- a brand → its logo.
+
+Every scene and item is anchored to a word, so nothing drifts from the voice. The Director only edits the draft.
+
+The Animator then builds the page. Each scene is scaled up to fill the frame.
+
+Before you see anything, the checks make sure that:
+- every scene fits the screen;
+- something changes every 3 seconds;
+- every number on screen has its source;
+- the **layout check** passes. It opens every scene in Chrome on your computer and fails on:
+  - text over text, or text covered by a shape;
+  - text spilling out of its card;
+  - anything outside the safe area;
+  - text too small to read;
+  - text clipped by its box;
+  - text with poor contrast.
 
 ### Step 7. ✋ Checkpoint B: the stills and the voiceover
 
@@ -395,6 +434,12 @@ voiceover to listen to. Answer: *"The chart comes in too late. Say 'EBITDA' slow
 ### Step 8. Render, check, package
 
 The Reels renderer, QA and packager finish it: `deliver/reel.mp4`, covers, `captions.srt` and the posting checklist.
+The checklist covers:
+- the cover;
+- 3 to 5 hashtags that fit: one broad, one for the format, the rest for the topic;
+- the series part in the post caption;
+- a trending sound only when it truly fits, added in the app quietly under the voice;
+- posting on a steady rhythm, since consistency beats bursts.
 
 **Before posting:** Instagram asks you to label realistic AI-generated voices (its "AI info" label). The checklist
 reminds you; check each app's current rule.
@@ -437,7 +482,7 @@ The templates, with every field explained: [`Editing-Workflow/templates/`](Editi
 | A hook only | *Please use my YouTube editing skill to edit this hook for my YouTube video.* |
 | A reel | *Make a reel from this clip: [file]. The promise is [one line].* |
 | Reels from a long video | *Cut three reels out of my long video [project].* |
-| An explainer | *Make an explainer reel about [topic] for [who]. About 75 seconds, ending with [call to action].* |
+| An explainer | *Make an explainer reel about [topic] for [who]. About 45 seconds, ending with [call to action].* |
 | At Checkpoint A | *Keep the earlier take of the studio line.* · *The joke at 1:12 goes.* · *Line 3 is too long.* |
 | At Checkpoint B | *The card at 0:14 covers my face.* · *Make the logo bigger.* · *The chart comes in too late.* |
 | Notes on the draft | *At 0:22 there's no sound.* · *Around 0:14 there's a quick flash, take it out.* · *This is way too busy.* |
@@ -459,7 +504,8 @@ Between the stages, automatic **gates** check the work before it moves on. A few
 | Beat check | a card or caption that lands before or after the word it belongs to |
 | Gap scan / pace check | stretches where nothing on screen changes for too long |
 | Safe zone (Reels, explainer) | text under the app's buttons or caption strip (prevented by construction, then checked on stills) |
-| Script check (explainer) | too long or short, a long hook, a number without a source |
+| Script check (explainer) | too long or short, a long hook, a number without a source; it also warns when the script never says "you", asks no question, gives no example, skips its format's shape, or ends with a call to action that doesn't ask for your goal |
+| Layout check (explainer) | in Chrome, on every scene: text over text or under a shape, text out of its card or the safe area, small or clipped text, poor contrast |
 | Voice check (explainer) | a word the voice skipped or misread, a long gap, a peak too loud, the wrong length |
 | Render verify | black frames or flashes, wrong size or frame rate, missing colour tags, low bitrate, clipped words |
 | Loudness | the whole video at -14 LUFS, the voice clear over the music |
@@ -484,7 +530,8 @@ The skills you installed under `.claude/` are the live copies. When the Libraria
 **copy those files back into `Editing-Workflow/`** so this repository keeps what it learned.
 
 To change the whole look (colours, fonts, card style), give it your style guide: *"Here's my style guide. Update the
-youtube-edit skill to match it."* The explainer's look is one file, `tokens.json`.
+youtube-edit skill to match it."* The explainer's look is one file, `tokens.json`: the Catppuccin Latte palette,
+with each colour given a role (text, accent, card, good, bad...), so a new palette changes every scene at once.
 
 ---
 
@@ -498,6 +545,7 @@ youtube-edit skill to match it."* The explainer's look is one file, `tokens.json
 | Words come out wrong for Hindi (or another language) | Say the language in the brief: it uses Whisper large-v3 instead of Parakeet. |
 | The first render needs internet | Install the local GSAP copy (section 3.4). Without it, the page loads GSAP from the web. |
 | The explainer says a vendor file is missing | It names the `npm pack ...` command to run; or ask Claude to set up the vendor folder. |
+| The layout check says it needs Chrome or puppeteer | Run `npx hyperframes browser ensure`; it uses the same Chrome HyperFrames renders with. |
 | A test is "skipped" | Normal when an optional tool (Kokoro, Chrome, a local GSAP) isn't installed; skipped is not failed. |
 | A render is slow | Rendering draws every frame in a browser; long 4K videos take time. Reels and explainers render much faster. |
 | "No space left on device" | Delete old renders (`output-*.mp4`) and `broll/raw/` downloads of finished projects. |
@@ -516,6 +564,8 @@ youtube-edit skill to match it."* The explainer's look is one file, `tokens.json
 | Parakeet / Whisper | speech to text with word times | free models |
 | Kokoro-82M | the explainer's voice, on your computer | Apache-2.0 |
 | KaTeX · Lucide · three.js | formulas · icons · 3D (explainer) | MIT · ISC · MIT |
+| Simple Icons | brand logos (explainer; each brand's own trademark rules still apply) | CC0 |
+| Catppuccin | the explainer's Latte colour palette | MIT |
 | DM Sans · JetBrains Mono | the fonts (shipped in this repository) | SIL Open Font License |
 
 Stock footage, sounds and music come only from free, licensed sources, and each file's source and licence is written

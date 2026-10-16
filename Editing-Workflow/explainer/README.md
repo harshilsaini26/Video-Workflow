@@ -53,7 +53,7 @@ explainer/
 | A scene that sits still too long | `pace-check.py` fails any stretch over 3 s with nothing changing; ambient motion (glows that travel with each cut, a build's idle motion) never counts as a change | §E1, §E6 |
 | A diagram that overflows or collides | gate E5 (`layout-check.py`) opens every scene in Chromium on your machine and fails on text over text, text crossing a shape, text out of its card, anything outside the safe area, small text, clipped text and WCAG contrast; the hub computes its own geometry; every scene type passes it at three lengths of text (`test_every_scene_case_is_clean`) | §E4 |
 | A hook that costs tokens to write | the `kinetic` scene: kinetic type from a one-line hint in script.json, no code | §E6 |
-| A small widget in an empty frame | every library scene is scaled up (to 1.8x) to fill the scene area, down to y 1420; no ease overshoots, nothing breathes without a reason, every cut is velocity-matched; the hook is a bespoke custom scene ([MOTION.md](skill/explainer/MOTION.md)) | §E6 |
+| A small widget in an empty frame | every library scene is scaled up (to 1.8x) to fill the scene area, down to y 1420; no ease overshoots, nothing breathes without a reason, every cut is velocity-matched; the hook is kinetic type from data, and custom scenes are kept for what the library can't draw ([MOTION.md](skill/explainer/MOTION.md)) | §E6 |
 | Slides instead of a video | six build-up scenes that grow on the words (flow, stack, compare, timeline, cards, hub), automatic transitions, real logos and real page screenshots | §E4, §E6 |
 | Silence between lines | a sound bed under the voice (a generated pad or the creator's track), ducked, with a whoosh on transitions and a pop as items land | §E3 |
 | A storyboard costs many tokens | the Writer hints a picture for each line (`viz`) and `plan-storyboard.py` writes the draft with every anchor; the Director only edits | §E2, §E4 |
@@ -77,13 +77,14 @@ cp Editing-Workflow/explainer/agents/explainer-*.md .claude/agents/
 pip install kokoro soundfile          # and: sudo apt install espeak-ng   (or: brew install espeak-ng)
 npx hyperframes models install parakeet
 # free libraries, copied locally so renders work offline:
-V=.claude/skills/explainer/assets/vendor && mkdir -p $V/katex $V/lucide $V/three && cd $V \
-  && npm pack gsap@3.14.2 katex@0.16.11 lucide-static@0.454.0 three@0.169.0 \
+V=.claude/skills/explainer/assets/vendor && mkdir -p $V/katex $V/lucide $V/three $V/simple-icons && cd $V \
+  && npm pack gsap@3.14.2 katex@0.16.11 lucide-static@0.454.0 three@0.169.0 simple-icons@13.21.0 \
   && for f in *.tgz; do mkdir -p "x-$f" && tar -xzf "$f" -C "x-$f"; done \
   && cp x-gsap-*/package/dist/gsap.min.js . \
   && cp -R x-katex-*/package/dist/katex.min.js x-katex-*/package/dist/katex.min.css x-katex-*/package/dist/fonts katex/ \
   && cp x-lucide-static-*/package/icons/*.svg lucide/ \
   && cp x-three-*/package/build/three.module.min.js three/ \
+  && cp -R x-simple-icons-*/package/icons x-simple-icons-*/package/_data simple-icons/ \
   && rm -rf x-* *.tgz && cd -
 # check the scripts:
 cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t . && cd -
@@ -217,7 +218,7 @@ Parakeet → align, 98% at least) and the real speaking rate (RESEARCH §3) are 
 
 - **One language:** English voices (`a` American, `b` British). Kokoro has other languages; the scripts and lexicon
   assume English.
-- **Formula widths** are estimated from the TeX source (KaTeX's real width is only known in the browser); Checkpoint B
-  stills catch an overflow.
-- **The kit's DM Sans files** are not usable DM Sans (Chromium draws them with the fallback serif's widths), so this
-  profile bundles its own fonts. The kit is left as it came.
+- **Formula widths** are estimated from the TeX source (KaTeX's real width is only known in the browser); a long
+  formula is shrunk to its row in the browser, and gate E5 checks the result.
+- **Fonts:** this profile bundles its own copy of DM Sans and JetBrains Mono, so its glyph-width measurements do not
+  depend on the kit's files.
