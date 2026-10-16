@@ -15,7 +15,7 @@ import explainer_lib as E
 from scenes import js_obj, need
 
 TYPE = "kinetic"
-MAX_SCALE = 1.4                   # the composer may grow it to fill the frame, this far
+MAX_SCALE = 1.8                   # the hook is the reel's biggest moment: it may grow as far as any scene
 BAKED = True                      # its sizes are worked out for the width it is given: measured at that width
 ASC, DESC = 0.992, 0.310          # DM Sans 700: the content area is (ASC + DESC) x size
 TRACK = -0.02                     # letter-spacing, em
