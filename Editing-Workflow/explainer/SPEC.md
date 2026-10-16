@@ -100,7 +100,8 @@ skipped; a maker never grades its own work; a second failure of the same check g
 
 1. **Background:** `blue` (gradient with a violet glow), `black` (with a blue glow) or `light` (off-white with a dot
    grid). It cross-fades in 0.4 s when a scene's `bg` changes.
-2. **Scene:** one at a time, inside the scene area (x 65 to 1015, y 520 to 1248; narrower below y 960, as in Reels).
+2. **Scene:** one at a time, inside the scene area (x 65 to 1015, y 520 to 1420 since the craft pass, Instagram's clear
+   line; narrower below y 960, as in Reels), scaled up to fill it.
    Scenes hand over with an overlap of at most 0.3 s: the old one exits (ease-in, shorter) while the new one enters
    (ease-out, longer).
 3. **Captions:** the band from y 330 to 470.

@@ -9,11 +9,13 @@ You run the explainer reel. You start every agent, hold the project's state, run
 failure and note, and you are the **only** one who talks to the creator. You never write the script, voice it,
 storyboard, compose or judge a render yourself.
 
-- `ES=.claude/skills/explainer` (this skill: PLAYBOOK.md, `tokens.json`, `lexicon.json`, `scripts/`, `assets/`,
+- `ES=.claude/skills/explainer` (this skill: PLAYBOOK.md, MOTION.md, `tokens.json`, `lexicon.json`, `scripts/`, `assets/`,
   `templates/`),
   `RS=.claude/skills/reels`, `SK=.claude/skills/youtube-edit` (the kit), agents in `.claude/agents/`,
   `W=videos/<project>`.
-- **Read `$ES/PLAYBOOK.md` at the start of every project** (§E0 to §E8). It is the doctrine you check the work against.
+- **Read `$ES/PLAYBOOK.md` and `$ES/MOTION.md` at the start of every project** (§E0 to §E8; MOTION.md is how a reel
+  looks and moves, learned from motion-graphics-skills, HyperFrames and Remotion). They are the doctrine you check the
+  work against: at Checkpoint B, a still where the picture sits small in empty space, or moves for no reason, goes back.
 - **Free tools only** (§E0): never propose a paid voice, stock, AI video, an avatar or a paid trial.
 
 ## The rules you never break
@@ -88,7 +90,12 @@ Start agents with the Agent tool (`subagent_type` = the agent's name); update ST
     1248) is the Reels place, so ignore it and check the band instead;
   - **first frame:** frame 0 shows the background and the first scene fading in (§E1.1); the check is that the hook
     is fully on screen by 1.0 s, not 0.35 s;
-  - skip the face and footage checks; the safe zone, loudness, frame rate and bitrate apply unchanged.
+  - **safe zone:** the explainer's scene area runs down to y 1420 (Instagram's clear line, MOTION.md §1), so a scene
+    reaching into the guide's bottom band above y 1420 is expected; anything below y 1420, or in the right column
+    below y 960, is a FAIL;
+  - **bitrate:** flat motion graphics average under the floor even at a 20 Mb/s target; `verify-render.py` passes them
+    when x264 was asked for the floor or more (it says "a simple picture");
+  - skip the face and footage checks; loudness and frame rate apply unchanged.
 - `reels-packager`: the music is already in the render (the composer's sound bed, §E3.7): level the reel to -14 LUFS and
   never mix music in again (the music row of its report: "in the render"); `captions.srt` from `$W/transcript.json`
   (the shown words, matching the burned-in captions) with the brief's terms; skip `STORYBOARD.md` (the Reels script reads Reels beats) and attach the Animator's

@@ -3,7 +3,8 @@
 The storyboard names an HTML file (relative to storyboard.json) holding <style>, markup and a <script> that defines
 build(tl, root, t0, t1). The composer puts the file inside <div class="box" id="<id>"> and calls the function with the
 shared timeline, that div, and the scene's times. A lint over the file fails the build when it styles or selects
-anything outside #<id>, touches document.body, reaches the network, or lacks the function. Libraries: GSAP (always
+anything outside #<id>, touches document.body, reaches the network, breaks MOTION.md (a back, elastic or bounce ease,
+repeat, yoyo, Math.random), or lacks the function. Libraries: GSAP (always
 there), KaTeX and three.js from the local vendor folder.
 """
 import os, re
@@ -21,6 +22,11 @@ _NETWORK = [(r"\bfetch\s*\(", "fetch("), (r"https?://", "a web address"), (r"\bi
             (r"@import\b", "CSS @import"),
             # "//host/x" in a string, url(), or an attribute loads over the web too; a // comment follows a space or a newline
             (r"[('\"`=]\s*//[\w-]+(\.[\w-]+)+", "a web address (//...)")]
+# MOTION.md's rules hold here too: no overshoot ease, no endless loop, nothing random (every render must be the same)
+_DOCTRINE = [(r"['\"`](back|elastic|bounce)(\.\w+)?(\([^)]*\))?['\"`]", "a %s ease: it overshoots and reads as cheap; use power3 or expo"),
+             (r"\brepeat\s*:", "repeat: an endless loop is lazy motion; move only when the voice gives a reason"),
+             (r"\byoyo\s*:", "yoyo: a back-and-forth is lazy motion; move only when the voice gives a reason"),
+             (r"\bMath\s*\.\s*random\b", "Math.random: a render must be the same every time; use fixed values")]
 _MODULE = r"<script\b[^>]*\btype\s*=\s*['\"]?module\b[^>]*>(.*?)</script>"
 _DOC = [(r"\bdocument\s*\.\s*body\b", "document.body"), (r"\bdocument\s*\.\s*documentElement\b", "document.documentElement")]
 _DOC_SELECT = r"\bdocument\s*\.\s*(querySelector(All)?|getElementById|getElementsBy\w+)\s*\("
@@ -57,6 +63,10 @@ def lint(src, sid, build):
     for pat, what in _NETWORK:
         if re.search(pat, scan):
             errs.append("uses %s: a custom scene renders offline, with no network" % what)
+    for pat, what in _DOCTRINE:
+        m = re.search(pat, src)
+        if m:
+            errs.append("uses " + (what % m.group(1) if "%s" in what else what))
     for pat, what in _DOC:
         if re.search(pat, src):
             errs.append("touches %s: work inside root (#%s) only" % (what, sid))

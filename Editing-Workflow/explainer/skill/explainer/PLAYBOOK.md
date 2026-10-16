@@ -3,6 +3,8 @@
 The doctrine for faceless, code-animated explainer reels: 60 to 90 s, vertical, an AI voice, word-timed captions and
 a scene for every moment. The Producer and every explainer agent read it at the start of every project. The evidence
 behind each rule is in the workflow repository's `Editing-Workflow/explainer/RESEARCH.md`; the design in its `SPEC.md`.
+How a reel looks and moves (fill the frame, motion with a reason, velocity-matched cuts, a bespoke hook) is in
+`$ES/MOTION.md`, read with this one.
 
 Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `SK=.claude/skills/youtube-edit`,
 `W=videos/<project>`.
@@ -16,9 +18,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
   name the brand), Chrome on the creator's machine for page screenshots, DM Sans and JetBrains Mono (OFL, bundled in
   `assets/fonts/`), and a music pad and sound effects the composer generates. No paid voice, stock, AI video or avatar.
 - **The layers:** a background (a bright royal blue lighter at the top, near-black, or light) with its own soft glows
-  drifting across it (lilac and periwinkle on blue, a big blue glow on black, faint cool ones on light), one scene at a
-  time in the scene area (x 65 to 1015, y 520 to 1248; 780 px wide below y 960), a transition layer, and captions in
-  the band at y 330 to 470. Under the voice, a sound bed (§E3.7). Nothing else goes on screen.
+  (lilac and periwinkle on blue, a big blue glow on black, faint cool ones on light) that travel with each cut, one
+  scene at a time scaled up to fill the scene area (x 65 to 1015, y 520 to 1420, Instagram's clear line; 780 px wide
+  below y 960), a transition layer, and captions in the band at y 330 to 470. Under the voice, a sound bed (§E3.7). Nothing else goes on screen.
 - **The look** lives in `$ES/tokens.json`: change it once and every scene follows.
 - **Reused from Reels unchanged:** the renderer, QA, packager, librarian and analyst, and their checks (Reels PLAYBOOK
   §R3 safe zone, §R10 free sources).
@@ -33,8 +35,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    payoff (the promise kept, named in `payoff`) → the call to action (`cta`), in the last 5 s.
 4. **Every 1.5 to 3 s something changes:** a new scene, a new item, a count, a highlight, a step in a build-up scene
    (the reference reels change their picture every 1.5 to 2 s). `pace-check.py` (gate E4) fails a still stretch over
-   3 s and warns over 2 s. The living layer (§E6.6) keeps the picture moving in between, but it never counts as a
-   change. The kit's gap-scan cannot see this here, since scenes always cover the voice.
+   3 s and warns over 2 s. Ambient motion (§E6.6) never counts as a change. The kit's gap-scan cannot see this here, since scenes always cover the voice.
 5. **The ending is the payoff or the CTA**, never a fade, a logo sting or "thanks for watching".
 
 ## §E2 Script rules
@@ -134,7 +135,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 
 ## §E6 Motion
 
-1. **Entrances ease out** (`tokens.motion.enter_ease`, 0.42 s); **exits ease in and are shorter** (0.28 s).
+1. **Entrances ease out** (`tokens.motion.enter_ease`, 0.42 s); **exits ease in (`power3.in`) and are shorter**
+   (0.2 to 0.28 s). **No `back`, `elastic` or `bounce` ease** anywhere: an overshoot reads as cheap (MOTION.md §2).
 2. **Staggers total 0.5 s at most**, however many items.
 3. **No linear easing on movement.** Linear is for counts, draws and the hub's slow constant turn only.
 4. **Items arrive on their words**, not all at once at the scene's start.
@@ -147,14 +149,22 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    and a missing function. A function defined in a `<script type="module">` (three.js) also needs
    `window.build<Id> = build<Id>;`: a module's names are its own, so the page could not call it. GSAP is always there; KaTeX and three.js come from the local vendor folder. Checkpoint B shows them at in, middle and out;
    one the creator likes is promoted into the library by the Librarian, with a test.
-6. **The living layer:** the picture never stands still. Each background's three glows travel around their home spots
-   (up to 380 px across and 520 px down every 4 s, on a fixed path, so every render is the same); each
-   scene pushes in slowly (to 1.045) for as long as it is on screen; and each build-up scene keeps an idle motion going
-   while it holds (a pulse down a connector, a float, a breathing dot, a slow turn). None of this counts as a change
-   for pace-check (§E1.4): it keeps the picture alive between changes, it is not one.
-7. **Transitions are automatic:** the first scene fades up, a scene on a new background wipes it in as a growing
-   circle, and the rest alternate a zoom and a push, the old scene leaving to match. A scene can name its own with
-   `"transition"`: `fade`, `push`, `zoom`, `wipe`, `burst` (a spray of colour, for a hook or a reveal) or `cut`.
+6. **Motion with a reason** (MOTION.md §2): nothing moves unless the voice gives it a reason. No scene pushes in on
+   its own and the background never drifts: its three glows travel with each cut (up to 380 px across and 420 px down,
+   expo.out over 1.2 s, to fixed spots, so every render is the same) and hold between cuts. A build-up scene keeps one
+   idle motion while it holds (a pulse down a connector, a float, a slow turn); a screenshot holds still and punches
+   in (1.25x) on its `focus` line on that line's word. None of this ambient motion counts as a change for pace-check
+   (§E1.4).
+7. **Transitions are automatic and velocity-matched:** the first scene fades up, a scene on a new background wipes it
+   in as a growing circle, and the rest alternate a zoom-through (the old scene rushes past the viewer into a blur,
+   the new one lands from behind) and a whip (the old one flies up, the new one lands from below), each exit
+   accelerating into the cut and each entrance decelerating out of it. A scene can name its own with `"transition"`:
+   `fade`, `push`, `zoom`, `wipe`, `burst` (a spray of colour, for a hook or a reveal) or `cut`.
+8. **Fill the frame:** the composer lays each library scene out narrower and scales it up (to 1.8x; a title to
+   150 px, a number to 1.3x) to fill the scene area; `moments.json` records each scene's box and scale. Two scenes in
+   a row with the same layout get a WARN: change the picture, or merge them into one build.
+9. **Bespoke where it counts:** the hook, and the payoff when the library can't make it land, are custom scenes
+   (§E6.5) briefed in MOTION.md §4's five parts. The library carries the middle.
 
 ## §E7 Sources and claims
 

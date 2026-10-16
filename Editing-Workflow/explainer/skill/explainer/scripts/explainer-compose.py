@@ -271,6 +271,10 @@ def main():
         if len(mine) >= 2 and sum(w in said for w in mine) >= 0.8 * len(mine):
             print("WARN %s: the title repeats what the voice is saying for %.1f s; show a picture of it instead (PLAYBOOK §E5.5)"
                   % (sc["id"], t_out - t_in))
+    for (a1, m1, _, _, _, _), (a2, m2, _, _, _, _) in zip(timed, timed[1:]):   # no two beats with the same layout (MOTION.md)
+        if m1.TYPE == m2.TYPE and m1.TYPE != "custom":
+            print("WARN %s: the same layout (%s) as the scene before; change the picture, or merge the two into one build"
+                  % (a2["id"], m2.TYPE))
     if timed[0][3] > GAP_MAX:
         fail("no scene from 0.00 to %.2f s: the first scene starts late" % timed[0][3])
     if timed[-1][5] < D - GAP_MAX:

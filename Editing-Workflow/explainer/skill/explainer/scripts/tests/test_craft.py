@@ -92,6 +92,16 @@ class Craft(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("wider than the", r.stdout)
 
+    def test_the_same_layout_twice_in_a_row_warns(self):
+        # no two beats with the same layout (motion-graphics-skills' launch learnings; HyperFrames: never the same framing)
+        second = dict(LIST, id="lc2", **{"in": "word:14"})
+        second["items"] = [dict(it, at="word:%d" % (16 + 2 * i)) for i, it in enumerate(LIST["items"])]
+        first = dict(LIST, out="word:14")
+        _, _, out = self.build(dict(BOARD, scenes=[LEAD_IN, first, second]))
+        self.assertIn("WARN lc2: the same layout (list-cards) as the scene before", out)
+        _, _, out = self.build(dict(BOARD, scenes=[LEAD_IN, LIST]))
+        self.assertNotIn("the same layout", out)
+
 
 if __name__ == "__main__":
     unittest.main()

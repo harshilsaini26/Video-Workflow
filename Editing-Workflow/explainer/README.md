@@ -17,6 +17,7 @@ explainer/
 │   ├── SKILL.md                    the Producer: runs in your main conversation
 │   ├── PLAYBOOK.md                 the doctrine every agent follows (§E0 to §E8)
 │   ├── tokens.json                 the look: fonts, colours, backgrounds, highlight, motion timing
+│   ├── MOTION.md                   how a reel looks and moves (from motion-graphics-skills, HyperFrames, Remotion)
 │   ├── lexicon.json                pronunciations ("WACC" → "wack"), kept across projects
 │   ├── assets/fonts/               DM Sans 500/700 and JetBrains Mono 500 (OFL, licences beside them)
 │   └── scripts/
@@ -25,14 +26,14 @@ explainer/
 │       ├── align-script.py         gate E2: what Parakeet heard → the shown words with times (transcript.json)
 │       ├── plan-storyboard.py      the draft storyboard from the script's viz hints and the aligned words
 │       ├── explainer-compose.py    gate E3: storyboard.json → a 1080x1920, 60 fps HyperFrames page and its sound bed
-│       ├── transitions.py          how each scene comes in: fade, push, zoom, wipe, burst, cut
+│       ├── transitions.py          how each scene comes in: fade, whip, zoom-through, wipe, burst, cut
 │       ├── sound.py                the sound bed: a generated pad or the creator's music, ducked, with sound effects
 │       ├── snap-page.py            a real page's screenshot with local Chrome, for the browser scene
 │       ├── pace-check.py           gate E4 (pacing): no still stretch over 3 s on the page
 │       ├── explainer_lib.py        shared: word anchors, the scene area, text measured with real glyph widths
 │       ├── scenes/                 one module per scene type (20, custom included)
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
-│       └── tests/                  148 tests (python3 -m unittest discover -s tests -t .)
+│       └── tests/                  158 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
     explainer-writer.md · explainer-voice.md · explainer-director.md · explainer-animator.md
 ```
@@ -47,7 +48,8 @@ explainer/
 | The voice must say "one thousand dollars" while the screen shows "$1,000" | every line is kept twice, `say` and `show`; captions show `show`, timed across the whole `say` span | §E2, §E5 |
 | A misread acronym spoils the reel | a pronunciation lexicon shared by every project; a bad line is regenerated alone | §E3 |
 | Graphics drift off their words | every scene and item is anchored to a word (`word:N`), never to seconds; the kit's beat-check checks every entrance against its word | §E4 |
-| A scene that sits still too long | `pace-check.py` fails any stretch over 3 s with nothing changing; the living layer (each background's drifting glows, a slow push-in, idle motion) keeps the picture moving in between | §E1, §E6 |
+| A scene that sits still too long | `pace-check.py` fails any stretch over 3 s with nothing changing; ambient motion (glows that travel with each cut, a build's idle motion) never counts as a change | §E1, §E6 |
+| A small widget in an empty frame | every library scene is scaled up (to 1.8x) to fill the scene area, down to y 1420; no ease overshoots, nothing breathes without a reason, every cut is velocity-matched; the hook is a bespoke custom scene ([MOTION.md](skill/explainer/MOTION.md)) | §E6 |
 | Slides instead of a video | six build-up scenes that grow on the words (flow, stack, compare, timeline, cards, hub), automatic transitions, real logos and real page screenshots | §E4, §E6 |
 | Silence between lines | a sound bed under the voice (a generated pad or the creator's track), ducked, with a whoosh on transitions and a pop as items land | §E3 |
 | A storyboard costs many tokens | the Writer hints a picture for each line (`viz`) and `plan-storyboard.py` writes the draft with every anchor; the Director only edits | §E2, §E4 |
@@ -179,20 +181,21 @@ flowchart TD
 | `script-check.py` | gate E1 on `script.json`; writes `SCRIPT.md` | 9: lengths and target (60 to 90 s), hook, sources (objects or plain strings), payoff and call to action, the report |
 | `tts-kokoro.py` | Kokoro line by line (`--only` one line), pauses by break, high-pass, compression, two-pass loudnorm to -16 LUFS / -1 dBTP (a peak over -1 dBTP fails); `--samples` for the voice choice; a `fake` engine for tests | 7 (1 needs Kokoro) |
 | `align-script.py` | gate E2: sequence alignment of heard to spoken words (tolerant of spelling, of the lexicon's respellings, of digits heard for number words: "1,000", "10%", "2024", "2.5"), shown words timed across their spoken span, spoken-only words at the start included | 11 |
-| `pace-check.py` | gate E4's pacing, from the `moments.json` the composer writes next to the page: every tween, count and item is a moment of change, the living layer is not; a still stretch over 3 s fails, over 2 s warns (the kit's gap-scan can't see it: scenes always cover the voice) | 5, and it runs in the end-to-end test |
+| `pace-check.py` | gate E4's pacing, from the `moments.json` the composer writes next to the page: every tween, count and item is a moment of change, ambient motion is not; a still stretch over 3 s fails, over 2 s warns (the kit's gap-scan can't see it: scenes always cover the voice) | 5, and it runs in the end-to-end test |
 | `plan-storyboard.py` | the draft storyboard: `viz` hints into scenes with each item on its word (an unspoken item halfway between its neighbours), money into count-ups, steps into numbers, brands into logo cards, the rest into draft titles; `PLAN.md` says which rule made each scene | 6, including the draft composing and passing pace-check, and a line with two pictures |
-| `transitions.py` | the transition for each scene (fade first, wipe on a new background, then zoom and push), the matching exit, the background wipe, the seeded burst | 6 |
+| `transitions.py` | the transition for each scene (fade first, wipe on a new background, then a zoom-through and a whip, velocity-matched with a motion blur), the matching exit, the background wipe, the seeded burst | 7 |
 | `sound.py` | the generated pad and sound effects (the same bytes every time), the events (a whoosh per moving transition, pops 0.35 s apart), the bed: looped, faded, ducked under the voice | 5: never silent, at least 6 dB of ducking, the creator's track looped and faded |
 | `snap-page.py` | a page's screenshot at an exact size with local Chrome in a fresh profile | 2 (1 needs Chrome) |
-| `explainer-compose.py` | gate E3: places every scene by its measured height, the living layer (per-background glows, push-in), transitions, word captions with the highlight box, the voice and the sound bed, the kit's markup; WARNs on a title that repeats the voice | 26, plus the kit's beat-check run on its page; bad storyboard values fail with the scene named |
-| `scenes/*.py` | 19 library scenes (6 build-up scenes and the logo card among them) and the sandboxed custom scene | 39 across the scene and asset suites, 9 for the custom contract (unique build names included) |
+| `explainer-compose.py` | gate E3: places every scene by its measured height and scales it up to fill the scene area, glows that travel with each cut, transitions, word captions with the highlight box, the voice and the sound bed, the kit's markup; WARNs on a title that repeats the voice and on the same layout twice in a row | 33 (6 for the craft rules: fill, title size, the taller area, same layout), plus the kit's beat-check run on its page; bad storyboard values fail with the scene named |
+| `scenes/*.py` | 19 library scenes (6 build-up scenes and the logo card among them) and the sandboxed custom scene | 39 across the scene and asset suites (a screenshot punching in on its focus line among them), 10 for the custom contract (unique build names, and MOTION.md's banned eases, loops and randomness) |
 | heights | each scene's predicted height against Chromium, 3 cases × 2 column widths × 19 scene types | 2, over 118 measured rows: every one 0 to 4 px over, never under |
 | `explainer_lib.py` | anchors, tokens, glyph-width text measuring | 5 |
-| docs | frontmatter parses, cited scripts exist, § references resolve, links, mermaid fences, the STATUS Voice row, the reused QA and Packager briefs | 9 |
+| docs | frontmatter parses, cited scripts exist, § references resolve, links, mermaid fences, the STATUS Voice row, the reused QA and Packager briefs, MOTION.md read first | 10 |
 | end to end | script-check → fake voice → alignment → compose → beat-check → `hyperframes check` → a 60 fps render → the kit's `verify-render.py --res 1080x1920` | 1 (needs FFmpeg, the kit, HyperFrames and a local GSAP), plus 1 with real Kokoro and Parakeet |
 
 **How it was verified** (2026-10-14 and 2026-10-15, on Linux with HyperFrames 0.8.157 and 0.8.159, and Chromium):
-- the whole suite: 148 tests, all passing; 2 skipped where Kokoro is not installed;
+- the whole suite: 158 tests, all passing; 2 skipped where Kokoro is not installed (re-run 2026-10-16 after the craft
+  pass, HyperFrames 0.8.164);
 - the end-to-end run (pace-check included): a 4-line, 30-word script voiced by the fake engine (11.09 s, -15.95 LUFS), aligned 100% with
   the widest gap inside a line 0.02 s, composed into 4 scenes, 4 backgrounds and 8 caption phrases, rendered at
   1080x1920 and 60 fps (11.6 s, about 20 MB) and passed by `verify-render.py`; the frames were looked at by eye;

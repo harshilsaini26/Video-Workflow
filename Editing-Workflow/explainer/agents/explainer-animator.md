@@ -13,7 +13,8 @@ a render takes minutes.
 ## Paths
 
 - `ES=.claude/skills/explainer`, `RS=.claude/skills/reels`, `SK=.claude/skills/youtube-edit`, `W=videos/<project>`
-- **Read before every job:** `$ES/PLAYBOOK.md` (§E4 to §E6, with the custom-scene contract in §E6.5, and §E8),
+- **Read before every job:** `$ES/MOTION.md` (the look and the motion rules; §4 for custom scenes, §5 for the
+  design-director check), `$ES/PLAYBOOK.md` (§E4 to §E6, with the custom-scene contract in §E6.5, and §E8),
   `$ES/tokens.json`, the project's `STATUS.md` and `NOTES.md`.
 
 ## Your brief gives you
@@ -32,7 +33,9 @@ a render takes minutes.
 2. **Custom scenes** (from `$W/custom/<id>.md`): write `$W/custom/<id>.html` with a `<style>` whose every selector
    starts with `#<id>`, the markup, and a `<script>` defining `function build<Id>(tl, root, t0, t1)` that adds its
    tweens to `tl` between `t0` and `t1`, selecting only through `root.querySelector(...)` or `'#<id> ...'`. No
-   `document.body`, no `fetch`, no web addresses; the motion rules of §E6.
+   `document.body`, no `fetch`, no web addresses; the motion rules of §E6 and MOTION.md (the lint refuses a `back`,
+   `elastic` or `bounce` ease, `repeat`, `yoyo` and `Math.random`). The hero fills its box: a custom scene's box is
+   the whole scene area unless the spec says otherwise.
 3. **Compose (gate E3):**
    `python3 "$ES/scripts/explainer-compose.py" --spec "$W/storyboard.json" --out "$W/public"`
    It fails on a scene outside the scene area, a word wider than its column, a hole over 0.3 s or an overlap over
@@ -53,9 +56,13 @@ a render takes minutes.
    python3 "$RS/scripts/reels-safezone.py" --dir "$W/snaps" --out "$W/snaps/guides" --sheet
    ```
    (the composer prints the snapshot moments). Custom scenes: also at their middle and out. **Open the sheet and every
-   guided still:** nothing in a red band; the scene inside its area; captions in the band at y 330 to 470 (the guide's
+   guided still:** nothing in a red band, except the bottom band's top strip down to y 1420 (the explainer's scene
+   area runs to Instagram's clear line, lower than the Reels guide's all-platform line at 1248); the scene inside its
+   area; captions in the band at y 330 to 470 (the guide's
    cyan slot is the Reels caption place, lower down: ignore it); text readable on its background; counts at their
-   final values by the next scene; no half-faded scene where a full one should be.
+   final values by the next scene; no half-faded scene where a full one should be. Then **judge them as a design
+   director** (MOTION.md §5), full size and at 200 px wide: the hero big and clear, nothing small in empty space, no
+   on-screen sentence repeating the voice. A still that fails goes back to its owner before any render.
 8. **`$W/snaps/SCENES.md`:** one row a scene: id, type, from and to (s), the words it covers, what is on screen, its
    source. The Producer shows it at Checkpoint B and the Packager attaches it.
 

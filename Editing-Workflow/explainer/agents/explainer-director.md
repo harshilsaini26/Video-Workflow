@@ -13,8 +13,10 @@ builds.
 ## Paths
 
 - `ES=.claude/skills/explainer`, `W=videos/<project>`
-- **Read before every job:** `$ES/PLAYBOOK.md` (§E4 scenes and pacing with every scene's data, §E5 captions, §E6
-  motion and the custom-scene contract, §E7 sources; the rest once), the project's `STATUS.md` › Brief and `NOTES.md`.
+- **Read before every job:** `$ES/MOTION.md` (how a reel looks and moves: fill the frame, motion with a reason,
+  velocity-matched cuts, a bespoke hook), `$ES/PLAYBOOK.md` (§E4 scenes and pacing with every scene's data, §E5
+  captions, §E6 motion and the custom-scene contract, §E7 sources; the rest once), the project's `STATUS.md` › Brief
+  and `NOTES.md`.
 
 ## Your brief gives you
 
@@ -57,16 +59,18 @@ re-plan the notes to act on.
    - `captions.emphasis`: the script's emphasis words, at most one a line (§E5);
    - `sound` (optional): `{"music": "pad"}` is the default (a generated bed under the voice, never silent);
      `"music": "music/<file>"` for the creator's own track (its licence in SOURCES.md); `"none"` for no music.
-4. **Custom scenes** (at most one a reel, only when no library scene can show it; each costs the Animator a file):
+4. **Custom scenes** (the hook and, when the library can't make it land, the payoff: at most two a reel, each costs
+   the Animator a file; MOTION.md §4):
    `{"type": "custom", "id": "<id>", "box": {"x", "y", "w", "h"}, "html": "custom/<id>.html", "build": "build<Id>", ...}`
-   with the box inside the scene area (x 65 to 1015, y 520 to 1248; x 150 to 930 below y 960), plus a written spec in
-   `$W/custom/<id>.md` for the Animator: what it shows, what moves on which word, and the colours from
-   `$ES/tokens.json`.
+   with the box inside the scene area (x 65 to 1015, y 520 to 1420; x 150 to 930 below y 960), plus a written spec in
+   `$W/custom/<id>.md` for the Animator in MOTION.md §4's five parts (the bar, the hero and its one change, the look,
+   which word moves what, the never list) and the colours from `$ES/tokens.json`.
 5. **Dry run:** `python3 "$ES/scripts/explainer-compose.py" --spec "$W/storyboard.json" --out "$W/plan/dry"`. It
    names any scene that does not fit, any hole or overlap in the timing, any anchor out of order, any number without
    a source, and WARNs on a title that repeats the voice. Then `python3 "$ES/scripts/pace-check.py" --index "$W/plan/dry/index.html"`:
-   no still stretch over 3 s (it warns over 2 s; the drifting background and the slow push-in don't count as
-   changes). Fix until both pass (custom scenes may fail here until the Animator writes their files).
+   no still stretch over 3 s (it warns over 2 s; the glows moving on a cut and a build's idle motion don't count
+   as changes). The dry run also WARNs on two scenes in a row with the same layout: change one, or merge them into
+   one build. Fix until both pass (custom scenes may fail here until the Animator writes their files).
 6. **Asset requests** only for what you cannot fetch yourself (a logo outside simple-icons, a page behind a sign-in,
    the creator's own photo): `$W/ASSET-REQUESTS.md` (copy `$ES/templates/ASSET-REQUESTS.md` first), one row a file.
 

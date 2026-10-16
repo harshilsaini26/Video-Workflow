@@ -67,6 +67,15 @@ class Custom(unittest.TestCase):
             self.fails("network", html=GOOD.replace("<style>", "<style>\n  " + bad))
         self.assertEqual(self.build(html=GOOD.replace("const bars", "// a comment\n    const bars"))[0].returncode, 0)
 
+    def test_the_motion_doctrine_holds_in_a_custom_scene(self):
+        # MOTION.md: no overshoot ease, no endless loop, nothing random (a render must be the same every time)
+        for bad, word in (("ease: 'back.out(1.7)'", "back"), ("ease: 'elastic.out(1, 0.3)'", "elastic"),
+                          ("ease: 'bounce.out'", "bounce"), ("repeat: -1, ease: 'power2.out'", "repeat"),
+                          ("yoyo: true, ease: 'power2.out'", "yoyo")):
+            self.fails(word, html=GOOD.replace("ease: 'power2.out'", bad))
+        self.fails("Math.random", html=GOOD.replace("const bars", "const r = Math.random(); const bars"))
+        self.assertEqual(self.build(html=GOOD.replace("ease: 'power2.out'", "ease: 'expo.out'"))[0].returncode, 0)
+
     def test_a_module_build_function_must_be_on_window(self):
         # a module's top-level function is private to the module: window.buildYield stays undefined and the scene empty
         module = GOOD.replace("<script>", '<script type="module">')
