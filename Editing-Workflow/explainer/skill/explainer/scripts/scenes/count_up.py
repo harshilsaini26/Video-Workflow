@@ -4,6 +4,7 @@ import explainer_lib as E
 from scenes import js_str, line_px, need, widest
 
 TYPE = "count-up"
+MAX_SCALE = 1.3                  # the number is already 170 px
 NEEDS_SOURCE = True
 V_SIZE = 170                    # the number: DM Sans 700, tabular digits, line height 1
 S_SIZE, S_LH, S_GAP = 52, 1.15, 20

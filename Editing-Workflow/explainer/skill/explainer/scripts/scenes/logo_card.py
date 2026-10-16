@@ -116,13 +116,13 @@ def render(scene, ctx, box):
     t = ctx.t_in
     js = ["tl.fromTo('#%s-card', %s, %s, %.3f);" % (sid, js_obj({"opacity": 0, "scale": 0.6, "y": 60, "rotation": -8}),
                                                     js_obj({"opacity": 1, "scale": 1, "y": 0, "rotation": 0, "duration": 0.6,
-                                                            "ease": "back.out(1.5)", "immediateRender": False}), t),
+                                                            "ease": "expo.out", "immediateRender": False}), t),
           ctx.enter("#%s-n" % sid, t + 0.2, {"y": 20})]
     if scene.get("sub"):
         js.append(ctx.enter("#%s-s" % sid, t + 0.3, {"y": 16}))
     if badge:
         js.append("tl.fromTo('#%s-b', %s, %s, %.3f);" % (sid, js_obj({"opacity": 0, "scale": 0}), js_obj(
-            {"opacity": 1, "scale": 1, "duration": mo["enter"], "ease": "back.out(2.2)", "immediateRender": False}), t + 0.45))
+            {"opacity": 1, "scale": 1, "duration": mo["enter"], "ease": "expo.out", "immediateRender": False}), t + 0.45))
     ctx.idle("#%s-card" % sid, t + 0.7, ctx.t_out, {"y": -12, "rotation": 2}, every=1.8)
     ctx.idle("#%s-g" % sid, t + 0.3, ctx.t_out, {"scale": 1.12}, every=1.2)
     return html, js

@@ -1,5 +1,6 @@
-"""The living layer: the picture never stands still. Orbs drift behind every scene, each scene pushes in slowly while it
-is on screen, and none of that ambient motion counts as a change for pace-check (gate E4 still wants a new picture)."""
+"""Motion with a reason (MOTION.md): no scene breathes or pushes in on its own; the background's glows move only on a
+cut, travelling with it, and hold still between cuts; no ease overshoots. None of that ambient motion counts as a change
+for pace-check (gate E4 still wants a new picture)."""
 import copy, json, os, re, unittest
 from .helpers import read, run, scratch, write
 from .test_compose import BOARD, D, VOICE, silent_wav, t_word, words30
@@ -21,13 +22,11 @@ class Living(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         return read(os.path.join(out, "index.html")), out
 
-    def test_every_scene_sits_in_a_live_wrapper_that_pushes_in(self):
+    def test_no_scene_breathes(self):
+        # HyperFrames' motion language: no lazy breathing, no slow push-in; a held scene is still unless it says something
         html, _ = self.build(BOARD)
-        push = TOK["ambient"]["push"]
-        for sid in ("hook", "n1", "cu"):
-            self.assertRegex(html, r'<div class="box" id="%s"[^>]*><div class="live" id="%s-live">' % (sid, sid))
-            self.assertRegex(html, r"tl\.fromTo\('#%s-live', \{ scale: 1 \}, \{ scale: %s, duration: [\d.]+, ease: 'sine.inOut'"
-                             % (sid, re.escape(str(push))))
+        self.assertNotRegex(html, r"tl\.\w+\('#\w+-live'")
+        self.assertNotIn("push", TOK["ambient"])
 
     def test_each_background_has_its_own_glows(self):
         html, _ = self.build(BOARD)                      # black, black, then light at the count-up: two background layers
@@ -37,19 +36,35 @@ class Living(unittest.TestCase):
             self.assertEqual([c for _, c in glows], [g["color"] for g in TOK["ambient"]["glows"][bg]], bg)
         self.assertNotIn('id="orbs"', html)              # no shared layer whose colours suit only one background
 
-    def test_glows_travel_visibly_for_the_whole_reel(self):
-        html, _ = self.build(BOARD)
-        drift = TOK["ambient"]["drift"]
-        for i in range(2):
-            for k in range(3):
-                moves = re.findall(r"tl\.to\('#bg%d-o%d', \{ x: (-?[\d.]+), y: (-?[\d.]+), duration: [\d.]+, ease: 'sine.inOut' \}, ([\d.]+)\);"
-                                   % (i, k), html)
-                self.assertGreaterEqual(len(moves), int(D // drift["every"]), (i, k))
-                self.assertGreaterEqual(max(float(t) for _, _, t in moves), D - drift["every"] - 1e-6)
-        xs = [abs(float(x)) for x in re.findall(r"tl\.to\('#bg\d-o\d', \{ x: (-?[\d.]+)", html)]
-        ys = [abs(float(y)) for y in re.findall(r"tl\.to\('#bg\d-o\d', \{ x: -?[\d.]+, y: (-?[\d.]+)", html)]
-        self.assertGreaterEqual(max(xs), 300)            # the reference's glows travel about 400 px every 2 to 3 s
-        self.assertGreaterEqual(max(ys), 400)
+    def test_glows_move_only_on_a_cut_and_travel_with_it(self):
+        board = copy.deepcopy(BOARD)                     # four scenes on black: three cuts
+        board["scenes"] = [
+            {"type": "title", "id": "a", "bg": "black", "in": "word:0", "out": "word:5", "text": "One"},
+            {"type": "title", "id": "b", "bg": "black", "in": "word:5", "out": "word:10", "text": "Two"},
+            {"type": "title", "id": "c", "bg": "black", "in": "word:10", "out": "word:15", "text": "Three"},
+            {"type": "title", "id": "d", "bg": "black", "in": "word:15", "out": "end", "text": "Four"}]
+        html, _ = self.build(board)
+        sh = TOK["ambient"]["shift"]
+        cuts = [round(t_word(i) - E.LEAD, 3) for i in (5, 10, 15)]
+        moves = re.findall(r"tl\.to\('#bg0-o(\d)', \{ x: (-?[\d.]+), y: (-?[\d.]+), duration: ([\d.]+), ease: '([\w.]+)' \}, ([\d.]+)\);", html)
+        self.assertEqual(len(moves), 3 * len(cuts))      # every glow, on every cut, and never between
+        self.assertEqual(sorted({float(m[5]) for m in moves}), cuts)
+        for k, x, y, dur, ease, t in moves:
+            self.assertEqual(ease, "expo.out")
+            self.assertEqual(float(dur), sh["duration"])
+            self.assertGreaterEqual(abs(float(x)), 0.5 * sh["x"])   # a move you can see, not a wobble
+            self.assertLessEqual(abs(float(x)), sh["x"])
+            self.assertLessEqual(abs(float(y)), sh["y"])
+        self.assertNotIn("sine.inOut', ease", html)
+        self.assertNotRegex(html, r"tl\.to\('#bg\d-o\d', \{[^}]*ease: 'sine")
+
+    def test_no_ease_overshoots(self):
+        # back, elastic and bounce read as cheap (HyperFrames motion-language.md, motion-graphics-skills' banned list)
+        here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        srcs = [os.path.join(here, "scenes", f) for f in os.listdir(os.path.join(here, "scenes")) if f.endswith(".py")]
+        srcs += [os.path.join(here, f) for f in ("explainer-compose.py", "transitions.py")]
+        for p in srcs:
+            self.assertNotRegex(read(p), r"['\"](back|elastic|bounce)\.\w+", p)
 
     def test_blue_is_a_light_royal_blue(self):
         lum = lambda h: 0.2126 * int(h[1:3], 16) + 0.7152 * int(h[3:5], 16) + 0.0722 * int(h[5:7], 16)
@@ -62,7 +77,7 @@ class Living(unittest.TestCase):
         _, out = self.build(BOARD)
         with open(os.path.join(out, "moments.json")) as f:
             spans = json.load(f)["spans"]
-        self.assertLess(max(e - s for s, e in spans), 2.0)        # the push-ins and drifts would be 3 to 5 s long
+        self.assertLess(max(e - s for s, e in spans), 2.0)        # idle floats and glow shifts are not changes
         board = copy.deepcopy(BOARD)
         board["scenes"] = [{"type": "title", "id": "only", "bg": "black", "in": "word:0", "out": "end", "text": "One idea"}]
         _, out = self.build(board)
@@ -75,7 +90,7 @@ class Living(unittest.TestCase):
                            {"type": "icon-row", "id": "sc", "bg": "black", "in": "word:4", "out": "end",
                             "items": [{"icon": "book", "label": "Read", "at": "word:6"}, {"icon": "clock", "label": "Wait", "at": "word:9"}]}]
         html, _ = self.build(board)
-        width = int(re.search(r'id="sc" style="left:\d+px;top:\d+px;width:(\d+)px', html).group(1))
+        width = int(re.search(r'id="sc-live" style="width:(\d+)px', html).group(1))
         pitch = (width + icon_row.COL_GAP) / 2.0
         first = re.search(r"tl\.set\('#sc \.ic-row', \{ x: ([\d.]+) \}, ([\d.]+)\);", html)
         self.assertAlmostEqual(float(first.group(1)), pitch / 2, delta=0.01)

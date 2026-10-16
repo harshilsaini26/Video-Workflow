@@ -64,7 +64,7 @@ def render(scene, ctx, box):
         js.append(ctx.enter("#%s-s%d" % (sid, i), t, {"x": -30}))
         js.append("tl.to('#%s-d%d', %s, %.3f);" % (sid, i, js_obj({"borderColor": acc, "backgroundColor": acc, "duration": 0.3,
                                                                    "ease": mo["enter_ease"]}), t))
-        js.append("tl.fromTo('#%s-d%d', { scale: 0.5 }, %s, %.3f);" % (sid, i, js_obj({"scale": 1, "duration": mo["enter"], "ease": "back.out(2)",
+        js.append("tl.fromTo('#%s-d%d', { scale: 0.5 }, %s, %.3f);" % (sid, i, js_obj({"scale": 1, "duration": mo["enter"], "ease": "expo.out",
                                                                                        "immediateRender": False}), t))
         if i:
             js.append("tl.to('#%s-prog', %s, %.3f);" % (sid, js_obj({"height": cy(i) - cy(0), "duration": 0.5, "ease": mo["enter_ease"]}), t - 0.1))

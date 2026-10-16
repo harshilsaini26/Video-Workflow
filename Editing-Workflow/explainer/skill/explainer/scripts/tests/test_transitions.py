@@ -39,12 +39,23 @@ class InThePage(unittest.TestCase):
     def test_board_gets_zoom_then_wipe(self):
         html = self.build(BOARD)                      # hook (black), n1 (black), cu (light)
         t_n1, t_cu = t_word(8) - E.LEAD, t_word(18) - E.LEAD
-        self.assertIn("tl.fromTo('#n1', { scale: 0.86 }, { scale: 1, duration: 0.5, ease: 'power3.out', immediateRender: false }, %.3f);" % t_n1, html)
-        self.assertRegex(html, r"tl\.to\('#hook', \{ opacity: 0, scale: 1\.18, duration: 0\.28, ease: 'power2\.in' \}, %.3f\);" % t_n1)
+        # HyperFrames' zoom-through: the old scene rushes past the viewer, the new one lands from behind (velocity-matched)
+        self.assertIn("tl.fromTo('#n1', { scale: 0.75, filter: 'blur(8px)' }, { scale: 1, filter: 'blur(0px)', duration: 0.5, "
+                      "ease: 'expo.out', immediateRender: false }, %.3f);" % t_n1, html)
+        self.assertIn("tl.to('#hook', { opacity: 0, scale: 1.2, filter: 'blur(10px)', duration: 0.2, ease: 'power3.in' }, %.3f);" % t_n1, html)
         self.assertIn("tl.set('#bg1', { opacity: 1 }, %.3f);" % t_cu, html)
         self.assertIn("tl.fromTo('#bg1', { clipPath: 'circle(0%% at 50%% 60%%)' }, { clipPath: 'circle(150%% at 50%% 60%%)', "
                       "duration: 0.55, ease: 'power2.inOut', immediateRender: false }, %.3f);" % t_cu, html)
         self.assertNotIn("tl.to('#bg1', { opacity: 1, duration", html)          # no cross-fade under the wipe
+
+    def test_push_is_a_whip(self):
+        board = copy.deepcopy(BOARD)
+        board["scenes"][1]["transition"] = "push"
+        html = self.build(board)
+        t_n1 = t_word(8) - E.LEAD
+        self.assertIn("tl.fromTo('#n1', { y: 300, filter: 'blur(10px)' }, { y: 0, filter: 'blur(0px)', duration: 0.5, "
+                      "ease: 'expo.out', immediateRender: false }, %.3f);" % t_n1, html)
+        self.assertIn("tl.to('#hook', { opacity: 0, y: -260, filter: 'blur(12px)', duration: 0.2, ease: 'power3.in' }, %.3f);" % t_n1, html)
 
     def test_named_burst(self):
         board = copy.deepcopy(BOARD)

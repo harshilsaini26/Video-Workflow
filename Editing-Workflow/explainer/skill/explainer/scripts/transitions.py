@@ -3,11 +3,13 @@
 The composer picks a transition for every scene unless the storyboard names one ("transition": "<kind>" on the scene
 coming in): the first scene fades up, a scene on a new background is wiped in (the new background opens as a circle),
 and the rest alternate between a zoom and a push, so the picture never just swaps. Transitions move the scene's box
-(#<id>); the living layer's slow push-in moves its .live wrapper, so the two never fight over one transform.
+(#<id>); the scene's fit-to-area scale sits on its .live wrapper, so the two never fight over one transform. Every cut is
+velocity-matched (MOTION.md): the exit accelerates into the cut and the entrance decelerates out of it.
 
   fade   the scene's own entrances only; the old scene lifts and fades
-  push   the new scene rises from below; the old one leaves upwards
-  zoom   the new scene grows from 0.86; the old one swells past the viewer
+  push   a whip: the old scene flies up and blurs, the new one lands from below out of a blur
+  zoom   HyperFrames' zoom-through: the old scene rushes past the viewer (1 to 1.2, blur 10 px, power3.in 0.2 s), the new
+         one lands from behind (0.75 to 1, blur 8 to 0 px, expo.out 0.5 s)
   wipe   the new background opens as a circle from the scene area; used at a background change
   burst  a spray of coloured squares from the centre; the new scene grows from 0.7 (for a hook or a reveal)
   cut    nothing moves: the old scene is gone on the frame the new one starts
@@ -17,7 +19,8 @@ import random
 from scenes import js_obj
 
 KINDS = ("fade", "push", "zoom", "wipe", "burst", "cut")
-ENTER, EXIT = 0.5, 0.28          # exits stay within tokens.motion.exit
+ENTER, EXIT = 0.5, 0.2           # exits stay within tokens.motion.exit
+IN_EASE, OUT_EASE = "expo.out", "power3.in"   # the exit accelerates into the cut, the entrance decelerates out of it
 WIPE, BURST = 0.55, 0.9
 WIPE_FROM, WIPE_TO = "circle(0% at 50% 60%)", "circle(150% at 50% 60%)"
 CENTRE = (540, 884)              # the scene area's centre
@@ -37,7 +40,7 @@ def pick(index, prev_bg, bg, explicit):
 
 
 def _from(sel, frm, to, t):
-    to = dict(to, duration=ENTER, ease="power3.out", immediateRender=False)
+    to = dict(to, duration=ENTER, ease=IN_EASE, immediateRender=False)
     return "tl.fromTo('%s', %s, %s, %.3f);" % (sel, js_obj(frm), js_obj(to), t)
 
 
@@ -45,9 +48,9 @@ def enter(kind, sid, t):
     """Tweens on the incoming scene's box (its own elements still make their entrances)."""
     sel = "#" + sid
     if kind == "push":
-        return [_from(sel, {"y": 160}, {"y": 0}, t)]
+        return [_from(sel, {"y": 300, "filter": "blur(10px)"}, {"y": 0, "filter": "blur(0px)"}, t)]
     if kind == "zoom":
-        return [_from(sel, {"scale": 0.86}, {"scale": 1}, t)]
+        return [_from(sel, {"scale": 0.75, "filter": "blur(8px)"}, {"scale": 1, "filter": "blur(0px)"}, t)]
     if kind == "wipe":
         return [_from(sel, {"scale": 0.94}, {"scale": 1}, t)]
     if kind == "burst":
@@ -60,8 +63,9 @@ def exit(kind, sid, t):
     sel = "#" + sid
     if kind == "cut":
         return ["tl.set('%s', { opacity: 0 }, %.3f);" % (sel, t)]
-    move = {"push": {"y": -160}, "zoom": {"scale": 1.18}, "burst": {"scale": 1.3}}.get(kind, {"y": -24})
-    return ["tl.to('%s', %s, %.3f);" % (sel, js_obj(dict({"opacity": 0}, **dict(move, duration=EXIT, ease="power2.in"))), t)]
+    move = {"push": {"y": -260, "filter": "blur(12px)"}, "zoom": {"scale": 1.2, "filter": "blur(10px)"},
+            "burst": {"scale": 1.3, "filter": "blur(10px)"}}.get(kind, {"y": -24})
+    return ["tl.to('%s', %s, %.3f);" % (sel, js_obj(dict({"opacity": 0}, **dict(move, duration=EXIT, ease=OUT_EASE))), t)]
 
 
 def wipe_bg(bg_id, t):

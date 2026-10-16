@@ -50,6 +50,6 @@ def render(scene, ctx, box):
                      % (sid, i, attrs, top, i * STEP // 2, i * STEP // 2, fill, ink, THICK, edge, ctx.esc(it["label"])))
         js.append(ctx.ghost("#%s-s%d" % (sid, i)))
         js.append("tl.fromTo('#%s-s%d', %s, %s, %.3f);"
-                  % (sid, i, js_obj({"opacity": GHOST, "y": -240}), js_obj({"opacity": 1, "y": 0, "duration": 0.55, "ease": "back.out(1.4)", "immediateRender": False}), t))
+                  % (sid, i, js_obj({"opacity": GHOST, "y": -240}), js_obj({"opacity": 1, "y": 0, "duration": 0.55, "ease": "expo.out", "immediateRender": False}), t))
     ctx.idle("#%s .sk" % sid, ctx.t_in + 0.6, ctx.t_out, {"y": -10})
     return '<div class="sk" style="height:%dpx">%s</div>' % (h, "".join(parts)), js

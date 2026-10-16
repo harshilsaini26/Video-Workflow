@@ -17,7 +17,7 @@ has a word wider than its column, an anchor that does not resolve or runs backwa
 number with no source, more than 0.3 s with no scene (at the start, between scenes or at the end), or two scenes
 overlapping by more than 0.3 s.
 """
-import argparse, html, json, os, random, re, shutil, sys, wave
+import argparse, html, json, math, os, random, re, shutil, sys, wave
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -78,51 +78,65 @@ def line_span(line):
     return None
 
 
+SCALE_MAX, SCALE_STEP = 1.8, 0.05   # how far a template scene is blown up to fill the scene area (MOTION.md: fill the frame)
+
+
 def place(sid, mod, scene):
-    """(left, top, width, height): centred in the scene area, narrow when it reaches the action column band.
-    A scene that brings its own box (custom) is only checked."""
+    """(left, top, width, height, inner width, inner height, scale): the scene laid out at inner width and scaled by
+    `scale` to fill the scene area, the largest scale (up to SCALE_MAX, or the module's MAX_SCALE) that keeps it inside
+    the area, every word inside its column, and its box in the narrow column wherever it reaches below y 960.
+    A scene that brings its own box (custom) is only checked, and never scaled."""
+    sa = E.SCENE
     if hasattr(mod, "place"):
         left, top, width, h = mod.place(scene)
-        sa = E.SCENE
         if left < sa["left"] or top < sa["top"] or left + width > sa["right"] or top + h > sa["bottom"] or not L.inside_safe(left, top, width, h):
             fail("%s: the box %d,%d %dx%d is outside the scene area (x %d to %d, y %d to %d; x %d to %d below y %d)"
                  % (sid, left, top, width, h, sa["left"], sa["right"], sa["top"], sa["bottom"], L.NARROW["left"], L.NARROW["right"], L.RIGHT_COL_TOP))
-        return left, top, width, h
-    left, width = WIDE
-    h = mod.height(scene, width)
-    if CENTRE + h / 2 > L.RIGHT_COL_TOP:
-        left, width = NARROW
-        h = mod.height(scene, width)
-    top = int(round(CENTRE - h / 2))
-    if h > E.SCENE["bottom"] - E.SCENE["top"]:
-        fail("%s: the scene is %d px tall, taller than the scene area (%d px); use less text or split it"
-             % (sid, h, E.SCENE["bottom"] - E.SCENE["top"]))
-    if not L.inside_safe(left, top, width, h):
-        fail("%s: the box %d,%d %dx%d is outside the safe zone" % (sid, left, top, width, h))
+        return left, top, width, h, width, h, 1.0
+    area_h = sa["bottom"] - sa["top"]
     need = mod.min_width(scene)
+    cap = min(SCALE_MAX, getattr(mod, "MAX_SCALE", SCALE_MAX))
+    s = cap
+    while s >= 1.0 - 1e-9:
+        for col_left, col_w in (WIDE, NARROW):
+            iw = int(col_w / s)
+            if need > iw:
+                continue
+            ih = mod.height(scene, iw)
+            w, h = int(math.floor(iw * s)), int(math.ceil(ih * s))
+            top = int(round(CENTRE - h / 2.0))
+            if h > area_h or (col_w == WIDE[1] and top + h > L.RIGHT_COL_TOP):
+                continue
+            left = col_left + (col_w - w) // 2
+            if L.inside_safe(left, top, w, h) and top >= sa["top"] and top + h <= sa["bottom"]:
+                return left, top, w, h, iw, ih, round(s, 2)
+        s = round(s - SCALE_STEP, 2)
+    # nothing fits even unscaled: say why, as before
+    left, width = NARROW
     if need > width:
         fail("%s: a word or a number in it (at its widest as it counts) is about %d px wide, wider than the %d px column; "
              "shorten it or use a smaller size" % (sid, need, width))
-    return left, top, width, h
+    fail("%s: the scene is %d px tall, taller than the scene area (%d px); use less text or split it"
+         % (sid, mod.height(scene, width), area_h))
 
 
-def glows(D, i, bg, amb, bg_js):
-    """The glows inside background layer i: each background's own (tokens.ambient.glows: lilac and periwinkle on blue, a
-    big blue glow on black, faint cool ones on light), each drifting around its home spot for the whole reel (ambient:
-    never a change for pace-check). Their paths are fixed by a seed, so every render of the page is the same."""
-    dr = amb["drift"]
-    every = float(dr["every"])
+def glows(i, bg, amb, cuts, bg_js):
+    """The glows inside background layer i (tokens.ambient.glows: each background's own). They hold still while a scene
+    holds and move only on a cut, travelling with it (expo.out over ambient.shift.duration): motion with a reason, not
+    lazy breathing (MOTION.md). Each move is to a seeded spot around the glow's home, so every render is the same.
+    Ambient: never a change for pace-check."""
+    sh = amb["shift"]
     out = []
     for k, g in enumerate(amb["glows"][bg]):
         rng = random.Random(97 * i + 7 + k)
         size, (cx, cy) = int(g["size"]), g["at"]
         out.append('<i class="orb" id="bg%d-o%d" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;'
                    'background:radial-gradient(circle, %s 0%%, transparent 65%%)"></i>' % (i, k, cx - size // 2, cy - size // 2, size, size, g["color"]))
-        t = 0.0
-        while t < D - 1e-6:
-            bg_js.append("tl.to('#bg%d-o%d', %s, %.3f);" % (i, k, js_obj({"x": rng.randint(-dr["x"], dr["x"]), "y": rng.randint(-dr["y"], dr["y"]),
-                                                                         "duration": every, "ease": "sine.inOut"}), t))
-            t += every
+        for n, t in enumerate(cuts):
+            sign = 1 if (n + k) % 2 == 0 else -1
+            bg_js.append("tl.to('#bg%d-o%d', %s, %.3f);" % (i, k, js_obj({"x": sign * int(round(rng.uniform(0.5, 1.0) * sh["x"])),
+                                                                         "y": int(round(rng.uniform(-1.0, 1.0) * sh["y"])),
+                                                                         "duration": sh["duration"], "ease": "expo.out"}), t))
     return "".join(out)
 
 
@@ -276,13 +290,14 @@ def main():
         sid = sc["id"]
         ctx = Ctx(sc, t_in, t_out, words, tok, a.vendor, out, sbg, head, spec_dir)
         try:
-            left, top, width, h = place(sid, mod, sc)
-            inner, lines = mod.render(sc, ctx, (left, top, width))
+            left, top, width, h, iw, ih, scale = place(sid, mod, sc)
+            inner, lines = mod.render(sc, ctx, (left, top, iw))
         except SceneError as e:
             fail("%s: %s" % (sid, e))
         except BAD_DATA as e:
             fail("%s: bad data in the %s scene (%s: %s)" % (sid, sc["type"], type(e).__name__, e))
-        moments["scenes"].append({"id": sid, "type": mod.TYPE, "in": round(t_in, 3), "out": round(t_out, 3)})
+        moments["scenes"].append({"id": sid, "type": mod.TYPE, "in": round(t_in, 3), "out": round(t_out, 3),
+                                  "box": [left, top, width, h], "scale": scale})
         if mod.TYPE == "custom":   # it animates itself between in and out
             moments["spans"].append([round(t_in, 3), round(t_out, 3)])
         css[mod.TYPE] = mod.CSS
@@ -301,13 +316,10 @@ def main():
         anchor = ' data-unanchored="1"' if word == "-" else ' data-anchor="%s"' % html.escape(word, quote=True)
         hosts.append('    <div class="card-host clip" id="host-%s" data-start="%.3f" data-duration="%.3f" data-track-index="%d"%s\n'
                      '      style="left:0;top:0;width:1080px;height:1920px;visibility:hidden;">'
-                     '<div class="box" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx"><div class="live" id="%s-live">%s</div></div></div>\n'
-                     % (sid, t_in, end - t_in, 3 + k, anchor, sid, left, top, width, h, sid, inner))
+                     '<div class="box" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx"><div class="live" id="%s-live" style="width:%dpx;height:%dpx;transform:scale(%s)">%s</div></div></div>\n'
+                     % (sid, t_in, end - t_in, 3 + k, anchor, sid, left, top, width, h, sid, iw, ih, ("%.2f" % scale).rstrip("0").rstrip(".") if scale != 1 else "1", inner))
         js.append("// %s (%s) %.2f to %.2f s" % (sid, mod.TYPE, t_in, t_out))
         js.extend(lines)
-        # the living layer: the scene pushes in slowly for as long as it is on screen (ambient: not a change)
-        js.append("tl.fromTo('#%s-live', { scale: 1 }, %s, %.3f);" % (sid, js_obj({"scale": amb["push"], "duration": round(end - t_in, 3),
-                                                                                  "ease": "sine.inOut", "immediateRender": False}), t_in))
         js.extend(ctx.ambient_lines)
         if t_out < D - 1e-6:
             gone = X.exit(kinds[k + 1] if k + 1 < len(kinds) else "fade", sid, t_out)
@@ -324,8 +336,14 @@ def main():
             elif bgs:
                 bg_js.append("tl.to('#bg%d', { opacity: 1, duration: %.3f, ease: 'power1.inOut' }, %.3f);" % (len(bgs), E.BG_FADE, t_in))
             bgs.append((sbg, t_in))
+    layer_of, cuts = [], {}
+    for k, (sc, _, sbg, t_in, _, _) in enumerate(timed):     # the layer each scene is on, and the cuts inside each layer
+        i = max(j for j, (_, t0) in enumerate(bgs) if t0 <= t_in + 1e-6)
+        if k and layer_of[-1] == i:
+            cuts.setdefault(i, []).append(t_in)
+        layer_of.append(i)
     bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d">%s</div>\n'
-                      % (i, tok["backgrounds"][b], 0 if i else 1, glows(D, i, b, amb, bg_js)) for i, (b, _) in enumerate(bgs))
+                      % (i, tok["backgrounds"][b], 0 if i else 1, glows(i, b, amb, cuts.get(i, []), bg_js)) for i, (b, _) in enumerate(bgs))
 
     def bg_at(t):
         cur = timed[0][2]
@@ -370,7 +388,7 @@ def main():
   #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:#000; font-family: %s; --label: %s; }
   .bg { position:absolute; inset:0; overflow:hidden; }
   .orb { position:absolute; border-radius:50%%; pointer-events:none; will-change:transform; }
-  .live { width:100%%; height:100%%; display:flex; flex-direction:column; align-items:center; justify-content:center; will-change:transform; }
+  .live { position:absolute; left:0; top:0; transform-origin:0 0; display:flex; flex-direction:column; align-items:center; justify-content:center; will-change:transform; }
   .card-host { position:absolute; pointer-events:none; overflow:hidden; z-index:10; }
   .tx-layer { position:absolute; inset:0; z-index:20; pointer-events:none; overflow:hidden; }
   .tx-p { position:absolute; opacity:0; border-radius:5px; will-change:transform; }

@@ -111,7 +111,7 @@ class Bars(SceneCase):
 
     def test_width_proportional_and_hi_cyan(self):
         html = self.ok(self.bars())
-        box_w = int(re.search(r'id="sc" style="left:\d+px;top:\d+px;width:(\d+)px', html).group(1))
+        box_w = int(re.search(r'id="sc-live" style="width:(\d+)px', html).group(1))
         fills = re.findall(r'<div class="b-fill" style="width:(\d+)px;background:([^;"]+)', html)
         self.assertEqual(len(fills), 3)
         for (w, col), v in zip(fills, (40, 1000, 500)):
