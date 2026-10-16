@@ -95,7 +95,7 @@ class Compose(unittest.TestCase):
             self.assertGreaterEqual(top, E.SCENE["top"])
             self.assertLessEqual(left + width, E.SCENE["right"])
             self.assertLessEqual(top + height, E.SCENE["bottom"])
-            self.assertTrue(E.L.inside_safe(left, top, width, height))
+            self.assertTrue(E.inside_scene(left, top, width, height))
             if top + height > E.L.RIGHT_COL_TOP:
                 self.assertEqual((left, width), (150, 780))
                 narrow += 1

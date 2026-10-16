@@ -23,7 +23,17 @@ def find_reels_lib():
 
 L = find_reels_lib()
 
-SCENE = {"left": 65, "top": 520, "right": 1015, "bottom": 1248}   # inside L.SAFE; narrower below L.RIGHT_COL_TOP
+# The scene area runs down to y 1420, Instagram's clear line (motion-graphics-skills' reel-export: y 360 to 1420, out of the
+# right 120 px), below the Reels skill's all-platform SAFE bottom (1248): an explainer is made for Instagram first, and a
+# picture that stops at 1248 leaves a third of the frame empty. Below RIGHT_COL_TOP it keeps the narrow column.
+SCENE = {"left": 65, "top": 520, "right": 1015, "bottom": 1420}
+
+
+def inside_scene(left, top, width, height):
+    """True when a box sits inside the scene area, and inside the narrow column wherever it reaches below y 960."""
+    if left < SCENE["left"] or top < SCENE["top"] or left + width > SCENE["right"] or top + height > SCENE["bottom"]:
+        return False
+    return top + height <= L.RIGHT_COL_TOP or (left >= L.NARROW["left"] and left + width <= L.NARROW["right"])
 CAPTION_BAND = (330, 470)
 LEAD = 0.2          # an entrance starts this long before its word (beat-check's 0.15 to 0.25 s window)
 MAX_OVERLAP = 0.3   # scenes hand over with at most this much overlap

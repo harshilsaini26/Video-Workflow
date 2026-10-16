@@ -4,7 +4,7 @@
   explainer-compose.py --spec videos/<p>/storyboard.json --out videos/<p>/public [--vendor DIR] [--kit DIR]
 
 The page has three layers (SPEC §6.1): a background that cross-fades when a scene's `bg` changes, one scene at a time
-centred in the scene area (x 65 to 1015, y 520 to 1248; 780 px wide when it reaches below y 960), and word captions in
+centred in the scene area (x 65 to 1015, y 520 to 1420; 780 px wide when it reaches below y 960) and scaled up to fill it, and word captions in
 the band at y 330 to 470. Scene times are word anchors ("word:N" in transcript.json); an entrance lands 0.2 s before
 its word. Each scene exits on its `out` while the next one enters, overlapping by the exit's 0.28 s.
 
@@ -29,7 +29,7 @@ from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 L = E.L
 WIDE = (L.SAFE["left"], L.SAFE["right"] - L.SAFE["left"])          # 65, 950
 NARROW = (L.NARROW["left"], L.NARROW["right"] - L.NARROW["left"])  # 150, 780
-CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 884
+CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 970
 GAP_MAX = 0.3
 GSAP_CDN = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
 FONTS = os.path.join(HERE, "..", "assets", "fonts")
@@ -45,7 +45,7 @@ def fail(msg):
 RESERVED = re.compile(r"^(stage|captions|voice|bg\d+|cap\d+)$")
 NOT_SHOWN = {"type", "id", "bg", "in", "out", "at", "source", "icon", "html", "build", "tex", "style", "unit",
              "n", "size", "decimals", "point", "row", "cell", "box", "hi", "value", "points",
-             "card", "side", "transition", "badge", "logo", "src", "screenshot"}   # settings, indexes, step numbers, files
+             "card", "side", "transition", "badge", "logo", "src", "screenshot", "focus"}   # settings, indexes, step numbers, files
 BAD_DATA = (TypeError, ValueError, KeyError, AttributeError, IndexError)
 
 
@@ -89,15 +89,15 @@ def place(sid, mod, scene):
     sa = E.SCENE
     if hasattr(mod, "place"):
         left, top, width, h = mod.place(scene)
-        if left < sa["left"] or top < sa["top"] or left + width > sa["right"] or top + h > sa["bottom"] or not L.inside_safe(left, top, width, h):
+        if not E.inside_scene(left, top, width, h):
             fail("%s: the box %d,%d %dx%d is outside the scene area (x %d to %d, y %d to %d; x %d to %d below y %d)"
                  % (sid, left, top, width, h, sa["left"], sa["right"], sa["top"], sa["bottom"], L.NARROW["left"], L.NARROW["right"], L.RIGHT_COL_TOP))
         return left, top, width, h, width, h, 1.0
     area_h = sa["bottom"] - sa["top"]
     need = mod.min_width(scene)
-    cap = min(SCALE_MAX, getattr(mod, "MAX_SCALE", SCALE_MAX))
-    s = cap
-    while s >= 1.0 - 1e-9:
+    cap = min(SCALE_MAX, mod.max_scale(scene) if hasattr(mod, "max_scale") else getattr(mod, "MAX_SCALE", SCALE_MAX))
+    steps = int(math.floor((cap - 1.0) / SCALE_STEP + 1e-9))
+    for s in [cap] + [round(1.0 + SCALE_STEP * k, 2) for k in range(steps, -1, -1) if 1.0 + SCALE_STEP * k < cap - 1e-9]:
         for col_left, col_w in (WIDE, NARROW):
             iw = int(col_w / s)
             if need > iw:
@@ -108,9 +108,8 @@ def place(sid, mod, scene):
             if h > area_h or (col_w == WIDE[1] and top + h > L.RIGHT_COL_TOP):
                 continue
             left = col_left + (col_w - w) // 2
-            if L.inside_safe(left, top, w, h) and top >= sa["top"] and top + h <= sa["bottom"]:
+            if E.inside_scene(left, top, w, h):
                 return left, top, w, h, iw, ih, round(s, 2)
-        s = round(s - SCALE_STEP, 2)
     # nothing fits even unscaled: say why, as before
     left, width = NARROW
     if need > width:

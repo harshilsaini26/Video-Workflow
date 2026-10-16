@@ -3,7 +3,7 @@ import explainer_lib as E
 from scenes import line_px, mono_lines, need, stagger_for, widest
 
 TYPE = "title"
-MAX_SCALE = 1.0                  # a title sets its own size (MIN_SIZE to MAX_SIZE): never blown up past it
+HERO = 150                       # the composer scales a title up to fill the frame, to this size at most
 SIZE, LH = 104, 1.08          # headline: DM Sans 700
 K_SIZE, K_LH, K_GAP = 30, 1.3, 22   # kicker: the mono label font, letter-spaced
 MIN_SIZE, MAX_SIZE = 72, 132
@@ -18,6 +18,11 @@ CSS = """
 
 def size(scene):
     return int(scene.get("size", SIZE))
+
+
+def max_scale(scene):
+    """A title grows to a hero size (120 px or more reads as a headline on a phone) and no further."""
+    return max(1.0, HERO / float(size(scene)))
 
 
 def validate(scene):

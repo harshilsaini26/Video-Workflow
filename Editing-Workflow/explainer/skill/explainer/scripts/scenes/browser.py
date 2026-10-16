@@ -15,6 +15,7 @@ B_SIZE, B_H, B_GAP, B_PADX, B_SP = 28, 52, 24, 22, 12   # badges: mono pills, wr
 BTN_H, BTN_GAP, BTN_SIZE = 84, 32, 36     # the button
 U_SIZE = 26                               # the address text
 VIEW, CAP_GAP = 400, 30                   # a screenshot's view, and the gap to the title under the window
+FOCUS_ZOOM = 1.25                         # the punch-in on a screenshot's focus line
 
 CSS = """
   .br-win { width:100%%; border-radius:26px; overflow:hidden; opacity:0; box-shadow:0 30px 80px rgba(0,0,0,.35); }
@@ -47,6 +48,12 @@ def validate(scene):
         errs.append("at most 6 badges")
     if scene.get("screenshot") and (scene.get("badges") or scene.get("button")):
         errs.append("with a screenshot the window shows the real page: drop badges and button")
+    f = scene.get("focus")
+    if f is not None:
+        if not scene.get("screenshot"):
+            errs.append("focus needs a screenshot")
+        elif not isinstance(f, dict) or not isinstance(f.get("y"), int) or f["y"] < 0 or f.get("at") is None:
+            errs.append("focus needs y (a whole pixel in the screenshot) and at (the word that names that line)")
     return errs
 
 
@@ -123,8 +130,13 @@ def shot(scene, ctx, box, page_bg, bar_bg, dots, url, dim):
             % (sid, page_bg, bar_bg, dots, url, page_bg, sid, ctx.esc(rel), cap))
     js = [ctx.enter("#%s-win" % sid, ctx.t_in, {"y": -60, "scale": 0.94}),
           ctx.enter("#%s .br-title, #%s .br-sub" % (sid, sid), ctx.t_in + 0.25, {"y": 16}, stagger=0.08)]
-    if tall > VIEW:   # read down the page while the scene holds (ambient: the picture keeps moving, nothing new arrives)
-        dur = round(max(0.5, ctx.t_out - ctx.t_in - 1.0), 3)
-        ctx.ambient("tl.fromTo('#%s-shot', { y: 0 }, %s, %.3f);" % (sid, js_obj({"y": -(tall - VIEW), "duration": dur, "ease": "sine.inOut",
-                                                                             "immediateRender": False}), ctx.t_in + 0.6))
+    f = scene.get("focus")
+    if f:   # the page holds still, then punches in on the line the voice names (MOTION.md: motion with a reason)
+        if f["y"] >= size[1]:
+            ctx.fail("focus y %d is below the screenshot's %d px" % (f["y"], size[1]))
+        t, attrs = ctx.item(f["at"])
+        html = html.replace('<div class="br-view" ', '<div class="br-view" id="%s-view"%s ' % (sid, attrs), 1)
+        fy = round(f["y"] * box[2] / float(size[0]), 1)              # the line, at the window's width
+        js.append("tl.to('#%s-shot', %s, %.3f);" % (sid, js_obj({"y": round(VIEW / 2.0 - fy, 1), "scale": FOCUS_ZOOM,
+                                                                  "transformOrigin": "50%% %spx" % fy, "duration": 0.8, "ease": "expo.out"}), t))
     return html, js

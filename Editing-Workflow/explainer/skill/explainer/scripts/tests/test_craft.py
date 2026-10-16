@@ -42,7 +42,7 @@ class Craft(unittest.TestCase):
         self.assertEqual(h, math.ceil(ih * s))
         col = 780 if top + h > E.L.RIGHT_COL_TOP else 950
         self.assertGreaterEqual(max(w / col, h / AREA_H), 0.85)          # it reaches across the area one way or the other
-        self.assertTrue(E.L.inside_safe(left, top, w, h))
+        self.assertTrue(E.inside_scene(left, top, w, h))
         self.assertGreaterEqual(top, E.SCENE["top"])
         self.assertLessEqual(top + h, E.SCENE["bottom"])
 
@@ -51,7 +51,7 @@ class Craft(unittest.TestCase):
         bx = boxes(html)
         self.assertEqual(set(bx), {"hook", "n1", "cu"})
         for sid, (left, top, w, h, iw, ih, s) in bx.items():
-            self.assertTrue(E.L.inside_safe(left, top, w, h), sid)
+            self.assertTrue(E.inside_scene(left, top, w, h), sid)
             self.assertGreaterEqual(top, E.SCENE["top"], sid)
             self.assertLessEqual(top + h, E.SCENE["bottom"], sid)
         with open(os.path.join(out, "moments.json")) as f:
@@ -60,9 +60,26 @@ class Craft(unittest.TestCase):
             self.assertEqual(sc[sid]["box"], list(b[:4]), sid)
             self.assertEqual(sc[sid]["scale"], b[6], sid)
 
-    def test_a_scene_can_cap_its_scale(self):
-        html, _, _ = self.build(BOARD)          # a title sets its own size: it is never blown up past it
-        self.assertEqual(boxes(html)["hook"][6], 1.0)
+    def test_a_title_grows_to_a_hero_size_and_no_further(self):
+        html, _, _ = self.build(BOARD)          # 104 px by default; a hero word is 120 px or more, and 150 px is plenty
+        s = boxes(html)["hook"][6]
+        self.assertGreater(s, 1.0)
+        self.assertLessEqual(104 * s, 150.5)
+        board = copy.deepcopy(BOARD)
+        board["scenes"][0]["size"] = 132
+        self.assertLessEqual(132 * boxes(self.build(board)[0])["hook"][6], 150.5)
+
+    def test_the_scene_area_runs_down_to_the_reels_safe_line(self):
+        # motion-graphics-skills' reel-export: Instagram's UI leaves y 360 to 1420 clear (out of the right 120 px)
+        self.assertEqual(E.SCENE["bottom"], 1420)
+        self.assertTrue(E.inside_scene(150, 900, 780, 520))
+        self.assertFalse(E.inside_scene(65, 900, 950, 520))        # below y 960 it keeps clear of the action column
+        self.assertFalse(E.inside_scene(150, 900, 780, 521))
+        tm = {"type": "timeline", "id": "tm", "bg": "black", "in": "word:4", "out": D,
+              "steps": [{"label": "Step " + "ABCDE"[i], "at": "word:%d" % (5 + 2 * i)} for i in range(5)]}
+        left, top, w, h, iw, ih, s = boxes(self.build(dict(BOARD, scenes=[LEAD_IN, tm]))[0])["tm"]
+        self.assertGreaterEqual(s, 1.3)                            # 660 px of steps: 1.1 at most in a 728 px area
+        self.assertLessEqual(top + h, 1420)
 
     def test_a_scene_too_wide_even_unscaled_still_fails(self):
         d = scratch(self)

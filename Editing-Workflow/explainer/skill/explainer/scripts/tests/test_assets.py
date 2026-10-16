@@ -1,8 +1,9 @@
 """Real logos and real pages, fetched on the creator's machine: a logo card from simple-icons (or the creator's own image),
-the browser scene showing a screenshot that scrolls, and snap-page.py taking that screenshot with local Chrome."""
+the browser scene showing a screenshot that punches in on its focus line, and snap-page.py taking that screenshot with local Chrome."""
 import json, os, re, shutil, struct, unittest, zlib
 from .helpers import read, run, scratch, write
-from .test_compose import D, VOICE, silent_wav, words30
+from .test_compose import D, VOICE, silent_wav, t_word, words30
+import explainer_lib as E
 from .test_scenes_ui import stub_vendor
 
 CHROMES = [os.environ.get("CHROME", ""), "/opt/pw-browsers/chromium"] + [shutil.which(n) or "" for n in ("google-chrome", "chromium", "chromium-browser")]
@@ -66,15 +67,27 @@ class Assets(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("img/missing.png", r.stdout)
 
-    def test_a_tall_screenshot_scrolls_and_a_short_one_does_not(self):
+    def test_a_screenshot_holds_still_until_its_focus_then_punches_in(self):
+        # no lazy scroll down the page (it drifted into blank page); the page moves once, on the word that names the line
         scene = {"type": "browser", "title": "Introduction to Corporate Finance", "domain": "coursera.org", "screenshot": "shots/page.png"}
         r, html, out = self.build(scene, files=[("shots/page.png", (1280, 2400))])
         self.assertEqual(r.returncode, 0, r.stdout)
         self.assertTrue(os.path.exists(os.path.join(out, "assets", "sc-page.png")))
-        self.assertRegex(html, r"tl\.fromTo\('#sc-shot', \{ y: 0 \}, \{ y: -\d+")
-        r, html, _ = self.build(scene, files=[("shots/page.png", (1280, 600))])
+        self.assertNotRegex(html, r"tl\.\w+\('#sc-shot'")
+        r, html, _ = self.build(dict(scene, focus={"y": 1500, "at": "word:8"}), files=[("shots/page.png", (1280, 2400))])
         self.assertEqual(r.returncode, 0, r.stdout)
-        self.assertNotIn("tl.fromTo('#sc-shot'", html)
+        iw = int(re.search(r'id="sc-live" style="width:(\d+)px', html).group(1))
+        k = iw / 1280.0
+        m = re.search(r"tl\.to\('#sc-shot', \{ y: (-?[\d.]+), scale: 1\.25, transformOrigin: '50% ([\d.]+)px', duration: 0\.8, "
+                      r"ease: 'expo\.out' \}, ([\d.]+)\);", html)
+        self.assertTrue(m, html[-3000:])
+        self.assertAlmostEqual(float(m.group(2)), 1500 * k, delta=1)
+        self.assertAlmostEqual(float(m.group(1)), 400 / 2.0 - 1500 * k, delta=1)    # the line lands mid-view
+        self.assertAlmostEqual(float(m.group(3)), t_word(8) - E.LEAD, places=3)
+        self.assertRegex(html, r'id="sc-view" data-at="%.3f" data-anchor="word8"' % (t_word(8) - E.LEAD))
+        r, _, _ = self.build(dict(scene, focus={"y": 2600, "at": "word:8"}), files=[("shots/page.png", (1280, 2400))])
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("focus", r.stdout)
         r, _, _ = self.build(dict(scene, screenshot="shots/none.png"))
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("shots/none.png", r.stdout)
