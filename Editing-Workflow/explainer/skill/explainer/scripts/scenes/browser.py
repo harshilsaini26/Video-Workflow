@@ -127,7 +127,6 @@ def shot(scene, ctx, box, page_bg, bar_bg, dots, url, dim):
     size = png_size(src)
     if not size:
         ctx.fail("screenshot %s is not a PNG (take one with snap-page.py)" % scene["screenshot"])
-    tall = int(round(size[1] * box[2] / float(size[0])))       # the page's height at the window's width
     cap = '<div class="br-title" style="color:%s">%s</div>' % (ctx.ink, ctx.esc(scene["title"]))
     if scene.get("subtitle"):
         cap += '<div class="br-sub" style="color:%s">%s</div>' % (dim, ctx.esc(scene["subtitle"]))
@@ -142,10 +141,15 @@ def shot(scene, ctx, box, page_bg, bar_bg, dots, url, dim):
             ctx.fail("focus y %d is below the screenshot's %d px" % (f["y"], size[1]))
         t, attrs = ctx.item(f["at"])
         html = html.replace('<div class="br-view" ', '<div class="br-view" id="%s-view"%s ' % (sid, attrs), 1)
-        fy = round(f["y"] * box[2] / float(size[0]), 1)              # the line, at the window's width
+        fy = round(f["y"] * box[2] / float(size[0]), 2)             # the line, at the window's width
+        exact = size[1] * box[2] / float(size[0])                     # the page's height as the browser draws it
         # the line to mid-view, but never so far that the page's top or bottom edge pulls into the view
-        lo, hi = VIEW - fy - FOCUS_ZOOM * (tall - fy), (FOCUS_ZOOM - 1) * fy
-        y = round(min(hi, max(lo, VIEW / 2.0 - fy)), 1) if lo <= hi else round(VIEW / 2.0 - fy, 1)
+        lo, hi = VIEW - fy - FOCUS_ZOOM * (exact - fy), (FOCUS_ZOOM - 1) * fy
+        y = VIEW / 2.0 - fy
+        if lo <= hi:   # rounded to 0.01 px towards the inside, so a clamped edge never shows a sliver of empty view
+            y = math.ceil(lo * 100) / 100.0 if y <= lo else (math.floor(hi * 100) / 100.0 if y >= hi else round(y, 2))
+        else:
+            y = round(y, 2)
         js.append("tl.to('#%s-shot', %s, %.3f);" % (sid, js_obj({"y": y, "scale": FOCUS_ZOOM,
                                                                   "transformOrigin": "50%% %spx" % fy, "duration": 0.8, "ease": "expo.out"}), t))
     return html, js
