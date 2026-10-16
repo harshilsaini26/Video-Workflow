@@ -22,6 +22,7 @@ import argparse, html, json, os, random, re, shutil, sys, wave
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import explainer_lib as E
+import transitions as X
 from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 
 L = E.L
@@ -201,6 +202,8 @@ def main():
         bg = sc.get("bg", bg or "blue")
         if bg not in tok["backgrounds"]:
             fail("%s: unknown bg %r (one of: %s)" % (sid, bg, ", ".join(tok["backgrounds"])))
+        if sc.get("transition") is not None and sc["transition"] not in X.KINDS:
+            fail("%s: unknown transition %r (one of: %s)" % (sid, sc["transition"], ", ".join(X.KINDS)))
         if (getattr(mod, "NEEDS_SOURCE", False) or shows_number(sc)) and not sc.get("source"):
             fail("%s: the %s scene shows a number or a claim and needs a source (a key in SOURCES.md)" % (sid, sc["type"]))
         if sc.get("source") and source_keys is not None and sc["source"] not in source_keys:
@@ -244,8 +247,12 @@ def main():
     # fonts load up front: a scene's text is hidden until its time, and a hidden face would load a frame late
     head = ['<link rel="preload" href="fonts/%s" as="font" type="font/woff2" crossorigin />' % f
             for f in sorted(os.listdir(os.path.join(out, "fonts")))] if os.path.isdir(os.path.join(out, "fonts")) else []
-    css, hosts, js = {}, [], []
+    css, hosts, js, tx_html = {}, [], [], []
     moments = {"duration": D, "scenes": [], "spans": []}   # every change on screen, for pace-check.py (gate E4)
+    kinds, prev = [], None    # how each scene comes in (transitions.py): the storyboard's choice or the composer's
+    for k, (sc, _, sbg, _, _, _) in enumerate(timed):
+        kinds.append(X.pick(k, prev, sbg, sc.get("transition")))
+        prev = sbg
     for k, (sc, mod, sbg, t_in, t_out, end) in enumerate(timed):
         sid = sc["id"]
         ctx = Ctx(sc, t_in, t_out, words, tok, a.vendor, out, sbg, head, spec_dir)
@@ -260,6 +267,12 @@ def main():
         if mod.TYPE == "custom":   # it animates itself between in and out
             moments["spans"].append([round(t_in, 3), round(t_out, 3)])
         css[mod.TYPE] = mod.CSS
+        lines = X.enter(kinds[k], sid, t_in) + lines
+        if kinds[k] == "burst":
+            c = tok["colors"]
+            spray, spray_js = X.burst(k, t_in, [c["cyan"], c["amber"], c["magenta"], c["white"]])
+            tx_html.append(spray)
+            lines += spray_js
         word = E.anchor_text(sc["in"], words)
         anchor = ' data-unanchored="1"' if word == "-" else ' data-anchor="%s"' % html.escape(word, quote=True)
         hosts.append('    <div class="card-host clip" id="host-%s" data-start="%.3f" data-duration="%.3f" data-track-index="%d"%s\n'
@@ -273,15 +286,18 @@ def main():
                                                                                   "ease": "sine.inOut", "immediateRender": False}), t_in))
         js.extend(ctx.ambient_lines)
         if t_out < D - 1e-6:
-            lines = lines + ["tl.to('#%s', %s, %.3f);" % (sid, js_obj({"opacity": 0, "y": -24, "duration": mo["exit"], "ease": mo["exit_ease"]}), t_out)]
-            js.append(lines[-1])
+            gone = X.exit(kinds[k + 1] if k + 1 < len(kinds) else "fade", sid, t_out)
+            lines = lines + gone
+            js.extend(gone)
         moments["spans"] += [[round(a_, 3), round(b_, 3)] for a_, b_ in filter(None, map(line_span, lines))]
 
     # ---- backgrounds ----------------------------------------------------------------------------------------------
     bgs, bg_js = [], []
-    for sc, _, sbg, t_in, _, _ in timed:
+    for k, (sc, _, sbg, t_in, _, _) in enumerate(timed):
         if not bgs or bgs[-1][0] != sbg:
-            if bgs:
+            if bgs and kinds[k] == "wipe":     # the new background opens as a circle
+                bg_js += X.wipe_bg("bg%d" % len(bgs), t_in)
+            elif bgs:
                 bg_js.append("tl.to('#bg%d', { opacity: 1, duration: %.3f, ease: 'power1.inOut' }, %.3f);" % (len(bgs), E.BG_FADE, t_in))
             bgs.append((sbg, t_in))
     bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d"></div>\n' % (i, tok["backgrounds"][b], 0 if i else 1)
@@ -334,6 +350,8 @@ def main():
   .orb { position:absolute; width:900px; height:900px; border-radius:50%%; will-change:transform; }
   .live { width:100%%; height:100%%; display:flex; flex-direction:column; align-items:center; justify-content:center; will-change:transform; }
   .card-host { position:absolute; pointer-events:none; overflow:hidden; z-index:10; }
+  .tx-layer { position:absolute; inset:0; z-index:20; pointer-events:none; overflow:hidden; }
+  .tx-p { position:absolute; opacity:0; border-radius:5px; will-change:transform; }
   .box { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .cap-layer { position:absolute; left:0; top:0; width:1080px; height:1920px; z-index:30; pointer-events:none; }
   .cap { position:absolute; left:%dpx; width:%dpx; top:%dpx; height:%dpx; display:flex; align-items:center; justify-content:center;
@@ -355,6 +373,8 @@ def main():
 
     cap_html = ('    <div class="clip cap-layer" id="captions" data-start="0" data-duration="%.3f" data-track-index="2">\n%s    </div>\n'
                 % (D, "".join(caps)))
+    if tx_html:   # transition sprays sit above the scenes, under the captions
+        cap_html = '    <div class="tx-layer" id="tx">%s</div>\n' % "".join(tx_html) + cap_html
     page = """<!doctype html>
 <html lang="en">
 <head>

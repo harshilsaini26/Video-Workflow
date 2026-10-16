@@ -159,6 +159,7 @@ class Compose(unittest.TestCase):
     def test_background_crossfades_on_change(self):
         def edit(b):
             b["scenes"][1]["bg"] = "light"
+            b["scenes"][1]["transition"] = "push"     # a named transition other than wipe keeps the cross-fade
         html, _, _ = self.ok(edit)
         self.assertEqual(len(re.findall(r'class="bg"', html)), 2)
         fades = re.findall(r"tl\.to\('#bg(\d+)', \{ opacity: 1, duration: ([\d.]+)[^;]*\}, ([\d.]+)\);", html)
