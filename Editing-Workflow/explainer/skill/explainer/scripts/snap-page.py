@@ -4,7 +4,7 @@
   snap-page.py --url https://www.coursera.org/learn/corporate-finance --out videos/<p>/shots/course.png
                [--width 1280] [--height 1600] [--wait 4000] [--chrome PATH]
 
-Writes a PNG of exactly --width x --height (the top of the page; the browser scene scrolls down it while it holds).
+Writes a PNG of exactly --width x --height (the top of the page; the browser scene's `focus` can punch in on a line further down).
 Chrome is found at --chrome, $CHROME, the usual install paths, or on PATH. A fresh profile is used every time, so you
 are never signed in and nothing personal is captured. The page is loaded once first: when Chrome shows its own error
 page instead ("This site can't be reached"), nothing is written and the error is named. A proxy in HTTPS_PROXY is passed

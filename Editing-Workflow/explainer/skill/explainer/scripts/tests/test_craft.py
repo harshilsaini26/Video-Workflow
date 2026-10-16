@@ -67,7 +67,20 @@ class Craft(unittest.TestCase):
         self.assertLessEqual(104 * s, 150.5)
         board = copy.deepcopy(BOARD)
         board["scenes"][0]["size"] = 132
-        self.assertLessEqual(132 * boxes(self.build(board)[0])["hook"][6], 150.5)
+        left, top, w, h, iw, ih, s = boxes(self.build(board)[0])["hook"]
+        self.assertLessEqual(132 * s, 150.5)
+        self.assertEqual(w, math.floor(iw * s))          # the box is sized with the scale the page draws with
+        self.assertEqual(h, math.ceil(ih * s))
+        self.assertTrue(E.inside_scene(left, top, w, h))
+
+    def test_a_wide_word_still_gets_the_wide_column(self):
+        # a one-line title whose word needs 781 to 950 px fits the full width above y 960, as before the taller area
+        board = copy.deepcopy(BOARD)
+        board["scenes"][0]["text"] = "Internationalisa"
+        left, top, w, h, iw, ih, s = boxes(self.build(board)[0])["hook"]
+        self.assertGreater(w, 780)
+        self.assertLessEqual(top + h, E.L.RIGHT_COL_TOP)
+        self.assertTrue(E.inside_scene(left, top, w, h))
 
     def test_the_scene_area_runs_down_to_the_reels_safe_line(self):
         # motion-graphics-skills' reel-export: Instagram's UI leaves y 360 to 1420 clear (out of the right 120 px)

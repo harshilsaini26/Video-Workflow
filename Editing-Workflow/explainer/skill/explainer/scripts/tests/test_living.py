@@ -46,7 +46,14 @@ class Living(unittest.TestCase):
         html, _ = self.build(board)
         sh = TOK["ambient"]["shift"]
         cuts = [round(t_word(i) - E.LEAD, 3) for i in (5, 10, 15)]
-        moves = re.findall(r"tl\.to\('#bg0-o(\d)', \{ x: (-?[\d.]+), y: (-?[\d.]+), duration: ([\d.]+), ease: '([\w.]+)' \}, ([\d.]+)\);", html)
+        # fromTo with the start written out: a render chunk that seeks into an overlap draws what a straight play draws
+        moves = re.findall(r"tl\.fromTo\('#bg0-o(\d)', \{ x: (-?[\d.]+), y: (-?[\d.]+) \}, \{ x: (-?[\d.]+), y: (-?[\d.]+), "
+                           r"duration: ([\d.]+), ease: '([\w.]+)', immediateRender: false \}, ([\d.]+)\);", html)
+        last = {}
+        for k, x0, y0, x, y, dur, ease, t in moves:
+            self.assertEqual((float(x0), float(y0)), last.get(k, (0.0, 0.0)))   # each move starts where the last one ended
+            last[k] = (float(x), float(y))
+        moves = [(k, x, y, dur, ease, t) for k, x0, y0, x, y, dur, ease, t in moves]
         self.assertEqual(len(moves), 3 * len(cuts))      # every glow, on every cut, and never between
         self.assertEqual(sorted({float(m[5]) for m in moves}), cuts)
         for k, x, y, dur, ease, t in moves:

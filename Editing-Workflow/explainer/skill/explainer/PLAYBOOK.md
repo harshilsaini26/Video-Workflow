@@ -151,7 +151,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    one the creator likes is promoted into the library by the Librarian, with a test.
 6. **Motion with a reason** (MOTION.md §2): nothing moves unless the voice gives it a reason. No scene pushes in on
    its own and the background never drifts: its three glows travel with each cut (up to 380 px across and 420 px down,
-   expo.out over 1.2 s, to fixed spots, so every render is the same) and hold between cuts. A build-up scene keeps one
+   expo.out over 1.2 s, each move written from where the last one ended, so every render is the same) and hold
+   between cuts. A build-up scene keeps one
    idle motion while it holds (a pulse down a connector, a float, a slow turn); a screenshot holds still and punches
    in (1.25x) on its `focus` line on that line's word. None of this ambient motion counts as a change for pace-check
    (§E1.4).

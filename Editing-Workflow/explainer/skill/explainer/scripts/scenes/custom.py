@@ -22,11 +22,23 @@ _NETWORK = [(r"\bfetch\s*\(", "fetch("), (r"https?://", "a web address"), (r"\bi
             (r"@import\b", "CSS @import"),
             # "//host/x" in a string, url(), or an attribute loads over the web too; a // comment follows a space or a newline
             (r"[('\"`=]\s*//[\w-]+(\.[\w-]+)+", "a web address (//...)")]
-# MOTION.md's rules hold here too: no overshoot ease, no endless loop, nothing random (every render must be the same)
-_DOCTRINE = [(r"['\"`](back|elastic|bounce)(\.\w+)?(\([^)]*\))?['\"`]", "a %s ease: it overshoots and reads as cheap; use power3 or expo"),
-             (r"\brepeat\s*:", "repeat: an endless loop is lazy motion; move only when the voice gives a reason"),
-             (r"\byoyo\s*:", "yoyo: a back-and-forth is lazy motion; move only when the voice gives a reason"),
-             (r"\bMath\s*\.\s*random\b", "Math.random: a render must be the same every time; use fixed values")]
+# MOTION.md's rules hold here too: no overshoot ease, no endless loop, nothing random (every render must be the same).
+# Checked in the scripts and styles only, comments removed, and only where the word drives motion (an ease value, a
+# repeat or yoyo key or call): a CSS background-repeat, a class named "back" or a string saying "bounce" is not motion.
+_EASE = r"(?:\bease\s*:\s*['\"`]\s*(back|elastic|bounce)\b|\b(Back|Elastic|Bounce)\s*\.\s*ease\w*)"
+_SCRIPT_RULES = [(_EASE, "a %s ease: it overshoots and reads as cheap; use power3 or expo"),
+                 (r"(?:(?<![-\w])['\"]?repeat['\"]?\s*:|\.\s*repeat\s*\()", "repeat: an endless loop is lazy motion; move only when the voice gives a reason"),
+                 (r"(?:(?<![-\w])['\"]?yoyo['\"]?\s*:|\.\s*yoyo\s*\()", "yoyo: a back-and-forth is lazy motion; move only when the voice gives a reason"),
+                 (r"\bMath\s*\.\s*random\b", "Math.random: a render must be the same every time; use fixed values"),
+                 (r"\bDate\s*\.\s*now\b", "Date.now: a render must be the same every time; use the timeline's t0 and t1")]
+_STYLE_RULES = [(r"\binfinite\b", "an endless CSS animation (infinite): it runs off the timeline; tween it on tl instead")]
+
+
+def _strip_comments(code, js=True):
+    code = re.sub(r"/\*.*?\*/", "", code, flags=re.S)
+    return re.sub(r"(^|[^:'\"`\\])//[^\n]*", r"\1", code) if js else code
+
+
 _MODULE = r"<script\b[^>]*\btype\s*=\s*['\"]?module\b[^>]*>(.*?)</script>"
 _DOC = [(r"\bdocument\s*\.\s*body\b", "document.body"), (r"\bdocument\s*\.\s*documentElement\b", "document.documentElement")]
 _DOC_SELECT = r"\bdocument\s*\.\s*(querySelector(All)?|getElementById|getElementsBy\w+)\s*\("
@@ -63,10 +75,14 @@ def lint(src, sid, build):
     for pat, what in _NETWORK:
         if re.search(pat, scan):
             errs.append("uses %s: a custom scene renders offline, with no network" % what)
-    for pat, what in _DOCTRINE:
-        m = re.search(pat, src)
-        if m:
-            errs.append("uses " + (what % m.group(1) if "%s" in what else what))
+    scripts = "\n".join(_strip_comments(x) for x in re.findall(r"<script\b[^>]*>(.*?)</script>", src, re.S | re.I))
+    styles = "\n".join(_strip_comments(x, js=False) for x in re.findall(r"<style[^>]*>(.*?)</style>", src, re.S | re.I))
+    for code, rules in ((scripts, _SCRIPT_RULES), (styles, _STYLE_RULES)):
+        for pat, what in rules:
+            m = re.search(pat, code)
+            if m:
+                name = next((g for g in m.groups() if g), "") if m.groups() else ""
+                errs.append("uses " + (what % name.lower() if "%s" in what else what))
     for pat, what in _DOC:
         if re.search(pat, src):
             errs.append("touches %s: work inside root (#%s) only" % (what, sid))

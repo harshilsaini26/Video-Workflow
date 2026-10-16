@@ -16,6 +16,7 @@ velocity-matched (MOTION.md): the exit accelerates into the cut and the entrance
 """
 import random
 
+import explainer_lib as E
 from scenes import js_obj
 
 KINDS = ("fade", "push", "zoom", "wipe", "burst", "cut")
@@ -23,7 +24,7 @@ ENTER, EXIT = 0.5, 0.2           # exits stay within tokens.motion.exit
 IN_EASE, OUT_EASE = "expo.out", "power3.in"   # the exit accelerates into the cut, the entrance decelerates out of it
 WIPE, BURST = 0.55, 0.9
 WIPE_FROM, WIPE_TO = "circle(0% at 50% 60%)", "circle(150% at 50% 60%)"
-CENTRE = (540, 884)              # the scene area's centre
+CENTRE = (540, (E.SCENE["top"] + E.SCENE["bottom"]) // 2)   # the scene area's centre
 PARTICLES = 28
 
 

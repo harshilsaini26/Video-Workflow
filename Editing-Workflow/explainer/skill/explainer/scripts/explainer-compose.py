@@ -4,9 +4,9 @@
   explainer-compose.py --spec videos/<p>/storyboard.json --out videos/<p>/public [--vendor DIR] [--kit DIR]
 
 The page has three layers (SPEC §6.1): a background that cross-fades when a scene's `bg` changes, one scene at a time
-centred in the scene area (x 65 to 1015, y 520 to 1420; 780 px wide when it reaches below y 960) and scaled up to fill it, and word captions in
+scaled up to fill the scene area (x 65 to 1015, y 520 to 1420; 780 px wide when it reaches below y 960), and word captions in
 the band at y 330 to 470. Scene times are word anchors ("word:N" in transcript.json); an entrance lands 0.2 s before
-its word. Each scene exits on its `out` while the next one enters, overlapping by the exit's 0.28 s.
+its word. Each scene exits on its `out` while the next one enters (a 0.2 s exit; the host stays 0.28 s).
 
 The markup is the kit's: card-host clips with data-anchor, items with data-at, the caption layer marked cap-layer, the
 voice as an <audio> clip, one paused GSAP timeline in window.__timelines, so beat-check.py, gap-scan.py, snap-beats.py
@@ -29,7 +29,8 @@ from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 L = E.L
 WIDE = (L.SAFE["left"], L.SAFE["right"] - L.SAFE["left"])          # 65, 950
 NARROW = (L.NARROW["left"], L.NARROW["right"] - L.NARROW["left"])  # 150, 780
-CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 970
+CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 970: a narrow-column scene centres here
+WIDE_CENTRE = (E.SCENE["top"] + L.RIGHT_COL_TOP) // 2               # 740: a full-width scene stays above y 960
 GAP_MAX = 0.3
 GSAP_CDN = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
 FONTS = os.path.join(HERE, "..", "assets", "fonts")
@@ -96,6 +97,7 @@ def place(sid, mod, scene):
     area_h = sa["bottom"] - sa["top"]
     need = mod.min_width(scene)
     cap = min(SCALE_MAX, mod.max_scale(scene) if hasattr(mod, "max_scale") else getattr(mod, "MAX_SCALE", SCALE_MAX))
+    cap = math.floor(cap * 100 + 1e-6) / 100.0          # the page draws scale(%.2f): size the box with exactly that
     steps = int(math.floor((cap - 1.0) / SCALE_STEP + 1e-9))
     for s in [cap] + [round(1.0 + SCALE_STEP * k, 2) for k in range(steps, -1, -1) if 1.0 + SCALE_STEP * k < cap - 1e-9]:
         for col_left, col_w in (WIDE, NARROW):
@@ -104,8 +106,13 @@ def place(sid, mod, scene):
                 continue
             ih = mod.height(scene, iw)
             w, h = int(math.floor(iw * s)), int(math.ceil(ih * s))
-            top = int(round(CENTRE - h / 2.0))
-            if h > area_h or (col_w == WIDE[1] and top + h > L.RIGHT_COL_TOP):
+            if col_w == WIDE[1]:    # the full width only above the action column: centred in y 520 to 960
+                top = int(round(WIDE_CENTRE - h / 2.0))
+                if h > L.RIGHT_COL_TOP - sa["top"]:
+                    continue
+            else:
+                top = int(round(CENTRE - h / 2.0))
+            if h > area_h:
                 continue
             left = col_left + (col_w - w) // 2
             if E.inside_scene(left, top, w, h):
@@ -131,11 +138,14 @@ def glows(i, bg, amb, cuts, bg_js):
         size, (cx, cy) = int(g["size"]), g["at"]
         out.append('<i class="orb" id="bg%d-o%d" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;'
                    'background:radial-gradient(circle, %s 0%%, transparent 65%%)"></i>' % (i, k, cx - size // 2, cy - size // 2, size, size, g["color"]))
+        at = (0, 0)   # each move starts where the last one ended, written out: a seek into an overlap draws the same frame
         for n, t in enumerate(cuts):
             sign = 1 if (n + k) % 2 == 0 else -1
-            bg_js.append("tl.to('#bg%d-o%d', %s, %.3f);" % (i, k, js_obj({"x": sign * int(round(rng.uniform(0.5, 1.0) * sh["x"])),
-                                                                         "y": int(round(rng.uniform(-1.0, 1.0) * sh["y"])),
-                                                                         "duration": sh["duration"], "ease": "expo.out"}), t))
+            to = (sign * int(round(rng.uniform(0.5, 1.0) * sh["x"])), int(round(rng.uniform(-1.0, 1.0) * sh["y"])))
+            bg_js.append("tl.fromTo('#bg%d-o%d', %s, %s, %.3f);" % (i, k, js_obj({"x": at[0], "y": at[1]}),
+                                                                   js_obj({"x": to[0], "y": to[1], "duration": sh["duration"],
+                                                                           "ease": "expo.out", "immediateRender": False}), t))
+            at = to
     return "".join(out)
 
 

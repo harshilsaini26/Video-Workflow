@@ -29,16 +29,18 @@ Distilled from three free, open sources, read as references (none of their code 
 ## 2. Motion with a reason
 
 1. **Nothing moves unless the voice gives it a reason.** "I'd rather have no motion than bad motion" (HyperFrames).
-   No slow push-in on every scene, no glows drifting the whole time, no endless loops. A piece arrives on the word
-   that names it; a screenshot holds still, then punches in on the line its `focus` names, on that word.
+   No slow push-in on every scene, no glows drifting the whole time. A piece arrives on the word that names it; a
+   screenshot holds still, then punches in on the line its `focus` names, on that word. The one exception is the
+   hold: a build may keep **one** small alive thing while it waits for its next word (the library's float, pulse or
+   the hub's slow turn), and that is all.
 2. **The background moves on the cut.** Its glows travel with each cut (expo.out, about 1.2 s) and hold between cuts.
 3. **Eases:** arrivals decelerate (`power3.out` for pieces, `expo.out` for scenes and cuts); exits accelerate
    (`power3.in`, 0.2 to 0.28 s). **Never `back`, `elastic` or `bounce`**: an overshoot reads as cheap. No linear
-   movement (linear is for counts and draws).
+   movement (linear is for counts, draws and the hub's slow turn).
 4. **One object changing shape** beats a fade: a bar that grows, a line that draws, a card that turns. Show a dim ghost
    of where a build is going (the library's build-up scenes do), stagger by a beat, keep the hold to one alive thing.
-5. **Deterministic.** No `Math.random`, no `repeat` or `yoyo`: every render of the page is the same frame for frame
-   (the custom-scene lint refuses them).
+5. **Deterministic, on the timeline.** No `Math.random` or `Date.now`, no `repeat` or `yoyo`, no `infinite` CSS
+   animation: every render of the page is the same frame for frame (the custom-scene lint refuses them).
 
 ## 3. Cuts
 

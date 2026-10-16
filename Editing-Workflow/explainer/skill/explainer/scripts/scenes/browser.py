@@ -1,7 +1,9 @@
 """browser: a mock browser window drops in, its page contents stagger in (SPEC §6.2). Nothing on it links anywhere.
 
 With `screenshot` (a PNG next to storyboard.json, taken with snap-page.py) the window shows the real page instead, in a
-fixed 400 px view that scrolls slowly down a taller page while the scene holds, and the title sits under the window.
+fixed 400 px view showing the top of the page, and the title sits under the window. With `focus` ({"y": a pixel row
+in the screenshot, "at": its word}) the page holds still, then punches in (1.25x) on that row when the word is said,
+never pulling the page's edge into the view.
 """
 import explainer_lib as E
 from scenes import js_obj, line_px, mono_lines, need, png_size, stagger_for, widest
@@ -115,7 +117,7 @@ def render(scene, ctx, box):
 
 
 def shot(scene, ctx, box, page_bg, bar_bg, dots, url, dim):
-    """The window with the real page in it, scrolling down a page taller than the view; the title under the window."""
+    """The window with the real page in it, punching in on its focus line when there is one; the title under the window."""
     sid = ctx.id
     rel, src = ctx.asset(scene["screenshot"])
     size = png_size(src)
@@ -137,6 +139,9 @@ def shot(scene, ctx, box, page_bg, bar_bg, dots, url, dim):
         t, attrs = ctx.item(f["at"])
         html = html.replace('<div class="br-view" ', '<div class="br-view" id="%s-view"%s ' % (sid, attrs), 1)
         fy = round(f["y"] * box[2] / float(size[0]), 1)              # the line, at the window's width
-        js.append("tl.to('#%s-shot', %s, %.3f);" % (sid, js_obj({"y": round(VIEW / 2.0 - fy, 1), "scale": FOCUS_ZOOM,
+        # the line to mid-view, but never so far that the page's top or bottom edge pulls into the view
+        lo, hi = VIEW - fy - FOCUS_ZOOM * (tall - fy), (FOCUS_ZOOM - 1) * fy
+        y = round(min(hi, max(lo, VIEW / 2.0 - fy)), 1) if lo <= hi else round(VIEW / 2.0 - fy, 1)
+        js.append("tl.to('#%s-shot', %s, %.3f);" % (sid, js_obj({"y": y, "scale": FOCUS_ZOOM,
                                                                   "transformOrigin": "50%% %spx" % fy, "duration": 0.8, "ease": "expo.out"}), t))
     return html, js

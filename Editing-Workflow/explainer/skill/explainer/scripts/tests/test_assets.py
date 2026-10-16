@@ -85,6 +85,12 @@ class Assets(unittest.TestCase):
         self.assertAlmostEqual(float(m.group(1)), 400 / 2.0 - 1500 * k, delta=1)    # the line lands mid-view
         self.assertAlmostEqual(float(m.group(3)), t_word(8) - E.LEAD, places=3)
         self.assertRegex(html, r'id="sc-view" data-at="%.3f" data-anchor="word8"' % (t_word(8) - E.LEAD))
+        for fy in (0, 2390):     # a line at the very top or bottom: the page never pulls away from the view's edge
+            r, html, _ = self.build(dict(scene, focus={"y": fy, "at": "word:8"}), files=[("shots/page.png", (1280, 2400))])
+            m = re.search(r"tl\.to\('#sc-shot', \{ y: (-?[\d.]+), scale: 1\.25, transformOrigin: '50% ([\d.]+)px'", html)
+            y, o, tall = float(m.group(1)), float(m.group(2)), 2400 * k
+            self.assertLessEqual(y - 0.25 * o, 0.01, fy)                          # the top of the page at or above the view's top
+            self.assertGreaterEqual(o + 1.25 * (tall - o) + y, 400 - 0.01, fy)   # its bottom at or below the view's bottom
         r, _, _ = self.build(dict(scene, focus={"y": 2600, "at": "word:8"}), files=[("shots/page.png", (1280, 2400))])
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("focus", r.stdout)

@@ -6,8 +6,8 @@
 The kit's gap-scan measures stretches with no overlay on screen; an explainer's scenes cover the whole voice by
 construction, so it can never find one. This reads `moments.json`, which explainer-compose.py writes next to the page:
 every scene's entrance and exit, every item, count, draw and highlight, each from its start to its end (a custom scene
-counts as changing from its in to its out). Captions and the living layer (the drifting orbs, each scene's slow
-push-in, a scene's idle float or pulse) are not counted: they keep the picture alive, they are not a new picture. A
+counts as changing from its in to its out). Captions and ambient motion (the background's glows moving with a cut, a
+scene's idle float or pulse, the hub's slow turn) are not counted: they keep the picture alive, they are not a new picture. A
 stretch with no change longer than --max seconds fails, naming the scene on screen; one longer than --warn is listed
 (PLAYBOOK §E1.4: a change every 1.5 to 3 s).
 """

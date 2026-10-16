@@ -74,7 +74,20 @@ class Custom(unittest.TestCase):
                           ("yoyo: true, ease: 'power2.out'", "yoyo")):
             self.fails(word, html=GOOD.replace("ease: 'power2.out'", bad))
         self.fails("Math.random", html=GOOD.replace("const bars", "const r = Math.random(); const bars"))
-        self.assertEqual(self.build(html=GOOD.replace("ease: 'power2.out'", "ease: 'expo.out'"))[0].returncode, 0)
+        self.fails("repeat", html=GOOD.replace("const bars", "tl.repeat(-1); const bars"))
+        self.fails("repeat", html=GOOD.replace("ease: 'power2.out'", '"repeat": -1, ease: \'power2.out\''))
+        self.fails("back", html=GOOD.replace("ease: 'power2.out'", "ease: Back.easeOut"))
+        self.fails("endless", html=GOOD.replace("#yield .bar.two, #yield svg { opacity: .5; }",
+                                                "#yield .bar.two, #yield svg { opacity: .5; animation: pulse 1s infinite; }"))
+        self.fails("Date.now", html=GOOD.replace("const bars", "const n = Date.now(); const bars"))
+        # the words alone are not motion: CSS repeat properties, a comment, a class named back, a string
+        ok = (GOOD.replace("#yield .bar.two, #yield svg { opacity: .5; }",
+                           "#yield .bar.two, #yield svg { opacity: .5; background-repeat: no-repeat; }")
+              .replace("const bars", "// repeat: never; no yoyo: here, no Math.random()\n    const label = 'bounce back'; const bars")
+              .replace('<div class="bar two"></div>', '<div class="bar two back"></div>')
+              .replace("ease: 'power2.out'", "ease: 'expo.out'"))
+        r, _ = self.build(html=ok)
+        self.assertEqual(r.returncode, 0, r.stdout)
 
     def test_a_module_build_function_must_be_on_window(self):
         # a module's top-level function is private to the module: window.buildYield stays undefined and the scene empty

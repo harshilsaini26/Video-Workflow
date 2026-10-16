@@ -70,7 +70,7 @@ class Build(unittest.TestCase):
             self.assertIn("outside the scene", r.stdout, t)
 
     def test_a_label_too_wide_fails(self):
-        long = "Supercalifragilisticexpialidocious-ness"
+        long = "Supercalifragilisticexpialidocious-ness-extraordinaire"   # wider than even the 950 px column
         for t, sc in GOOD.items():
             bad = copy.deepcopy(sc)
             it = items_of(bad)[0]
