@@ -2,7 +2,7 @@
 turns slowly while it holds, its labels staying upright (PLAYBOOK §E4). For "the parts of X", "what X connects"."""
 import math
 import explainer_lib as E
-from scenes import js_obj, need
+from scenes import GHOST, js_obj, need
 
 TYPE = "hub"
 H = 680                          # the scene's height
@@ -73,7 +73,8 @@ def render(scene, ctx, box):
         js.append("tl.fromTo('#%s-k%d', { strokeDashoffset: %d }, %s, %.3f);"
                   % (sid, k, length, js_obj({"strokeDashoffset": 0, "duration": 0.35, "ease": "power2.out", "immediateRender": False}),
                      max(ctx.t_in, t - 0.2)))
-        js.append(ctx.enter("#%s-n%d" % (sid, k), t, {"scale": 0.4}))
+        js.append(ctx.ghost("#%s-n%d" % (sid, k), {"scale": 0.85}))     # the empty spot shows dimmed until its word
+        js.append(ctx.enter("#%s-n%d" % (sid, k), t, {"opacity": GHOST, "scale": 0.85}))
     centre = '<div class="hb-centre" id="%s-c" style="left:%.0fpx;top:%.0fpx;background:%s;color:%s;box-shadow:0 0 60px %s">%s</div>' % (
         sid, cx, cy, acc, "#FFFFFF" if ctx.light else c["ink"], acc, ctx.esc(scene["center"]))
     js.append(ctx.enter("#%s-c" % sid, ctx.t_in, {"scale": 0.5}))

@@ -100,7 +100,7 @@ class Build(unittest.TestCase):
 
     def test_the_structure_shows_dimmed_until_each_piece_is_said(self):
         # the stage is never bare while a build waits for its first word: every piece is a dim ghost from the scene's in
-        ghosts = {"flow": r"#sc-n\d", "stack": r"#sc-s\d", "cards": r"#sc-c\d"}
+        ghosts = {"flow": r"#sc-n\d", "stack": r"#sc-s\d", "cards": r"#sc-c\d", "compare": r"#sc-[lr]\d", "hub": r"#sc-n\d"}
         t_in = 0.5 + 4 * 0.4 - E.LEAD
         for t, sel in ghosts.items():
             r, html = self.build(GOOD[t])
