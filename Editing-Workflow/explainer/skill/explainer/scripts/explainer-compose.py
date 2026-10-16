@@ -22,6 +22,7 @@ import argparse, html, json, os, random, re, shutil, sys, wave
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import explainer_lib as E
+import sound
 import transitions as X
 from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 
@@ -160,6 +161,15 @@ def main():
     D = round(voice_len + E.TAIL, 3)
     shutil.copy(vpath, os.path.join(out, "voice.wav"))
 
+    # ---- the sound bed (sound.py): the pad or the creator's music, ducked under the voice, plus sound effects -----
+    snd = S.get("sound") or {}
+    music = snd.get("music", "pad")
+    if music not in (None, "none", "pad"):
+        if not os.path.isfile(rel(music)):
+            fail("sound: no music file at %s (paths are relative to storyboard.json)" % music)
+        music = rel(music)
+    want_sfx = bool(snd.get("sfx", True))
+
     # ---- fonts and GSAP -------------------------------------------------------------------------------------------
     # DM Sans 500/700 and JetBrains Mono 500 ship with the skill (OFL, assets/fonts/): the scene heights are measured
     # with exactly these files (the Reels skill's dev/measure-glyphs.mjs), so a different copy would move every line break
@@ -248,7 +258,7 @@ def main():
     # fonts load up front: a scene's text is hidden until its time, and a hidden face would load a frame late
     head = ['<link rel="preload" href="fonts/%s" as="font" type="font/woff2" crossorigin />' % f
             for f in sorted(os.listdir(os.path.join(out, "fonts")))] if os.path.isdir(os.path.join(out, "fonts")) else []
-    css, hosts, js, tx_html = {}, [], [], []
+    css, hosts, js, tx_html, item_times = {}, [], [], [], []
     moments = {"duration": D, "scenes": [], "spans": []}   # every change on screen, for pace-check.py (gate E4)
     kinds, prev = [], None    # how each scene comes in (transitions.py): the storyboard's choice or the composer's
     for k, (sc, _, sbg, _, _, _) in enumerate(timed):
@@ -268,6 +278,7 @@ def main():
         if mod.TYPE == "custom":   # it animates itself between in and out
             moments["spans"].append([round(t_in, 3), round(t_out, 3)])
         css[mod.TYPE] = mod.CSS
+        item_times += [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner)]
         lines = X.enter(kinds[k], sid, t_in) + lines
         if kinds[k] == "burst":
             c = tok["colors"]
@@ -374,6 +385,16 @@ def main():
 
     cap_html = ('    <div class="clip cap-layer" id="captions" data-start="0" data-duration="%.3f" data-track-index="2">\n%s    </div>\n'
                 % (D, "".join(caps)))
+    bed = ""
+    if music in (None, "none") and not want_sfx:
+        pass
+    elif music not in (None, "none") and not shutil.which("ffmpeg"):
+        print("WARN no ffmpeg on PATH: the reel has no music bed (install FFmpeg, or set \"sound\": {\"music\": \"none\"})")
+    else:
+        evs = sound.events([(kinds[k], timed[k][3]) for k in range(1, len(timed))], item_times) if want_sfx else []
+        sound.mix_bed(os.path.join(out, "voice.wav"), None if music in (None, "none") else (sound.pad_file() if music == "pad" else music),
+                      evs, D, os.path.join(out, "bed.wav"), float(snd.get("music_db", -22)))
+        bed = ('    <audio id="bed" src="bed.wav" data-start="0" data-duration="%.3f" data-track-index="40" data-volume="1"></audio>\n' % D)
     if tx_html:   # transition sprays sit above the scenes, under the captions
         cap_html = '    <div class="tx-layer" id="tx">%s</div>\n' % "".join(tx_html) + cap_html
     page = """<!doctype html>
@@ -385,7 +406,7 @@ def main():
 <body>
   <div id="stage" data-composition-id="%s" data-start="0" data-duration="%.3f" data-fps="60" data-width="1080" data-height="1920">
 %s    <audio id="voice" src="voice.wav" data-start="0" data-duration="%.3f" data-track-index="1" data-volume="1"></audio>
-%s%s
+%s%s%s
     <script src="%s"></script>
     <script>
       (function () {
@@ -408,7 +429,7 @@ def main():
   </div>
 </body>
 </html>
-""" % (CSS, "".join(h + "\n" for h in head), html.escape(str(S["id"]), quote=True), D, bg_html, voice_len, "".join(hosts), cap_html, gsap_src, HELPERS,
+""" % (CSS, "".join(h + "\n" for h in head), html.escape(str(S["id"]), quote=True), D, bg_html, voice_len, bed, "".join(hosts), cap_html, gsap_src, HELPERS,
        "\n        ".join(bg_js), "\n        ".join(js), "\n        ".join(cap_js), D, js_str(S["id"]))
     with open(os.path.join(out, "index.html"), "w") as f:
         f.write(page)
