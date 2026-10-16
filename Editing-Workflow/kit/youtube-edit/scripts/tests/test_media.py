@@ -32,12 +32,12 @@ class ApplyCut(unittest.TestCase):
 
 @needs_ffmpeg
 class VerifyRender(unittest.TestCase):
-    def render(self, d, name, vf=None, tags=True):
+    def render(self, d, name, vf=None, tags=True, src="testsrc2", rate="1M"):
         path = os.path.join(d, name)
-        ffmpeg("-f", "lavfi", "-i", "testsrc2=size=320x180:rate=30:duration=6", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=6",
+        ffmpeg("-f", "lavfi", "-i", "%s%ssize=320x180:rate=30:duration=6" % (src, ":" if "=" in src else "="), "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=6",
                # ffmpeg 9: frame colour properties override the output flags on an encode, so tag the frames too
                *(["-vf", ",".join(f for f in (("setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709" if tags else None), vf) if f)]
-                 if (vf or tags) else []), "-c:v", "libx264", "-preset", "ultrafast", "-b:v", "1M", "-pix_fmt", "yuv420p",
+                 if (vf or tags) else []), "-c:v", "libx264", "-preset", "ultrafast", "-b:v", rate, "-pix_fmt", "yuv420p",
                *(TAGS if tags else []), "-c:a", "aac", "-shortest", path)
         return path
 
@@ -53,6 +53,20 @@ class VerifyRender(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertTrue(os.path.exists(os.path.join(os.path.dirname(out), "render-sheet.png")))
         self.assertIn("**PASS**", read(out))
+
+    def test_a_simple_picture_under_the_floor_passes_when_the_encoder_was_given_enough(self):
+        # flat motion graphics need few bits: x264 asked for 1 Mb/s spends far less on a still colour, and that is not
+        # a starved encode (the floor here is 0.28 Mb/s)
+        d = scratch(self)
+        r, out = self.verify(d, self.render(d, "flat.mp4", src="color=c=0x2941D1"))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertRegex(read(out), r"Video bitrate \| PASS \| [\d.]+ Mb/s \(asked for 1\.0 Mb/s; a simple picture\)")
+
+    def test_an_encoder_asked_for_too_little_fails(self):
+        d = scratch(self)
+        r, out = self.verify(d, self.render(d, "starved.mp4", src="color=c=0x2941D1", rate="100k"))
+        self.assertNotEqual(r.returncode, 0)
+        self.assertRegex(read(out), r"Video bitrate \| FAIL")
 
     def test_two_frame_black_flash_fails(self):
         d = scratch(self)
