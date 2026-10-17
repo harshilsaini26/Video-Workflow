@@ -60,6 +60,36 @@ class Gate(unittest.TestCase):
             self.assertIn(word, r.stdout, word)
 
     @unittest.skipUnless(have_browser(), "needs node, puppeteer and Chrome (npx hyperframes browser ensure)")
+    def test_text_and_cards_end_by_1235_and_bare_shapes_by_1650(self):
+        # SOP S7: one bottom limit for anything with words on it; a shape with no text may use the lower frame
+        r = self.check('<div class="card" style="left:0;top:600px;width:360px">Answer</div>')       # y 1200 to 1280
+        self.assertIn("outside the safe area", r.stdout)
+        r = self.check('<div style="position:absolute;left:0;top:960px;width:300px;height:40px;background:#7287fd"></div>')
+        self.assertEqual(r.returncode, 0, r.stdout)                                                  # y 1560 to 1600
+        r = self.check('<div style="position:absolute;left:0;top:1060px;width:300px;height:40px;background:#7287fd"></div>')
+        self.assertIn("outside the safe area", r.stdout)                                             # y 1660 to 1700
+
+    @unittest.skipUnless(have_browser(), "needs node, puppeteer and Chrome (npx hyperframes browser ensure)")
+    def test_two_scenes_on_screen_at_a_cut_fail(self):
+        # SOP S9: the old scene is gone by the cut; if both show above 30% at once, the handover fails
+        card = '<div class="box" id="%s" style="left:150px;top:600px;width:780px;height:300px"><div class="card" style="left:0;top:0;width:360px">%s</div></div>'
+        host = ('<div class="card-host" id="host-%s" data-start="%s" data-duration="%s">%s</div>')
+        for a_dur, ok in (("2.2", False), ("2.0", True)):
+            d = scratch(self)
+            pub = os.path.join(d, "public")
+            body = host % ("sa", "0", a_dur, card % ("sa", "Search")) + host % ("sb", "2.0", "2.0", card % ("sb", "Answer"))
+            write(os.path.join(pub, "index.html"), (PAGE % "").replace(
+                '<div class="card-host" id="host-sc" data-start="0" data-duration="4"><div class="box" id="sc" style="left:150px;top:600px;width:780px;height:700px">\n</div></div>', body))
+            write(os.path.join(pub, "moments.json"), {"duration": 4, "scenes": [{"id": "sa", "type": "x", "in": 0, "out": 2.0},
+                                                                                  {"id": "sb", "type": "x", "in": 2.0, "out": 4.0}], "spans": []})
+            r = run("layout-check.py", "--index", os.path.join(pub, "index.html"), "--no-hf")
+            if ok:
+                self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            else:
+                self.assertIn("E5 FAIL: sb:", r.stdout)
+                self.assertIn("both on screen", r.stdout)
+
+    @unittest.skipUnless(have_browser(), "needs node, puppeteer and Chrome (npx hyperframes browser ensure)")
     def test_every_scene_case_is_clean(self):
         # every library scene, three lengths of text each (dev/make-cases.py), composed and looked at in Chromium
         from .test_theme import make_cases
@@ -81,8 +111,8 @@ class Gate(unittest.TestCase):
                 for key in ("screenshot", "src"):
                     if data.get(key):
                         png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
-                sc = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:0", "out": 16.0}, **data)
-                sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [sc], "sound": {"music": "none", "sfx": False}})
+                sc = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:1", "out": 16.0}, **data)
+                sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [mc.LEAD_IN, sc], "sound": {"music": "none", "sfx": False}})
                 r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", vendor)
                 self.assertEqual(r.returncode, 0, "%s-%s: %s" % (typ, name, r.stdout))
                 with open(os.path.join(d, "public", "moments.json")) as f:

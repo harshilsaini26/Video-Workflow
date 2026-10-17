@@ -14,7 +14,7 @@ import glob, json, os, re, shutil, subprocess, tempfile
 import explainer_lib as E
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MIN_PX = 28          # the smallest text a phone viewer reads on the 1080 px frame (labels are 34 px or more by design)
+MIN_PX = E.MIN_TEXT  # the smallest text a phone viewer reads on the 1080 px frame
 KEEP = ("content_overlap", "text_box_overflow", "clipped_text", "contrast_aa_failure")
 HANDOVER = 0.6       # after a scene starts, the old one may still be leaving through it (the cut and its blur)
 
@@ -22,7 +22,8 @@ HANDOVER = 0.6       # after a scene starts, the old one may still be leaving th
 def area():
     L = E.L
     return {"left": E.SCENE["left"], "top": E.SCENE["top"], "right": E.SCENE["right"], "bottom": E.SCENE["bottom"],
-            "col_top": L.RIGHT_COL_TOP, "narrow_left": L.NARROW["left"], "narrow_right": L.NARROW["right"]}
+            "picture_bottom": E.PICTURE_BOTTOM, "col_top": L.RIGHT_COL_TOP, "narrow_left": L.NARROW["left"],
+            "narrow_right": L.NARROW["right"]}
 
 
 def npx_dirs():
@@ -67,16 +68,29 @@ def find_chrome():
 
 
 def samples(moments):
-    """One moment per scene: just before it starts to leave, when everything in it has arrived."""
+    """One moment per scene: just before its exit starts, when everything in it has arrived."""
     out = []
     for s in moments["scenes"]:
-        t = s["out"] - 0.1 if s["out"] - s["in"] > 0.7 else (s["in"] + s["out"]) / 2.0
+        t = s["out"] - E.EXIT - 0.05 if s["out"] - s["in"] > 0.8 else (s["in"] + s["out"]) / 2.0
         out.append({"id": s["id"], "t": round(t, 3)})
     return out
 
 
-def probe(index, smp):
-    return probe_pages([{"index": index, "samples": smp}])
+def handovers(moments, half=0.25, step=1 / 30.0):
+    """Every cut, looked at every 2 frames from `half` before it to `half` after it (SOP S9)."""
+    out = []
+    sc = moments["scenes"]
+    for a, b in zip(sc, sc[1:]):
+        n = int(round(2 * half / step))
+        for k in range(n + 1):
+            t = b["in"] - half + k * step
+            if 0 <= t <= moments["duration"]:
+                out.append({"a": a["id"], "b": b["id"], "t": round(t, 4)})
+    return out
+
+
+def probe(index, smp, cuts=()):
+    return probe_pages([{"index": index, "samples": smp, "handovers": list(cuts)}])
 
 
 def probe_pages(pages):

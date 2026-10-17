@@ -5,7 +5,9 @@
 //         "covered"  something painted sits on top of the text
 //         "crosses"  the text is drawn over a line or a shape that is not its own card
 //         "spill"    the text runs out of the card or chip it sits on
-//         "outside"  text or a shape leaves the safe area (x 65 to 1015, y 520 to 1420; x 150 to 930 below y 960)
+//         "outside"  text or a card leaves the safe area (x 65 to 1015, y 520 to 1235; x 150 to 930 below y 960); a
+//                    painted shape with no text in it may run on to area.picture_bottom (1650)
+//         "handover" at a cut, the outgoing and the incoming scene both show content at 30% or more (job handovers)
 //         "small"    text drawn smaller than min_px on the 1080 px frame
 import fs from "node:fs";
 import { createRequire } from "node:module";
@@ -67,7 +69,7 @@ for (const s of pg.samples) {
     };
     const name = (el) => (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.className && el.className.baseVal === undefined ? "." + String(el.className).split(" ")[0] : ""));
     const where = (r) => " (x " + Math.round(r.left) + " to " + Math.round(r.right) + ", y " + Math.round(r.top) + " to " + Math.round(r.bottom) + ")";
-    const outside = (r) => r.left < area.left - 2 || r.right > area.right + 2 || r.top < area.top - 2 || r.bottom > area.bottom + 2 ||
+    const outside = (r, bottom) => r.left < area.left - 2 || r.right > area.right + 2 || r.top < area.top - 2 || r.bottom > (bottom || area.bottom) + 2 ||
       (r.bottom > area.col_top + 2 && (r.left < area.narrow_left - 2 || r.right > area.narrow_right + 2));
     // what is really visible of a box: clipped by every ancestor that hides its overflow (a screenshot in its window)
     const clip = (el, r) => {
@@ -161,11 +163,60 @@ for (const s of pg.samples) {
     for (const el of root.querySelectorAll("*")) {          // shapes too must stay inside the safe area
       if (!painted(el) || alpha(el) < 0.5) continue;
       const r = clip(el, el.getBoundingClientRect());
-      if (r.width > 1 && r.height > 1 && outside(r)) out.push({ kind: "outside", text: "", detail: name(el) + " is outside the safe area" + where(r) });
+      const bare = !el.textContent.trim() && !el.querySelector(".katex");      // no words on it: it may use the lower frame
+      if (r.width > 1 && r.height > 1 && outside(r, bare ? area.picture_bottom : area.bottom))
+        out.push({ kind: "outside", text: "", detail: name(el) + " is outside the safe area" + where(r) });
     }
     return out;
   }, s, job.area, job.min_px);
   for (const f of found) issues.push(Object.assign({ page: pg.index, scene: s.id, t: s.t }, f));
+}
+// the cuts: each host shown only inside its own clip (data-start, data-duration), as HyperFrames does
+for (const h of pg.handovers || []) {
+  const f = await page.evaluate((h) => {
+    const tl = Object.values(window.__timelines || {})[0];
+    for (const c of document.querySelectorAll(".card-host")) {
+      const s = parseFloat(c.dataset.start), d = parseFloat(c.dataset.duration);
+      c.style.visibility = h.t >= s - 1e-6 && h.t < s + d - 1e-6 ? "visible" : "hidden";
+    }
+    for (const c of document.querySelectorAll(".cap-layer, .tx-layer")) c.style.visibility = "hidden";
+    if (tl) tl.seek(h.t, false);
+    const alpha = (el) => {
+      let o = 1;
+      for (let e = el; e && e.nodeType === 1; e = e.parentElement) {
+        const cs = getComputedStyle(e);
+        if (cs.visibility === "hidden" || cs.display === "none") return 0;
+        o *= parseFloat(cs.opacity);
+      }
+      return o;
+    };
+    // what a scene shows: its strongest piece of text or paint, and where its shown pieces are
+    const shown = (id) => {
+      const root = document.getElementById(id);
+      if (!root) return { a: 0, box: null };
+      let a = 0, box = null;
+      for (const el of root.querySelectorAll("*")) {
+        const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+        const cs = getComputedStyle(el);
+        const paint = own || cs.backgroundColor !== "rgba(0, 0, 0, 0)" || cs.backgroundImage !== "none" || el.tagName.toLowerCase() === "img";
+        if (!paint) continue;
+        const v = alpha(el);
+        if (v < 0.3) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2) continue;
+        a = Math.max(a, v);
+        box = box ? { l: Math.min(box.l, r.left), t: Math.min(box.t, r.top), r: Math.max(box.r, r.right), b: Math.max(box.b, r.bottom) }
+                  : { l: r.left, t: r.top, r: r.right, b: r.bottom };
+      }
+      return { a, box };
+    };
+    const A = shown(h.a), B = shown(h.b);
+    if (A.a < 0.3 || B.a < 0.3 || !A.box || !B.box) return null;
+    const cross = Math.min(A.box.r, B.box.r) > Math.max(A.box.l, B.box.l) && Math.min(A.box.b, B.box.b) > Math.max(A.box.t, B.box.t);
+    return cross ? { kind: "handover", text: "", detail: h.a + " and " + h.b + " are both on screen (" + Math.round(A.a * 100) + "% and " +
+                     Math.round(B.a * 100) + "%): the old scene must be gone by the cut" } : null;
+  }, h);
+  if (f) issues.push(Object.assign({ page: pg.index, scene: h.b, t: h.t }, f));
 }
 }
 await browser.close();

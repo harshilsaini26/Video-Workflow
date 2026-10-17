@@ -134,15 +134,16 @@ class Compose(unittest.TestCase):
             b["scenes"][2]["out"] = "word:28"
         self.fails(early_end, "no scene from")
 
-    def test_overlap_over_0_3_fails(self):
+    def test_scenes_hand_over_on_one_cut(self):
+        # SOP S9: a scene ends where the next begins; any overlap would put two scenes on screen
         n1_in = t_word(8) - E.LEAD
 
         def wide(b):
-            b["scenes"][0]["out"] = round(n1_in + 0.5 - TOK["motion"]["exit"], 3)
+            b["scenes"][0]["out"] = round(n1_in + 0.1, 3)
         self.fails(wide, "overlap")
 
         def snug(b):
-            b["scenes"][0]["out"] = round(n1_in + 0.25 - TOK["motion"]["exit"], 3)
+            b["scenes"][0]["out"] = round(n1_in, 3)
         self.ok(snug)
 
     def test_last_out_can_be_end(self):

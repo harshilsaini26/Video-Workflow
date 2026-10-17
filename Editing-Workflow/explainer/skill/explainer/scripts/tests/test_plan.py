@@ -67,10 +67,12 @@ class Plan(unittest.TestCase):
         d, sb, words = self.plan(script)
         hk = sb["scenes"][0]
         self.assertEqual(hk["type"], "kinetic")
-        said = lambda part: words[int(part["at"].split(":")[1])]["text"]
-        self.assertEqual(said(hk["big"]), "3-step")           # "3" lands on "3-step", then each piece on its own word
-        self.assertEqual([said(w) for w in hk["words"]], ["3-step", "trick"])
-        self.assertEqual((said(hk["line"]), said(hk["strike"]), said(hk["punch"])), ("AI", "invent", "less"))
+        # SOP S8: the hook is whole on screen by 1.0 s: its pieces land in order on the words said by then
+        pos = [int(p["at"].split(":")[1]) for p in [hk["big"]] + hk["words"] + [hk["line"], hk["strike"], hk["punch"]]]
+        self.assertEqual(pos, sorted(pos))
+        self.assertEqual(pos[0], 0)
+        self.assertTrue(all(words[i]["start"] <= 1.0 for i in pos), pos)
+        self.assertGreater(len(set(pos)), 1)
         self.assertEqual(hk["strike"]["word"], "INVENTS")
         r = run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)

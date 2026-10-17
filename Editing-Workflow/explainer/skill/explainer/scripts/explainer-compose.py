@@ -6,7 +6,8 @@
 The page has three layers (SPEC §6.1): a background that cross-fades when a scene's `bg` changes, one scene at a time
 scaled up to fill the scene area (x 65 to 1015, y 520 to 1420; 780 px wide when it reaches below y 960), and word captions in
 the band at y 330 to 470. Scene times are word anchors ("word:N" in transcript.json); an entrance lands 0.2 s before
-its word. Each scene exits on its `out` while the next one enters (a 0.2 s exit; the host stays 0.28 s).
+its word. Each scene's exit runs over the 0.2 s before its `out` and the next one enters on it: one scene on screen at a
+time (SOP S9).
 
 The markup is the kit's: card-host clips with data-anchor, items with data-at, the caption layer marked cap-layer, the
 voice as an <audio> clip, one paused GSAP timeline in window.__timelines, so beat-check.py, gap-scan.py, snap-beats.py
@@ -15,7 +16,7 @@ and verify-render.py read it unchanged.
 Fails (exit 1, "E3 FAIL: <scene id>: ...") on: an unknown type or bad id, a scene that does not fit the scene area or
 has a word wider than its column, an anchor that does not resolve or runs backwards, an item outside its scene, a
 number with no source, more than 0.3 s with no scene (at the start, between scenes or at the end), or two scenes
-overlapping by more than 0.3 s.
+overlapping by more than 0.3 s, a voice over the 90 s ceiling, or a hook item that lands after 0.8 s (SOP S8).
 """
 import argparse, html, json, math, os, random, re, shutil, sys, wave
 
@@ -29,7 +30,7 @@ from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 L = E.L
 WIDE = (L.SAFE["left"], L.SAFE["right"] - L.SAFE["left"])          # 65, 950
 NARROW = (L.NARROW["left"], L.NARROW["right"] - L.NARROW["left"])  # 150, 780
-CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 970: a narrow-column scene centres here
+CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 877: a narrow-column scene centres here
 WIDE_CENTRE = (E.SCENE["top"] + L.RIGHT_COL_TOP) // 2               # 740: a full-width scene stays above y 960
 GAP_MAX = 0.3
 GSAP_CDN = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
@@ -80,8 +81,9 @@ def line_span(line):
     return None
 
 
-IDLE_ROOM = 12                       # a holding scene floats up to this far: keep it clear of the area's edges
+IDLE_ROOM = E.IDLE_ROOM
 SCALE_MAX, SCALE_STEP = 1.8, 0.05   # how far a template scene is blown up to fill the scene area (MOTION.md: fill the frame)
+SCALE_MIN = 0.8                      # and how far one that is too tall may shrink (the probe's 28 px floor still holds)
 
 
 def place(sid, mod, scene):
@@ -98,14 +100,19 @@ def place(sid, mod, scene):
         return left, top, width, h, width, h, 1.0
     area_h = sa["bottom"] - sa["top"] - 2 * IDLE_ROOM
     need = mod.min_width(scene)
+    fonts = [int(x) for x in re.findall(r"font-size:\s*(\d+)px", getattr(mod, "CSS", "") or "")]
+    floor = E.MIN_TEXT / float(min(fonts)) if fonts else SCALE_MIN      # never scale its smallest text under 28 px
     cap = min(SCALE_MAX, mod.max_scale(scene) if hasattr(mod, "max_scale") else getattr(mod, "MAX_SCALE", SCALE_MAX))
     cap = math.floor(cap * 100 + 1e-6) / 100.0          # the page draws scale(%.2f): size the box with exactly that
     steps = int(math.floor((cap - 1.0) / SCALE_STEP + 1e-9))
-    for s in [cap] + [round(1.0 + SCALE_STEP * k, 2) for k in range(steps, -1, -1) if 1.0 + SCALE_STEP * k < cap - 1e-9]:
+    shrink = [round(1.0 - SCALE_STEP * k, 2) for k in range(1, int(round((1.0 - SCALE_MIN) / SCALE_STEP)) + 1)]
+    for s in [cap] + [round(1.0 + SCALE_STEP * k, 2) for k in range(steps, -1, -1) if 1.0 + SCALE_STEP * k < cap - 1e-9] + shrink:
+        if s < floor - 1e-9:
+            continue
         for col_left, col_w in (WIDE, NARROW):
             iw = int(col_w / s)
-            if need > iw:
-                continue
+            if need > iw or (need > col_w and not getattr(mod, "SHRINK_WIDTH", False)):
+                continue                     # shrinking is for height: a word wider than the column never fits
             ih = mod.height(scene, iw)
             w, h = int(math.floor(iw * s)), int(math.ceil(ih * s))
             if col_w == WIDE[1]:    # the full width only above the action column: centred in y 520 to 960
@@ -124,8 +131,8 @@ def place(sid, mod, scene):
     if need > width:
         fail("%s: a word or a number in it (at its widest as it counts) is about %d px wide, wider than the %d px column; "
              "shorten it or use a smaller size" % (sid, need, width))
-    fail("%s: the scene is %d px tall, taller than the scene area (%d px); use less text or split it"
-         % (sid, mod.height(scene, width), area_h))
+    fail("%s: the scene is %d px tall, taller than the scene area (%d px) at a size its smallest text can take; drop a "
+         "row or an item (captions carry the words), never split it for height (SOP S9)" % (sid, mod.height(scene, width), area_h))
 
 
 def glows(i, bg, tok, cuts, bg_js):
@@ -184,6 +191,9 @@ def main():
     with wave.open(vpath) as w:
         voice_len = round(w.getnframes() / float(w.getframerate()), 3)
     D = round(voice_len + E.TAIL, 3)
+    if voice_len > E.MAX_VOICE + 1e-6:
+        fail("the voice is %.1f s, over the 90 s ceiling: trim the script (script-check.py --voice lists the lines to cut)"
+             % voice_len)
     shutil.copy(vpath, os.path.join(out, "voice.wav"))
 
     # ---- the sound bed (sound.py): the pad or the creator's music, ducked under the voice, plus sound effects -----
@@ -266,15 +276,16 @@ def main():
             fail("%s: %s" % (sid, e))
         if t_out <= t_in:
             fail("%s: out (%s, %.2f s) is not after in (%s, %.2f s)" % (sid, sc["out"], t_out, sc["in"], t_in))
-        timed.append((sc, mod, bg, t_in, t_out, min(D, t_out + mo["exit"])))
+        timed.append((sc, mod, bg, t_in, t_out, t_out))          # the exit is over by the cut
 
     for (a1, _, _, s1, _, e1), (a2, _, _, s2, _, e2) in zip(timed, timed[1:]):
         if s2 < s1:
             fail("%s: it starts before %s, the scene listed ahead of it; list scenes in time order" % (a2["id"], a1["id"]))
         if s2 - e1 > GAP_MAX:
             fail("no scene from %.2f to %.2f s (between %s and %s); every moment of the voice needs a scene" % (e1, s2, a1["id"], a2["id"]))
-        if e1 - s2 > GAP_MAX + 1e-6:
-            fail("%s and %s overlap by %.2f s (at most %.1f): end %s earlier" % (a1["id"], a2["id"], e1 - s2, GAP_MAX, a1["id"]))
+        if e1 - s2 > E.MAX_OVERLAP + 1e-6:
+            fail("%s and %s overlap by %.2f s: a scene ends where the next begins (its out is the next one's in); end %s "
+                 "earlier" % (a1["id"], a2["id"], e1 - s2, a1["id"]))
     # a title that says what the voice is saying adds nothing the captions don't (PLAYBOOK §E5.5); the hook is meant to
     for sc, _, _, t_in, t_out, _ in timed[1:]:      # be read, so the first scene may
         if sc["type"] != "title" or t_out - t_in <= 2.0:
@@ -313,7 +324,8 @@ def main():
         except BAD_DATA as e:
             fail("%s: bad data in the %s scene (%s: %s)" % (sid, sc["type"], type(e).__name__, e))
         moments["scenes"].append({"id": sid, "type": mod.TYPE, "in": round(t_in, 3), "out": round(t_out, 3),
-                                  "box": [left, top, width, h], "scale": scale})
+                                  "box": [left, top, width, h], "scale": scale,
+                                  "travels": bool(getattr(mod, "travels", lambda s: False)(sc))})
         if mod.TYPE == "custom":   # it animates itself between in and out
             moments["spans"].append([round(t_in, 3), round(t_out, 3)])
         css[mod.TYPE] = mod.CSS
@@ -321,7 +333,11 @@ def main():
         if mod.TYPE != "custom" and starts and min(starts) - t_in > 0.8:   # the scene's own first change, not its transition
             print("WARN %s: nothing shows for %.1f s after the scene starts; put something on its first word (PLAYBOOK §E4.9)"
                   % (sid, min(starts) - t_in))
-        item_times += [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner)]
+        mine = [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner)]
+        if k == 0 and mine and max(mine) > E.HOOK_BY + 1e-6:
+            fail("%s: the hook is not whole on screen by 1.0 s: an item lands at %.2f s (every hook item by %.1f s); anchor "
+                 "the hook's pieces to word 0 or 1 (SOP S8)" % (sid, max(mine), E.HOOK_BY))
+        item_times += mine
         lines = X.enter(kinds[k], sid, t_in) + lines
         if kinds[k] == "burst":
             spray, spray_js = X.burst(k, t_in, [f for f, _ in E.theme(tok, sbg)["series"]])

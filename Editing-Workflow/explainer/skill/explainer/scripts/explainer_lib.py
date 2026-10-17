@@ -23,10 +23,12 @@ def find_reels_lib():
 
 L = find_reels_lib()
 
-# The scene area runs down to y 1420, Instagram's clear line (motion-graphics-skills' reel-export: y 360 to 1420, out of the
-# right 120 px), below the Reels skill's all-platform SAFE bottom (1248): an explainer is made for Instagram first, and a
-# picture that stops at 1248 leaves a third of the frame empty. Below RIGHT_COL_TOP it keeps the narrow column.
-SCENE = {"left": 65, "top": 520, "right": 1015, "bottom": 1420}
+# Text and cards end by y 1235 (SOP S7, from the RAG reel: QA and the Reels guides judge the bottom 35% as covered by
+# the app's caption and buttons, so one limit holds everywhere: here, in the E5 probe and in QA). Painted shapes with
+# no text in them (particles, floors, illustration) may run on to PICTURE_BOTTOM: the lower frame is not left empty.
+# Below RIGHT_COL_TOP everything keeps the narrow column.
+SCENE = {"left": 65, "top": 520, "right": 1015, "bottom": 1235}
+PICTURE_BOTTOM = 1650
 
 
 def inside_scene(left, top, width, height):
@@ -36,9 +38,14 @@ def inside_scene(left, top, width, height):
     return top + height <= L.RIGHT_COL_TOP or (left >= L.NARROW["left"] and left + width <= L.NARROW["right"])
 CAPTION_BAND = (330, 470)
 LEAD = 0.2          # an entrance starts this long before its word (beat-check's 0.15 to 0.25 s window)
-MAX_OVERLAP = 0.3   # scenes hand over with at most this much overlap
+MAX_OVERLAP = 0.02  # scenes hand over on one cut: no overlap beyond rounding (SOP S9)
+MIN_TEXT = 28       # the smallest text a phone viewer reads on the 1080 px frame (gate E5 checks it drawn)
+IDLE_ROOM = 12      # a scene floats or drifts up to this far: its box keeps this clear of the area's edges
 BG_FADE = 0.4       # background cross-fade
 TAIL = 0.5          # the composition runs this long past the voice
+EXIT = 0.2          # a scene's exit runs over the last EXIT seconds before its cut, so two scenes never share the screen
+MAX_VOICE = 90.0    # the ceiling: a reel's voice is at most 90 s (SPEC; the RAG reel shipped at 92.3 s)
+HOOK_BY = 0.8       # every item of the hook lands by 0.8 s, so the hook is whole on screen by 1.0 s (SOP S8)
 
 _ANCHOR = re.compile(r"^word:(\d+)$")
 

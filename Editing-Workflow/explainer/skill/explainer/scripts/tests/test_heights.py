@@ -3,15 +3,19 @@
 The fixture comes from dev/make-cases.py and dev/measure-scenes.mjs (see dev/README.md); rerun them after changing a
 scene's CSS constants or the fonts.
 """
-import json, os, unittest
+import glob, json, os, unittest
 from scenes import REGISTRY
 
-FIX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "heights.json")
+FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
 
 def rows():
-    with open(FIX) as f:
-        return json.load(f)
+    """heights.json and every heights-<group>.json beside it (one per group of scenes)."""
+    out = []
+    for path in sorted(glob.glob(os.path.join(FIXTURES, "heights*.json"))):
+        with open(path, encoding="utf-8") as f:
+            out += json.load(f)
+    return out
 
 
 class Heights(unittest.TestCase):

@@ -13,7 +13,7 @@ Each module has
 Every entrance is an opacity 0 -> 1 fromTo with the enter ease (ctx.enter); exits belong to the composer. Staggers
 are written as { amount: total } and never pass tokens.motion.stagger_total_max.
 """
-import html as _html, importlib, json, math, os, re, shutil, struct
+import html as _html, importlib, importlib.util, json, math, os, re, shutil, struct
 
 import explainer_lib as E
 
@@ -202,10 +202,25 @@ def need(scene, keys):
     return ["missing %r" % k for k in keys if scene.get(k) in (None, "", [])]
 
 
-_MODULES = ["title", "number", "count_up", "list_cards", "line_chart", "bars", "duration", "qa_stack",
-            "browser", "sheet", "formula", "icon_row", "custom",
-            "flow", "stack", "compare", "timeline", "cards", "hub", "logo_card", "kinetic"]
-REGISTRY = {}
-for _m in _MODULES:
-    _mod = importlib.import_module("scenes." + _m)
-    REGISTRY[_mod.TYPE] = _mod
+def discover(folder, package="scenes"):
+    """{TYPE: module} for every scenes module in `folder`: each <name>.py (not _private) that sets TYPE. A new scene is a
+    new file; nothing else to edit. Files without a TYPE (helpers, notes) are left alone."""
+    found = {}
+    for f in sorted(os.listdir(folder)):
+        if not f.endswith(".py") or f.startswith("_"):
+            continue
+        name = f[:-3]
+        if package == "scenes":
+            mod = importlib.import_module("scenes." + name)
+        else:
+            spec = importlib.util.spec_from_file_location("%s.%s" % (package, name), os.path.join(folder, f))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+        if isinstance(getattr(mod, "TYPE", None), str):
+            if mod.TYPE in found:
+                raise ImportError("two scene modules say TYPE %r: %s and %s" % (mod.TYPE, found[mod.TYPE].__name__, mod.__name__))
+            found[mod.TYPE] = mod
+    return found
+
+
+REGISTRY = discover(os.path.dirname(os.path.abspath(__file__)))

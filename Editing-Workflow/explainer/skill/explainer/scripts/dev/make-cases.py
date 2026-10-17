@@ -6,14 +6,21 @@
   make-cases.py DIR --merge measured.jsonl      # writes tests/fixtures/heights.json
 
 Three text lengths per scene type (custom excluded: it brings its own box). A developer tool, not part of a video run.
+More cases live beside this file in cases_<group>.py (each sets CASES = {type: [(name, data), ...]}); with
+--only TYPE,TYPE the run covers just those types, and --fixture NAME writes tests/fixtures/heights-NAME.json, so a new
+group of scenes is measured without touching anyone else's rows.
 """
-import argparse, json, os, struct, subprocess, sys, wave, zlib
+import argparse, glob, importlib.util, json, os, struct, subprocess, sys, wave, zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.dirname(HERE)
 FIXTURE = os.path.join(SCRIPTS, "tests", "fixtures", "heights.json")
 WORDS = ["word%d" % i for i in range(40)]
 D = 40 * 0.4 + 1.0
+
+
+# a short title first: the case is never the reel's hook (whose items must land by 0.8 s, SOP S8)
+LEAD_IN = {"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:1", "text": "Lead"}
 
 
 def at(i):
@@ -120,6 +127,23 @@ SHOTS = [("shot-short", {"title": "Coursera", "domain": "coursera.org", "screens
 CASES["browser"] = CASES["browser"] + SHOTS
 
 
+def load_groups(folder=HERE):
+    """{type: cases} from every cases_<group>.py in `folder`."""
+    out = {}
+    for path in sorted(glob.glob(os.path.join(folder, "cases_*.py"))):
+        spec = importlib.util.spec_from_file_location(os.path.basename(path)[:-3], path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        for typ, variants in mod.CASES.items():
+            if typ in out or typ in CASES:
+                raise ValueError("%s: cases for %s are already defined elsewhere" % (path, typ))
+            out[typ] = variants
+    return out
+
+
+CASES.update(load_groups())
+
+
 def png(path, w, h):
     raw = b"".join(b"\x00" + b"\x30\x60\xc0" * w for _ in range(h))
     chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
@@ -128,9 +152,11 @@ def png(path, w, h):
                 chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 
 
-def compose(root, vendor):
+def compose(root, vendor, only=None):
     cases = []
     for typ, variants in CASES.items():
+        if only and typ not in only:
+            continue
         for name, data in variants:
             case = "%s-%s" % (typ, name)
             d = os.path.join(root, case)
@@ -143,9 +169,9 @@ def compose(root, vendor):
             for key in ("screenshot", "src"):
                 if data.get(key):
                     png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
-            scene = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:0", "out": D}, **data)
+            scene = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:1", "out": D}, **data)
             with open(os.path.join(d, "storyboard.json"), "w") as f:
-                json.dump({"id": case, "scenes": [scene]}, f)
+                json.dump({"id": case, "scenes": [LEAD_IN, scene]}, f)
             r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "explainer-compose.py"), "--spec", os.path.join(d, "storyboard.json"),
                                 "--out", os.path.join(d, "public"), "--vendor", vendor], capture_output=True, text=True)
             if r.returncode:
@@ -156,17 +182,17 @@ def compose(root, vendor):
     print("composed %d cases in %s" % (len(cases), root))
 
 
-def merge(root, measured):
+def merge(root, measured, fixture=FIXTURE):
     cases = {c["case"]: c for c in json.load(open(os.path.join(root, "cases.json")))}
     rows = []
     for line in open(measured):
         m = json.loads(line)
         c = cases[m["case"]]
         rows.append({"case": m["case"], "type": c["type"], "scene": c["scene"], "width": m["width"], "height": m["height"]})
-    os.makedirs(os.path.dirname(FIXTURE), exist_ok=True)
-    with open(FIXTURE, "w") as f:
+    os.makedirs(os.path.dirname(fixture), exist_ok=True)
+    with open(fixture, "w", encoding="utf-8") as f:
         f.write("[\n" + ",\n".join(json.dumps(r) for r in rows) + "\n]\n")
-    print("wrote %d rows to %s" % (len(rows), FIXTURE))
+    print("wrote %d rows to %s" % (len(rows), fixture))
 
 
 if __name__ == "__main__":
@@ -174,5 +200,8 @@ if __name__ == "__main__":
     ap.add_argument("dir")
     ap.add_argument("--vendor", default=os.path.join(SCRIPTS, "..", "assets", "vendor"))
     ap.add_argument("--merge")
+    ap.add_argument("--only", help="comma-separated scene types")
+    ap.add_argument("--fixture", help="write tests/fixtures/heights-<NAME>.json instead of heights.json")
     a = ap.parse_args()
-    merge(a.dir, a.merge) if a.merge else compose(a.dir, a.vendor)
+    fx = os.path.join(SCRIPTS, "tests", "fixtures", "heights-%s.json" % a.fixture) if a.fixture else FIXTURE
+    merge(a.dir, a.merge, fx) if a.merge else compose(a.dir, a.vendor, set(a.only.split(",")) if a.only else None)

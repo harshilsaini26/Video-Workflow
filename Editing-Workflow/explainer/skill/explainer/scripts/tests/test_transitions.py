@@ -42,7 +42,8 @@ class InThePage(unittest.TestCase):
         # HyperFrames' zoom-through: the old scene rushes past the viewer, the new one lands from behind (velocity-matched)
         self.assertIn("tl.fromTo('#n1', { scale: 0.75, filter: 'blur(8px)' }, { scale: 1, filter: 'blur(0px)', duration: 0.5, "
                       "ease: 'expo.out', immediateRender: false }, %.3f);" % t_n1, html)
-        self.assertIn("tl.to('#hook', { opacity: 0, scale: 1.2, filter: 'blur(10px)', duration: 0.2, ease: 'power3.in' }, %.3f);" % t_n1, html)
+        # the exit is over on the cut (SOP S9): it starts 0.2 s before the next scene's in
+        self.assertIn("tl.to('#hook', { opacity: 0, scale: 1.2, filter: 'blur(10px)', duration: 0.2, ease: 'power3.in' }, %.3f);" % (t_n1 - 0.2), html)
         self.assertIn("tl.set('#bg1', { opacity: 1 }, %.3f);" % t_cu, html)
         self.assertIn("tl.fromTo('#bg1', { clipPath: 'circle(0%% at 50%% 60%%)' }, { clipPath: 'circle(150%% at 50%% 60%%)', "
                       "duration: 0.55, ease: 'power2.inOut', immediateRender: false }, %.3f);" % t_cu, html)
@@ -55,7 +56,7 @@ class InThePage(unittest.TestCase):
         t_n1 = t_word(8) - E.LEAD
         self.assertIn("tl.fromTo('#n1', { y: 300, filter: 'blur(10px)' }, { y: 0, filter: 'blur(0px)', duration: 0.5, "
                       "ease: 'expo.out', immediateRender: false }, %.3f);" % t_n1, html)
-        self.assertIn("tl.to('#hook', { opacity: 0, y: -260, filter: 'blur(12px)', duration: 0.2, ease: 'power3.in' }, %.3f);" % t_n1, html)
+        self.assertIn("tl.to('#hook', { opacity: 0, y: -260, filter: 'blur(12px)', duration: 0.2, ease: 'power3.in' }, %.3f);" % (t_n1 - 0.2), html)
 
     def test_named_burst(self):
         board = copy.deepcopy(BOARD)

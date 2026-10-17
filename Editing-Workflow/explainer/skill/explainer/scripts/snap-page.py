@@ -67,7 +67,11 @@ def main():
     finally:
         shutil.rmtree(profile, True)
     if not os.path.exists(out):
-        sys.exit("Chrome wrote no screenshot (%s)" % (r.stderr.strip().splitlines() or ["no message"])[-1])
+        last = (r.stderr.strip().splitlines() or ["no message"])[-1]
+        code = re.search(r"Page load failed: (net::)?(ERR_[A-Z_]+)", r.stderr)   # newer headless Chrome says so itself
+        if code:
+            sys.exit("the page did not load (%s): %s; nothing written" % (code.group(2), a.url))
+        sys.exit("Chrome wrote no screenshot (%s)" % last)
     with open(out, "rb") as f:
         head = f.read(24)
     w, h = struct.unpack(">II", head[16:24])

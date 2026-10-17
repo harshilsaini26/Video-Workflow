@@ -173,11 +173,12 @@ class Hub(unittest.TestCase):
                     self.assertGreaterEqual(apart, hub.GAP - 0.01, (labels, i, j))
 
     def test_three_long_labels_fit_the_narrow_column(self):
-        # a portrait frame: the ring may be taller than wide, so three long labels still fit 780 px unscaled
+        # a portrait frame: the ring may be taller than wide, so three long labels fit 780 px (shrunk to 0.8 at most,
+        # which keeps the 44 px labels over the 28 px floor)
         from scenes import hub
         sc = {"center": "RAG", "items": [{"label": l, "at": W(6)} for l in ("Retrieval", "Augmented", "Generation")]}
-        self.assertLessEqual(hub.min_width(sc), 780)
-        self.assertLessEqual(hub.height(sc, 780), E.SCENE["bottom"] - E.SCENE["top"])
+        self.assertLessEqual(hub.min_width(sc) * 0.8, 780)
+        self.assertLessEqual(hub.height(sc, 780) * 0.8, E.SCENE["bottom"] - E.SCENE["top"] - 2 * E.IDLE_ROOM)
 
     def test_labels_are_large_and_nothing_spins(self):
         from scenes import hub

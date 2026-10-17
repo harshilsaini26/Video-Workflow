@@ -7,7 +7,7 @@ NEEDS_SOURCE = True
 L_SIZE, L_LH, L_GAP = 30, 1.3, 18      # the mono label on top
 V_SIZE, V_GAP = 96, 12                 # the value readout (line height 1)
 CHART = 400                            # the plot, px tall
-X_SIZE, X_LH, X_GAP = 26, 1.3, 10      # the x labels under it
+X_SIZE, X_LH, X_GAP = 28, 1.3, 10      # the x labels under it (at the 28 px floor)
 DOT = 22
 DRAW = 0.6                             # seconds a segment takes to draw
 

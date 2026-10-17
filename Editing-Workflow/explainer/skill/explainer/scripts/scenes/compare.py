@@ -20,7 +20,7 @@ CSS = """
   .cp-row + .cp-row { margin-top:%dpx; }
   .cp-dot { width:%dpx; height:%dpx; border-radius:50%%; flex:none; }
   .cp-vs { position:absolute; left:50%%; top:%dpx; width:76px; height:76px; margin:-38px 0 0 -38px; border-radius:50%%; z-index:2;
-    display:flex; align-items:center; justify-content:center; font-family: var(--label); font-weight:500; font-size:26px; opacity:0; }
+    display:flex; align-items:center; justify-content:center; font-family: var(--label); font-weight:500; font-size:28px; opacity:0; }
   .cp-win { position:absolute; right:12px; top:%dpx; width:64px; height:64px; border-radius:50%%; display:flex; align-items:center;
     justify-content:center; font-weight:700; font-size:38px; opacity:0; z-index:3; }
 """ % (COL_GAP, HEAD, H_GAP, T_SIZE, ROW, M_GAP, PAD, R_SIZE, R_GAP, MARK, MARK, HEAD // 2, (HEAD - 64) // 2)

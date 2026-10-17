@@ -1,7 +1,7 @@
 """browser: a mock browser window drops in, its page contents stagger in (SPEC §6.2). Nothing on it links anywhere.
 
 With `screenshot` (a PNG next to storyboard.json, taken with snap-page.py) the window shows the real page instead, in a
-fixed 400 px view showing the top of the page, and the title sits under the window. With `focus` ({"y": a pixel row
+fixed 360 px view showing the top of the page, and the title sits under the window. With `focus` ({"y": a pixel row
 in the screenshot, "at": its word}) the page holds still, then punches in (1.25x) on that row when the word is said,
 never pulling the page's edge into the view.
 """
@@ -16,8 +16,8 @@ T_SIZE, T_LH = 60, 1.15                   # page title, DM Sans 700
 S_SIZE, S_LH, S_GAP = 36, 1.3, 16         # subtitle, DM Sans 500
 B_SIZE, B_H, B_GAP, B_PADX, B_SP = 28, 52, 24, 22, 12   # badges: mono pills, wrapping
 BTN_H, BTN_GAP, BTN_SIZE = 84, 32, 36     # the button
-U_SIZE = 26                               # the address text
-VIEW, CAP_GAP = 400, 30                   # a screenshot's view, and the gap to the title under the window
+U_SIZE = 28                               # the address text: at the 28 px floor, so the window may sit at 1.0
+VIEW, CAP_GAP = 360, 30                   # a screenshot's view (fits the 1235 area with a two-line title), and the gap to the title
 FOCUS_ZOOM = 1.25                         # the punch-in on a screenshot's focus line
 
 CSS = """

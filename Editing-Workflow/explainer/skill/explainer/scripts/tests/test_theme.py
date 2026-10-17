@@ -79,7 +79,7 @@ class Theme(unittest.TestCase):
                 for key in ("screenshot", "src"):
                     if data.get(key):
                         png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
-                html = self.compose(d, dict({"type": typ, "id": "sc", "bg": bgs[(k + j) % 2], "in": "word:0", "out": 16.0}, **data), vendor)
+                html = self.compose(d, dict({"type": typ, "id": "sc", "bg": bgs[(k + j) % 2], "in": "word:1", "out": 16.0}, **data), vendor)
                 page = re.sub(r'<div class="lc-mark">.*?</div>', "", html, flags=re.S)   # a brand's own mark, in its own colour
                 for h in re.findall(r"#[0-9A-Fa-f]{6}\b", page):
                     self.assertIn(h.lower(), LATTE.values(), "%s-%s: %s" % (typ, name, h))
@@ -92,7 +92,7 @@ class Theme(unittest.TestCase):
         write(os.path.join(d, "transcript.json"), {"words": [{"text": "word%d" % i, "start": 0.5 + i * 0.4, "end": 0.8 + i * 0.4}
                                                               for i in range(40)]})
         silent_wav(os.path.join(d, "voice.wav"), 15.5)
-        sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [scene], "sound": {"music": "none", "sfx": False}})
+        sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [make_cases().LEAD_IN, scene], "sound": {"music": "none", "sfx": False}})
         r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", vendor)
         self.assertEqual(r.returncode, 0, "%s: %s" % (scene["type"], r.stdout + r.stderr))
         return read(os.path.join(d, "public", "index.html"))

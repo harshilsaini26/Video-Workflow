@@ -24,6 +24,7 @@ sys.path.insert(0, HERE)
 from scenes import logo_card
 
 BEAT = 2.5
+HOOK_BY, LEAD = 0.8, 0.2          # explainer_lib's: the hook's items land by 0.8 s, an entrance 0.2 s before its word
 BGS = ["mantle", "base"]          # the two Latte surfaces (tokens.json), alternating at each section break
 STOP = set("a an and are as at be but by for from has have i in is it its me my of on or our so than that the their them then "
            "there these they this to was we were what when which who will with you your".split())
@@ -107,6 +108,31 @@ def kinetic(sc, idx, words):
     anchor_list(seq, "text", idx, words, same=True)
     if sc.get("strike"):
         sc["strike"].pop("text", None)
+    return sc
+
+
+def hook_anchors(sc, words, limit):
+    """SOP S8: the hook is whole on screen by 1.0 s, so every piece of the first scene lands on a word said by `limit`
+    (word start, seconds). A kinetic hook's pieces are spread in order over those words; any other late anchor moves
+    to the last of them."""
+    early = [i for i, w in enumerate(words) if w["start"] <= limit] or [0]
+    if sc.get("type") == "kinetic":
+        seq = [sc[k] for k in ("big",) if sc.get(k)] + list(sc.get("words") or []) + [sc[k] for k in ("line", "strike", "punch") if sc.get(k)]
+        for j, piece in enumerate(seq):
+            piece["at"] = "word:%d" % early[int(round(j * (len(early) - 1) / float(max(1, len(seq) - 1))))]
+        return sc
+
+    def walk(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k == "at" and isinstance(v, str) and v.startswith("word:") and int(v[5:]) > early[-1]:
+                    o[k] = "word:%d" % early[-1]
+                else:
+                    walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+    walk(sc)
     return sc
 
 
@@ -239,6 +265,7 @@ def main():
     if not scenes:
         sys.exit("no scenes: no transcript words carry the script's line ids")
     scenes[0]["in"] = "word:0"
+    hook_anchors(scenes[0], words, HOOK_BY + LEAD)
     for x, y in zip(scenes, scenes[1:]):
         x["out"] = y["in"]
     scenes[-1]["out"] = "end"

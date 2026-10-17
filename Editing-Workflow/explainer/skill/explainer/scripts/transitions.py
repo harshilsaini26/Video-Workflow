@@ -20,7 +20,7 @@ import explainer_lib as E
 from scenes import js_obj
 
 KINDS = ("fade", "push", "zoom", "wipe", "burst", "cut")
-ENTER, EXIT = 0.5, 0.2           # exits stay within tokens.motion.exit
+ENTER, EXIT = 0.5, E.EXIT        # exits stay within tokens.motion.exit
 IN_EASE, OUT_EASE = "expo.out", "power3.in"   # the exit accelerates into the cut, the entrance decelerates out of it
 WIPE, BURST = 0.55, 0.9
 WIPE_FROM, WIPE_TO = "circle(0% at 50% 60%)", "circle(150% at 50% 60%)"
@@ -59,14 +59,15 @@ def enter(kind, sid, t):
     return []
 
 
-def exit(kind, sid, t):
-    """The outgoing scene's exit, matched to the way the next one comes in."""
+def exit(kind, sid, cut):
+    """The outgoing scene's exit, matched to the way the next one comes in. It runs over the EXIT seconds before the
+    cut and is over on it, so the old scene and the new one are never on screen together (SOP S9)."""
     sel = "#" + sid
     if kind == "cut":
-        return ["tl.set('%s', { opacity: 0 }, %.3f);" % (sel, t)]
+        return ["tl.set('%s', { opacity: 0 }, %.3f);" % (sel, cut)]
     move = {"push": {"y": -260, "filter": "blur(12px)"}, "zoom": {"scale": 1.2, "filter": "blur(10px)"},
             "burst": {"scale": 1.3, "filter": "blur(10px)"}}.get(kind, {"y": -24})
-    return ["tl.to('%s', %s, %.3f);" % (sel, js_obj(dict({"opacity": 0}, **dict(move, duration=EXIT, ease=OUT_EASE))), t)]
+    return ["tl.to('%s', %s, %.3f);" % (sel, js_obj(dict({"opacity": 0}, **dict(move, duration=EXIT, ease=OUT_EASE))), max(0.0, cut - EXIT))]
 
 
 def wipe_bg(bg_id, t):
