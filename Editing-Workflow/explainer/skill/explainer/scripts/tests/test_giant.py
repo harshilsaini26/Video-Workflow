@@ -59,6 +59,21 @@ class GiantCaptions(unittest.TestCase):
         self.assertTrue(caps)
         self.assertFalse([c for c, t in caps if lo - 1e-3 <= float(t) < hi - 1e-3], caps)
 
+    def test_the_handle_and_the_part_read_on_every_ground(self):
+        # the band above the captions takes each ground's quiet colour as the ground changes, like the captions do
+        d = scratch(self)
+        write(os.path.join(d, "transcript.json"), {"words": words30()})
+        silent_wav(os.path.join(d, "voice.wav"), VOICE)
+        board = {"id": "t", "brand": {"handle": "@you", "part": 1},
+                 "scenes": [dict(BOARD["scenes"][0], bg="mantle", out="word:8"), dict(BOARD["scenes"][1], bg="blue", **{"in": "word:8", "out": "word:18"}),
+                            dict(BOARD["scenes"][2], bg="ink", **{"in": "word:18"})]}
+        sp = write(os.path.join(d, "storyboard.json"), board)
+        r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
+        self.assertEqual(r.returncode, 0, r.stdout[-300:])
+        html = read(os.path.join(d, "public", "index.html"))
+        for bg, w in (("blue", 8), ("ink", 18)):
+            self.assertIn("tl.set('#brand', { color: '%s' }, %.3f);" % (E.theme(TOK, bg)["muted"], t_word(w) - E.LEAD), html, bg)
+
     def test_emphasised_caption_words_carry_more_weight(self):
         r, html, _ = compose(self, [dict(BOARD["scenes"][0], out="end")], emphasis=["NPV"])
         self.assertIn(".cap .cw.em {", html)

@@ -512,6 +512,8 @@ def main():
         cap_html = ('    <div class="brand" id="brand" style="top:%dpx;height:%dpx;color:%s"><span>%s</span><span>%s</span></div>\n'
                     % (BRAND_TOP, BRAND_H, E.theme(tok, timed[0][2])["muted"], html.escape(str(brand.get("handle", ""))),
                        html.escape(part))) + cap_html
+        for b, t0 in bgs[1:]:          # it takes each ground's quiet colour as the ground changes (3:1 on all four)
+            cap_js.append("tl.set('#brand', { color: '%s' }, %.3f);" % (E.theme(tok, b)["muted"], t0))
     if tx_html:   # transition sprays sit above the scenes, under the captions
         cap_html = '    <div class="tx-layer" id="tx">%s</div>\n' % "".join(tx_html) + cap_html
     page = """<!doctype html>

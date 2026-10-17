@@ -200,6 +200,21 @@ class Stat(Case):
         self.fails(dict(sc, value=-3), "value is 0 or more")
         self.fails(dict(sc, unit="7 DAYS"), "the digits go in value")
 
+    def test_the_digits_close_up_to_their_own_widths_once_counted(self):
+        # DM Sans has no tabular figures: while counting each digit sits in a cell as wide as the widest digit (so the
+        # count never jiggles); once counted, each cell closes to its own digit's width, so "24" never reads "2 4"
+        import re
+        from scenes import stat
+        import explainer_lib as E
+        html = self.ok(dict(GOOD["stat"], value=24, prefix=""))
+        s = stat.size(dict(GOOD["stat"], value=24, prefix=""))
+        g = E.glyphs()["display700"]
+        for k, ch in enumerate("24"):
+            m = re.search(r"tl\.fromTo\('#sc-c%d', \{ width: ([\d.]+) \}, \{ width: ([\d.]+), duration" % k, html)
+            self.assertTrue(m, "cell %d does not close up" % k)
+            self.assertAlmostEqual(float(m.group(2)), g[ch] * s, delta=0.6)
+            self.assertGreater(float(m.group(1)), float(m.group(2)) - 0.01)
+
     def test_it_needs_a_source(self):
         sc = dict(GOOD["stat"])
         del sc["source"]
@@ -212,7 +227,7 @@ class Stat(Case):
         self.assertIsNotNone(m)
         self.assertAlmostEqual(float(m.group(2)), at_minus_lead(6) + 0.05, places=3)
         self.assertIn("const sc_n = { v: 0 };", html)
-        cells = re.findall(r'<span class="stat-c" style="width:([\d.]+)px(;display:none)?">(\d?)</span>', html)
+        cells = re.findall(r'<span class="stat-c" id="sc-c\d+" style="width:([\d.]+)px(;display:none)?">(\d?)</span>', html)
         self.assertEqual([c[2] for c in cells], ["", "", "0"])                     # three cells, the count starts at 0
         self.assertEqual(len({c[0] for c in cells}), 1)                            # every digit cell the same width
 

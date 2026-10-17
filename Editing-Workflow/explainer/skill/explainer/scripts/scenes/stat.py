@@ -11,7 +11,7 @@ narrow column, smaller (down to 200 px) when it is long; the composer then scale
 """
 import json
 import explainer_lib as E
-from scenes import line_px, need, widest
+from scenes import js_obj, line_px, need, widest
 
 TYPE = "stat"
 NEEDS_SOURCE = True
@@ -118,8 +118,8 @@ def render(scene, ctx, box):
     cells = []
     for k, ch in enumerate(final):
         j = k - (len(final) - len(zero))
-        cells.append('<span class="stat-c" style="width:%.2fpx%s">%s</span>' % (_cell(ch) * s, "" if j >= 0 else ";display:none",
-                                                                                  ctx.esc(zero[j]) if j >= 0 else ""))
+        cells.append('<span class="stat-c" id="%s-c%d" style="width:%.2fpx%s">%s</span>' % (sid, k, _cell(ch) * s, "" if j >= 0 else ";display:none",
+                                                                                            ctx.esc(zero[j]) if j >= 0 else ""))
     fig = '<span>%s</span>%s<span>%s</span>' % (ctx.esc(scene.get("prefix", "")), "".join(cells), ctx.esc(scene.get("suffix", "")))
     if scene.get("at") is not None:
         t, attrs = ctx.item(scene["at"])
@@ -148,4 +148,12 @@ def render(scene, ctx, box):
     js.append("tl.to(%s_n, { v: %s, duration: %.3f, ease: '%s', onUpdate: function () { %s_set(%s); } }, %.3f);"
               % (sid, json.dumps(float(scene["value"])), dur, ctx.tokens["motion"]["enter_ease"], sid,
                  "%s_n.v" % sid if dec else "Math.round(%s_n.v)" % sid, start))
+    # counted: each cell closes to its own digit's width (DM Sans has no tabular figures; "24" must not read "2 4")
+    g = E.glyphs()["display700"]
+    for k, ch in enumerate(final):
+        natural = round(g.get(ch, _cell(ch)) * s, 2)
+        if natural < _cell(ch) * s - 0.01:
+            js.append("tl.fromTo('#%s-c%d', %s, %s, %.3f);" % (sid, k, js_obj({"width": round(_cell(ch) * s, 2)}),
+                                                               js_obj({"width": natural, "duration": 0.35, "ease": "power3.out",
+                                                                       "immediateRender": False}), start + dur))
     return html, js
