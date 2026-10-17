@@ -93,6 +93,7 @@ def find_word(text, idx, words):
 
 
 def kinetic(sc, idx, words):
+    from scenes import kinetic as K
     """A kinetic hook from plain words: {"big": "3", "words": ["STEP", "TRICK"], "line": "AI INVENTS", "strike": "INVENTS",
     "punch": "LESS"} -> each piece an object with its own "at", landed in order on the words that say it."""
     for k in ("big", "line", "punch"):
@@ -102,6 +103,7 @@ def kinetic(sc, idx, words):
         sc["strike"] = {"word": sc["strike"]}
     if isinstance(sc.get("words"), list):
         sc["words"] = [{"text": w} if isinstance(w, str) else w for w in sc["words"]]
+    K.normalize(sc)                      # "5 STEPS" written as words: the 5 is the hero
     seq = ([sc["big"]] if sc.get("big") else []) + list(sc.get("words") or []) + ([sc["line"]] if sc.get("line") else [])
     if sc.get("strike"):
         sc["strike"].setdefault("text", sc["strike"]["word"])

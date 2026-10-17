@@ -290,6 +290,8 @@ def main():
         if sc.get("source") and source_keys is not None and sc["source"] not in source_keys:
             fail("%s: source %r is not in script.json's sources (%s)" % (sid, sc["source"], ", ".join(sorted(source_keys)) or "none"))
         try:
+            if hasattr(mod, "normalize"):
+                mod.normalize(sc)
             errs = mod.validate(sc)
         except BAD_DATA as e:
             fail("%s: bad data in the %s scene (%s: %s)" % (sid, sc["type"], type(e).__name__, e))
@@ -426,6 +428,9 @@ def main():
     em = {L.norm(x) for x in C.get("emphasis", [])}
     hl = E.theme(tok, timed[0][2])["highlight"]
     chunks = L.chunk_words([w for w in words if w["start"] < D], 4, 24)
+    giant = [(t_in, t_out) for sc, m_, _, t_in, t_out, _ in timed if m_.TYPE == "giant-captions"]
+    # while giant captions run, the words are the picture: the band steps aside, never the same words twice
+    chunks = [ch for ch in chunks if not any(a - 1e-3 <= ch["start"] < b - 1e-3 for a, b in giant)]
     caps, cap_js = [], []
     for i, ch in enumerate(chunks):
         b = bg_at(ch["start"])
@@ -472,6 +477,7 @@ def main():
     flex-wrap:wrap; gap:0 .26em; visibility:hidden; font-weight:700; font-size:%dpx; line-height:1.1; letter-spacing:-.01em;
     text-align:center; }
   .cap .cw { position:relative; display:inline-block; padding:0 .14em; border-radius:6px; }
+  .cap .cw.em { transform: scale(1.12); margin:0 .1em; }
   .cap .hd { position:absolute; width:14px; height:14px; background:%s; border:3px solid %s; opacity:0; }
   .cap .hd.a { left:-7px; top:-7px; } .cap .hd.b { right:-7px; bottom:-7px; }
 %s""" % (tok["fonts"]["label_file"], stage_bg, stage_bg, tok["fonts"]["display"], tok["fonts"]["label"], WIDE[0], WIDE[1], WIDE[0], WIDE[1], band_top,

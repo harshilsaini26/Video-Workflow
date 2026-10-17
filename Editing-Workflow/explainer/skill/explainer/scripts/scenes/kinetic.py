@@ -88,6 +88,24 @@ CSS = """
 """ % TRACK
 
 
+def normalize(scene):
+    """A hero token written into the words ("5 STEPS", "3") becomes the big one: the reel's biggest moment is never set
+    at word size because the writer typed it in one line. A big already given is kept."""
+    ws = scene.get("words") or []
+    if scene.get("big") or not ws or not isinstance(ws[0], dict):
+        return scene
+    head, _, rest = str(ws[0].get("text", "")).strip().partition(" ")
+    if BIG_RE.match(head) and any(ch.isdigit() for ch in head):
+        scene["big"] = {"text": head, "at": ws[0].get("at")}
+        if rest.strip():
+            ws[0] = dict(ws[0], text=rest.strip())
+        else:
+            ws.pop(0)
+        if not ws:
+            scene.pop("words", None)
+    return scene
+
+
 def validate(scene):
     errs = []
     if not scene.get("big") and not scene.get("words"):

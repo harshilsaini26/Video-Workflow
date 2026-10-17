@@ -125,6 +125,8 @@ SHOTS = [("shot-short", {"title": "Coursera", "domain": "coursera.org", "screens
          ("shot-long", {"title": "Introduction to Corporate Finance", "subtitle": "The Wharton School",
                         "domain": "coursera.org", "screenshot": "shot.png"})]
 CASES["browser"] = CASES["browser"] + SHOTS
+# giant captions: the voice's words (word0 to word39 in every case), with and without keywords
+CASES["giant-captions"] = lengths({}, {"keywords": ["word5"]}, {"keywords": ["word3", "word7", "word11"]})
 # a flow too long for the area travels down a window
 CASES["flow"] = CASES["flow"] + [("travel", {"nodes": [{"label": l, "at": at(2 + 2 * i)} for i, l in
                                                      enumerate(["Question", "Search", "Passages", "Prompt", "Answer", "Cite"])]})]
