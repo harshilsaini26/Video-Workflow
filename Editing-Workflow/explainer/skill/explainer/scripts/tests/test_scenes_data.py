@@ -39,7 +39,7 @@ def at_minus_lead(i):
 
 
 def entrance_times(html, sel_prefix):
-    return [float(t) for t in re.findall(r"tl\.fromTo\('%s[^']*', \{ opacity: 0[^;]*\}, ([\d.]+)\);" % re.escape(sel_prefix), html)]
+    return [float(t) for t in re.findall(r"tl\.fromTo\('%s[^' ]*', \{ opacity: 0[^;]*\}, ([\d.]+)\);" % re.escape(sel_prefix), html)]   # the piece, not its words
 
 
 class ListCards(SceneCase):
@@ -60,7 +60,7 @@ class ListCards(SceneCase):
 class EmptyStage(SceneCase):
     def test_list_cards_show_their_slots_from_the_start(self):
         html = self.ok({"type": "list-cards", "items": [{"label": "A", "at": "word:9"}, {"label": "B", "at": "word:12"}]})
-        self.assertEqual(len(re.findall(r"tl\.to\('#sc-c\d', \{ opacity: 0\.18", html)), 2)
+        self.assertEqual(len(re.findall(r"tl\.to\('#sc-c\d', \{ opacity: 0\.4", html)), 2)     # empty slots, words hidden
 
     def test_a_scene_that_shows_nothing_at_first_warns(self):
         r, _ = self.build({"type": "bars", "source": "s1", "rows": [{"label": "A", "value": 1, "at": "word:12"},

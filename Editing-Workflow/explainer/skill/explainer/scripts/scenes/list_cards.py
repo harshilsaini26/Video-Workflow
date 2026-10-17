@@ -1,6 +1,6 @@
 """list-cards: two to four cards, each arriving on its word (SPEC §6.2)."""
 import explainer_lib as E
-from scenes import GHOST, line_px, need, widest
+from scenes import SLOT, line_px, need, widest
 
 TYPE = "list-cards"
 SIZE, LH = 56, 1.15            # card label: DM Sans 700
@@ -39,8 +39,9 @@ def render(scene, ctx, box):
     html, js = [], []
     for i, it in enumerate(scene["items"]):
         t, attrs = ctx.item(it["at"])
-        html.append('<div class="l-card" id="%s-c%d"%s style="%s;border-left-color:%s;color:%s">%s</div>'
+        html.append('<div class="l-card" id="%s-c%d"%s style="%s;border-left-color:%s;color:%s"><span class="gt">%s</span></div>'
                     % (ctx.id, i, attrs, face, ctx.c["accent"], ctx.ink, ctx.esc(it["label"])))
-        js.append(ctx.ghost("#%s-c%d" % (ctx.id, i)))
-        js.append(ctx.enter("#%s-c%d" % (ctx.id, i), t, {"opacity": GHOST, "x": -60, "scale": 0.96}))
+        js += ctx.slot("#%s-c%d" % (ctx.id, i))
+        js.append(ctx.enter("#%s-c%d" % (ctx.id, i), t, {"opacity": SLOT, "x": -60, "scale": 0.96}))
+        js.append(ctx.fill("#%s-c%d" % (ctx.id, i), t))
     return "".join(html), js

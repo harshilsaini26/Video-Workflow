@@ -1,7 +1,7 @@
 """stack: two to five slabs drop onto a pile, the first at the bottom, each on its word; the pile bobs while it holds
 (PLAYBOOK §E4). For things that build on each other: "time value, then risk, then the cost of capital"."""
 import explainer_lib as E
-from scenes import GHOST, js_obj, need
+from scenes import SLOT, js_obj, need
 
 TYPE = "stack"
 SLAB, GAP, THICK = 92, 14, 14    # a slab, the gap between two, the bottom slab's thickness shadow
@@ -44,10 +44,11 @@ def render(scene, ctx, box):
         edge = E.rgba(ctx.c["ink"], 0.28)                          # the slab's thickness: a darker ledge under it
         top = h - THICK - SLAB - i * (SLAB + GAP)
         parts.append('<div class="sk-slab" id="%s-s%d"%s style="top:%dpx;left:%dpx;right:%dpx;background:%s;color:%s;'
-                     'box-shadow:0 %dpx 0 %s, %s">%s</div>'
+                     'box-shadow:0 %dpx 0 %s, %s"><span class="gt">%s</span></div>'
                      % (sid, i, attrs, top, i * STEP // 2, i * STEP // 2, fill, ink, THICK, edge, ctx.c["shadow"], ctx.esc(it["label"])))
-        js.append(ctx.ghost("#%s-s%d" % (sid, i)))
+        js += ctx.slot("#%s-s%d" % (sid, i))
         js.append("tl.fromTo('#%s-s%d', %s, %s, %.3f);"
-                  % (sid, i, js_obj({"opacity": GHOST, "y": -240}), js_obj({"opacity": 1, "y": 0, "duration": 0.55, "ease": "expo.out", "immediateRender": False}), t))
+                  % (sid, i, js_obj({"opacity": SLOT, "y": -240}), js_obj({"opacity": 1, "y": 0, "duration": 0.55, "ease": "expo.out", "immediateRender": False}), t))
+        js.append(ctx.fill("#%s-s%d" % (sid, i), t))
     ctx.idle("#%s .sk" % sid, ctx.t_in + 0.6, ctx.t_out, {"y": -10})
     return '<div class="sk" style="height:%dpx">%s</div>' % (h, "".join(parts)), js

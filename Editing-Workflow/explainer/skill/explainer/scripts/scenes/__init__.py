@@ -102,11 +102,19 @@ class Ctx:
             self.fail("vendor/lucide/%s.svg is not a plain SVG icon" % name)
         return svg
 
-    def ghost(self, sel, extra=None):
-        """Show `sel` dimmed (opacity GHOST) from the scene's in, so a build that waits for its words never leaves the
-        stage bare; its entrance then starts from GHOST (ctx.enter(sel, t, {"opacity": GHOST, ...}))."""
+    def slot(self, sel, extra=None):
+        """`sel` waits as an empty slot from the scene's in: its outline at opacity SLOT, its words (every `.gt` inside
+        it) hidden, so a build that waits for its words never leaves the stage bare and never shows faint text. Its
+        entrance then starts from SLOT (ctx.enter(sel, t, {"opacity": SLOT, ...})) and ctx.fill brings the words in."""
         m = self.tokens["motion"]
-        return "tl.to(%s, %s, %.3f);" % (sel_js(sel), js_obj(dict({"opacity": GHOST}, **dict(extra or {}, duration=m["enter"], ease=m["enter_ease"]))), self.t_in)
+        return ["tl.set(%s, { opacity: 0 }, 0);" % sel_js(sel + " .gt"),
+                "tl.to(%s, %s, %.3f);" % (sel_js(sel), js_obj(dict({"opacity": SLOT}, **dict(extra or {}, duration=m["enter"], ease=m["enter_ease"]))), self.t_in)]
+
+    def fill(self, sel, t):
+        """The words of a slot arrive, just after the slot itself fills on its word."""
+        m = self.tokens["motion"]
+        return "tl.fromTo(%s, { opacity: 0 }, %s, %.3f);" % (sel_js(sel + " .gt"), js_obj({"opacity": 1, "duration": 0.3, "ease": m["enter_ease"],
+                                                                                         "immediateRender": False}), t + 0.08)
 
     def idle(self, sel, t0, t1, props, every=1.6):
         """An idle back-and-forth while a scene holds (ambient: not a change): from t0 to t1, `sel` eases to `props` and
@@ -145,7 +153,7 @@ class Ctx:
         return "tl.fromTo(%s, %s, %s, %.3f);" % (sel_js(sel), js_obj(f), js_obj(g), t)
 
 
-GHOST = 0.18      # how bright a piece of a build is before its word
+SLOT = 0.4        # how strong a piece's empty outline is before its word (its words stay hidden until then)
 LUCIDE_INSTALL = "npm pack lucide-static@0.454.0, then copy its icons/*.svg to assets/vendor/lucide/"
 
 

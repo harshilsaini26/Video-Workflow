@@ -2,7 +2,7 @@
 down every drawn connector while the scene holds (PLAYBOOK §E4). For a process: "it retrieves, then augments, then
 generates"."""
 import explainer_lib as E
-from scenes import GHOST, js_obj, need
+from scenes import SLOT, js_obj, need
 
 TYPE = "flow"
 NODE, LINK = 112, 72             # a step's height, the connector between two steps
@@ -53,11 +53,12 @@ def render(scene, ctx, box):
         t, attrs = ctx.item(n["at"])
         times.append(t)
         top = i * (NODE + LINK)
-        icon = '<span class="fl-ic" style="color:%s">%s</span>' % (acc, ctx.icon(n["icon"])) if n.get("icon") else ""
-        parts.append('<div class="fl-node" id="%s-n%d"%s style="top:%dpx;%s;border-color:%s;color:%s">%s<span>%s</span></div>'
+        icon = '<span class="fl-ic gt" style="color:%s">%s</span>' % (acc, ctx.icon(n["icon"])) if n.get("icon") else ""
+        parts.append('<div class="fl-node" id="%s-n%d"%s style="top:%dpx;%s;border-color:%s;color:%s">%s<span class="gt">%s</span></div>'
                      % (sid, i, attrs, top, face, rest, ctx.ink, icon, ctx.esc(n["label"])))
-        js.append(ctx.ghost("#%s-n%d" % (sid, i)))
-        js.append(ctx.enter("#%s-n%d" % (sid, i), t, {"opacity": GHOST, "y": 30, "scale": 0.92}))
+        js += ctx.slot("#%s-n%d" % (sid, i))
+        js.append(ctx.enter("#%s-n%d" % (sid, i), t, {"opacity": SLOT, "y": 30, "scale": 0.92}))
+        js.append(ctx.fill("#%s-n%d" % (sid, i), t))
         js.append("tl.to('#%s-n%d', %s, %.3f);" % (sid, i, js_obj({"borderColor": acc, "duration": 0.3, "ease": mo["enter_ease"]}), t))
         if i:
             js.append("tl.to('#%s-n%d', %s, %.3f);" % (sid, i - 1, js_obj({"borderColor": rest, "duration": 0.3, "ease": mo["enter_ease"]}), t))

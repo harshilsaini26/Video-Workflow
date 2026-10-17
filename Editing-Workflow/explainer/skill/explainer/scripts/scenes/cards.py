@@ -2,7 +2,7 @@
 a focus can lift one card on a word (the others dim); each card floats while it holds (PLAYBOOK §E4). For "three
 certificates", "two courses": things to count and name."""
 import explainer_lib as E
-from scenes import GHOST, js_obj, need
+from scenes import SLOT, js_obj, need
 
 TYPE = "cards"
 CW, CH = 250, 320                # a card
@@ -71,14 +71,15 @@ def render(scene, ctx, box):
         top = lift(scene) + FAN / 2.0 + abs(i - mid) * 16
         bars = "".join('<div class="cd-bar" style="width:%d%%;background:%s"></div>' % (w, ink) for w in (86, 70, 54))
         parts.append('<div class="cd-card" id="%s-c%d"%s style="left:%.0fpx;top:%.0fpx;z-index:%d"><div class="cd-face" id="%s-f%d" '
-                     'style="background:%s;color:%s;box-shadow:%s"><div class="cd-tag">No. %d</div><div class="cd-n">%d</div>%s'
+                     'style="background:%s;color:%s;box-shadow:%s"><div class="cd-tag gt">No. %d</div><div class="cd-n gt">%d</div>%s'
                      '<i class="cd-star" style="border-color:%s"></i></div></div>'
                      % (sid, i, attrs, left, top, i + 1, sid, i, fill, ink, ctx.c["shadow"], i + 1, i + 1, bars, ink))
-        js.append(ctx.ghost("#%s-c%d" % (sid, i), {"rotation": round((i - mid) * 8, 2)}))   # its place in the fan, dimmed
+        js += ctx.slot("#%s-c%d" % (sid, i), {"rotation": round((i - mid) * 8, 2)})   # its place in the fan, an empty card
         js.append("tl.fromTo('#%s-c%d', %s, %s, %.3f);" % (
-            sid, i, js_obj({"opacity": GHOST, "x": 320, "y": 420, "rotation": 40}),
+            sid, i, js_obj({"opacity": SLOT, "x": 320, "y": 420, "rotation": 40}),
             js_obj({"opacity": 1, "x": 0, "y": 0, "rotation": round((i - mid) * 8, 2), "duration": 0.6, "ease": mo["enter_ease"],
                     "immediateRender": False}), t))
+        js.append(ctx.fill("#%s-c%d" % (sid, i), t))
         ty = lift(scene) + CH + FAN + GAP
         titles.append('<div class="cd-t" id="%s-t%d" style="top:%dpx;color:%s">%s</div>' % (sid, i, ty, ctx.ink, ctx.esc(cd["title"])))
         if cd.get("sub"):

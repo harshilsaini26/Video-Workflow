@@ -98,16 +98,22 @@ class Build(unittest.TestCase):
             self.assertTrue(ctx.ambient_lines, t)
             self.assertTrue(all(l.startswith("tl.") for l in ctx.ambient_lines), t)
 
-    def test_the_structure_shows_dimmed_until_each_piece_is_said(self):
-        # the stage is never bare while a build waits for its first word: every piece is a dim ghost from the scene's in
-        ghosts = {"flow": r"#sc-n\d", "stack": r"#sc-s\d", "cards": r"#sc-c\d", "compare": r"#sc-[lr]\d", "hub": r"#sc-n\d"}
+    def test_each_piece_waits_as_an_empty_slot_until_it_is_said(self):
+        # the stage is never bare while a build waits for its words, but nothing on it reads as faint text: every piece
+        # is an empty outline (its words hidden) from the scene's in, and its words arrive on their own word
+        slots = {"flow": r"#sc-n\d", "stack": r"#sc-s\d", "cards": r"#sc-c\d", "compare": r"#sc-[lr]\d", "hub": r"#sc-n\d"}
         t_in = 0.5 + 4 * 0.4 - E.LEAD
-        for t, sel in ghosts.items():
+        for t, sel in slots.items():
             r, html = self.build(GOOD[t])
             self.assertEqual(r.returncode, 0, r.stdout)
-            dim = re.findall(r"tl\.to\('(%s)', \{ opacity: 0\.18,[^}]* duration: [\d.]+, ease: '[\w.]+' \}, ([\d.]+)\);" % sel, html)
+            dim = re.findall(r"tl\.to\('(%s)', \{ opacity: 0\.4,[^}]* duration: [\d.]+, ease: '[\w.]+' \}, ([\d.]+)\);" % sel, html)
             self.assertEqual(len(dim), COUNTS[t], t)
             self.assertTrue(all(abs(float(x) - t_in) < 1e-3 for _, x in dim), t)
+            for piece, _ in dim:
+                self.assertIn("tl.set('%s .gt', { opacity: 0 }, 0);" % piece, html, t)
+                self.assertRegex(html, r"tl\.fromTo\('%s \.gt', \{ opacity: 0 \}, \{ opacity: 1," % re.escape(piece), t)
+                self.assertRegex(html, r'id="%s"[^>]*>.*?class="[^"]*\bgt\b' % piece[1:], t)
+            self.assertNotIn("opacity: 0.18", html, t)
         r, html = self.build(GOOD["timeline"])                     # the rail and its empty dots come in with the scene
         self.assertIn("tl.fromTo('#sc .tm-rail, #sc .tm-dot', { opacity: 0, y: -16 }", html)
         self.assertNotIn("WARN sc: nothing shows", r.stdout)

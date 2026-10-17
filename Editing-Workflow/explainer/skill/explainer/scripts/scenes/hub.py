@@ -6,7 +6,7 @@ taller than wide, as a portrait frame allows) where every node clears the middle
 the scene is as tall and as wide as that ring needs, so nothing overlaps, crosses a label or leaves the box. Nothing spins; the middle keeps one slow pulse while it holds."""
 import math
 import explainer_lib as E
-from scenes import GHOST, js_obj, need
+from scenes import SLOT, js_obj, need
 
 TYPE = "hub"
 DISC = 220                       # the middle disc
@@ -121,13 +121,14 @@ def render(scene, ctx, box):
         # the spoke runs from the disc's edge to the node's middle; the node, drawn on top, hides its end
         spokes.append('<line id="%s-k%d" x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="6" stroke-linecap="round" '
                       'stroke-dasharray="%d" stroke-dashoffset="%d"/>' % (sid, k, x1, y1, nx, ny, c["accent"], length, length))
-        pills.append('<div class="hb-pill" id="%s-n%d"%s style="left:%.1fpx;top:%.1fpx;width:%dpx;%s;color:%s">%s</div>'
+        pills.append('<div class="hb-pill" id="%s-n%d"%s style="left:%.1fpx;top:%.1fpx;width:%dpx;%s;color:%s"><span class="gt">%s</span></div>'
                      % (sid, k, attrs, x, y, w, ctx.card(), ctx.ink, ctx.esc(it["label"])))
-        js.append(ctx.ghost("#%s-n%d" % (sid, k), {"scale": 0.85}))     # the empty spot shows dimmed until its word
+        js += ctx.slot("#%s-n%d" % (sid, k), {"scale": 0.85})     # the empty spot waits as an outline until its word
         js.append("tl.fromTo('#%s-k%d', { strokeDashoffset: %d }, %s, %.3f);"
                   % (sid, k, length, js_obj({"strokeDashoffset": 0, "duration": 0.35, "ease": "power2.out", "immediateRender": False}),
                      max(ctx.t_in, t - 0.2)))
-        js.append(ctx.enter("#%s-n%d" % (sid, k), t, {"opacity": GHOST, "scale": 0.85}))
+        js.append(ctx.enter("#%s-n%d" % (sid, k), t, {"opacity": SLOT, "scale": 0.85}))
+        js.append(ctx.fill("#%s-n%d" % (sid, k), t))
     centre = ('<div class="hb-centre" id="%s-c" style="left:%.1fpx;top:%.1fpx;background:%s;color:%s;box-shadow:0 0 0 14px %s">%s</div>'
               % (sid, cx - DISC / 2.0, cy - DISC / 2.0, c["accent"], c["on_accent"], c["accent_soft"], ctx.esc(scene["center"])))
     js.append(ctx.enter("#%s-c" % sid, ctx.t_in, {"scale": 0.5}))
