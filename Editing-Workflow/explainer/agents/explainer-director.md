@@ -33,9 +33,14 @@ re-plan the notes to act on.
    numbered steps into numbers, known brands into logo cards, and everything else into draft titles. Read PLAN.md:
    **every "draft title" is yours to replace** with a picture, and every scene is yours to improve. Edit, don't
    rewrite: the anchors are already right.
-2. **Make it move like the reference (§E1.4, §E4):** a new picture or a visible change every 1.5 to 3 s; prefer the
-   build-up scenes (flow, stack, compare, timeline, cards, hub) that grow on the words over a static title; name real
-   things with a `logo-card` (its slug from simpleicons.org, or `src` for the creator's own image) or a `browser` with
+2. **Make it move like the reference (§E1.4, §E4):** a new picture or a visible change every 1.5 to 3 s, and **a new
+   picture at least every 8 s** (E4 fails a scene held longer; only a `flow` that travels may hold its steps longer).
+   Prefer objects to labelled boxes: `stat`, `chat`, `doc`, `browser`, `logo-card`, the editor and social mock-ups
+   (`prompt-bar`, `nle-timeline`, `reel-feed`, `video-card`...), and the build-up scenes (flow, stack, compare,
+   timeline, cards, hub) that grow on the words, over a static title. Keep the grounds' rhythm the planner sets (the
+   hook on `ink`, the payoff on `blue`, light `mantle`/`base` between, a `blue` beat now and then): a reel that never
+   leaves one pale ground reads as one long slide. The hook's items land on words 0 and 1 (E3 holds them to 0.8 s).
+   Name real things with a `logo-card` (its slug from simpleicons.org, or `src` for the creator's own image) or a `browser` with
    a `screenshot` you take with `python3 "$ES/scripts/snap-page.py" --url <page> --out "$W/shots/<name>.png"` (look at
    it: no cookie banner, no sign-in wall); never a title that repeats what the voice is saying (§E5.5); a background
    change only at a section break; transitions are automatic (name one only for a reason: `"transition": "burst"` on
@@ -62,7 +67,7 @@ re-plan the notes to act on.
 4. **Custom scenes** (opt-in: only when the creator asks for a moment the library cannot make; the hook is a
    `kinetic` scene, MOTION.md §4; each custom scene costs the Animator a file and tokens):
    `{"type": "custom", "id": "<id>", "box": {"x", "y", "w", "h"}, "html": "custom/<id>.html", "build": "build<Id>", ...}`
-   with the box inside the scene area (x 65 to 1015, y 520 to 1420; x 150 to 930 below y 960), plus a written spec in
+   with the box inside the scene area (x 65 to 1015, y 520 to 1235; x 150 to 930 below y 960), plus a written spec in
    `$W/custom/<id>.md` for the Animator in MOTION.md §4's five parts (the bar, the hero and its one change, the look,
    which word moves what, the never list) and the colours from `$ES/tokens.json`.
 5. **Dry run:** `python3 "$ES/scripts/explainer-compose.py" --spec "$W/storyboard.json" --out "$W/plan/dry"`. It
@@ -70,7 +75,10 @@ re-plan the notes to act on.
    a source, and WARNs on a title that repeats the voice. Then `python3 "$ES/scripts/pace-check.py" --index "$W/plan/dry/index.html"`:
    no still stretch over 3 s (it warns over 2 s; the glows moving on a cut and a build's idle motion don't count
    as changes). The dry run also WARNs on two scenes in a row with the same layout: change one, or merge them into
-   one build. Fix until both pass (custom scenes may fail here until the Animator writes their files).
+   one build. Then `python3 "$ES/scripts/layout-check.py" --index "$W/plan/dry/index.html" --no-hf`: every scene clean
+   and every handover clean (the old scene gone by the cut, SOP S9), before anything is rendered. Fix until all pass
+   (custom scenes may fail here until the Animator writes their files). **A scene too tall: drop a row or an item
+   (the captions carry the words); never split a scene to fix its height** (the RAG reel's split made a new overlap).
 6. **Asset requests** only for what you cannot fetch yourself (a logo outside simple-icons, a page behind a sign-in,
    the creator's own photo): `$W/ASSET-REQUESTS.md` (copy `$ES/templates/ASSET-REQUESTS.md` first), one row a file.
 
@@ -90,6 +98,9 @@ and the last scene holds the payoff or the call to action.
 - Invent a claim or a number; show a number without its source.
 - Use plain seconds except `"end"` on the last scene; anchor to a word that is not in `transcript.json`.
 - Ask for anything paid; specify a custom scene that needs the network.
+- Report a position or a time you did not measure as if you had: label every number measured (from moments.json, the
+  dry run, layout-check) or estimated (S7); a time on the page is moments.json's.
+- Edit a shared script (the composer, a scene, a gate): report what must change and why (S11).
 
 ## Report
 

@@ -17,10 +17,12 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
   (MIT), Lucide icons (ISC), simple-icons for brand marks (CC0 data; each mark is its owner's trademark, shown only to
   name the brand), Chrome on the creator's machine for page screenshots, DM Sans and JetBrains Mono (OFL, bundled in
   `assets/fonts/`), and a music pad and sound effects the composer generates. No paid voice, stock, AI video or avatar.
-- **The layers:** a Catppuccin Latte background (`mantle` #e6e9ef, or `base` #eff1f5 for a new section) with two or
-  three faint lavender and sky glows that travel with each cut, one
-  scene at a time scaled up to fill the scene area (x 65 to 1015, y 520 to 1420, Instagram's clear line; 780 px wide
-  below y 960), a transition layer, and captions in the band at y 330 to 470. Under the voice, a sound bed (§E3.7). Nothing else goes on screen.
+- **The layers:** a Catppuccin Latte ground (`mantle` #e6e9ef and `base` #eff1f5, strong `blue` #1e66f5, dark `ink`
+  #4c4f69: the planner sets a rhythm, MOTION.md §1.3) with faint glows that travel with each cut and particles rising
+  for the whole reel, one scene at a time scaled up to fill the scene area (x 65 to 1015, y 520 to 1235: text and card
+  edges end there, the one bottom line for the composer, gate E5 and QA; 780 px wide below y 960) inside a camera that
+  slowly pushes in, a transition layer, and captions in the band at y 330 to 470. Under the voice, a sound bed
+  (§E3.7). Nothing else goes on screen.
 - **The look** lives in `$ES/tokens.json`: change it once and every scene follows.
 - **Reused from Reels unchanged:** the renderer, QA, packager, librarian and analyst, and their checks (Reels PLAYBOOK
   §R3 safe zone, §R10 free sources).
@@ -49,8 +51,11 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 
 ## §E2 Script rules
 
-1. **Length:** 2.7 words a second; 30 to 90 s is **81 to 240 words** (`script-check.py`, gate E1). A target length
-   (30 to 90 s; anything else fails) narrows that to its own ±15%.
+1. **Length:** the spoken words at the voice's own measured rate (`voice-rates.json`, written by the samples; 2.4 words
+   a second for am_michael until measured) plus the pauses between lines; 30 to 90 s (`script-check.py`, gate E1). A
+   target (30 to 90 s; 90 is a target too) narrows that to its own ±15%. At most 3 section breaks every 75 s. The
+   script is voiced once before Checkpoint A and `script-check.py --voice` gives its real length; over 90 s it lists
+   the lines to trim, and the creator decides (SOP S4, S5, S16).
 2. **Every line twice:** `say` is what the voice reads ("one thousand dollars", "wack"); `show` is what the screen
    shows ("$1,000", "WACC"). Numbers are shown in full digits (1,000, never 1K).
 3. **Short lines:** one breath, one clause. A line over about 18 words gets split.
@@ -112,7 +117,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | ask the viewer's questions | `qa-stack` | `items[{text, em[], at}]` (at most 5) |
    | name a website, course or product | `browser` | `title`, `subtitle`, `badges[]`, `button`, `domain`, or `screenshot` (a PNG from `snap-page.py`) |
    | name a company, school or product by its mark | `logo-card` | `logo` (a simple-icons slug) or `src` (an image), `name`, `badge`, `sub` |
-   | walk through a process | `flow` | `nodes[{label, icon, at}]` (2 to 4) |
+   | walk through a process | `flow` | `nodes[{label, icon, at}]` (2 to 6; 5 or 6 travel down a window, the camera moving to each step) |
    | build one thing on another | `stack` | `items[{label, at}]` (2 to 5, the first at the bottom) |
    | set two things against each other | `compare` | `left` / `right{title, items[{text, at}]}` (1 to 4), `winner{side, at}` |
    | walk through a plan or a history | `timeline` | `steps[{label, sub, at}]` (2 to 5) |
@@ -120,19 +125,42 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | name the parts of one idea | `hub` | `center` (one short word), `items[{label, at}]` (2 to 6) |
    | walk through a table or a calculation | `sheet` | `rows[[...]]` (at most 8), `highlight{row or cell, at}`, `formula` |
    | give a formula | `formula` | `tex`, `parts[{tex, at}]` (KaTeX) |
+   | land a hero figure ("8 HOURS", "+$363") | `stat` | `value`, `prefix`, `suffix`, `unit`, `decimals`, `label`, `at` (200 to 320 px; needs a source) |
+   | ask and answer (an assistant, a support bot) | `chat` | `name`, `messages[{role, text, at, cite{text, at}}]` (2, 4 or 6, user first) |
+   | show the passage a system found | `doc` | `name`, `title`, `blocks[{text, at, tag} or {filler: n}]` (a block with `at` highlights) |
+   | let the words be the picture | `giant-captions` | `keywords[]` (the voice's own words, 1 to 3 at a time, 120 to 200 px; the caption band steps aside) |
+   | words or tools piling up | `gravity-drop` | `items[{text, at}]` (2 to 8), `style` (chips or words) |
+   | open a chapter | `title-card` | `kicker`, `title` (6 words at most), `subtitle` (or `{text, at}`) |
+   | cross one thing out (and bring its replacement) | `icon-strike` | `icon`, `label`, `at`, `strike{at}`, `replacement{icon, label, at}` |
+   | the call to action: comment a word | `comment-cta` | `keyword{text, at}`, `gets{text, at}` |
+   | what people say | `comment-drop` | `comments[{name, text, likes, time, at}]` (2 to 4) |
+   | typing into an AI | `prompt-bar` | `prompt{text, at}`, `send{at}`, `reply{text, at}` |
+   | planning shots | `storyboard-deck` | `frames[{note, sketch, at}]` (2 to 4; sketch face, screen, chart, wide or title) |
+   | bringing files in | `file-drop` | `files[{name, size, icon, at}]` (1 to 4), `done{label, at}` |
+   | cutting a video | `nle-timeline` | `tracks[{kind, clips[{label, length}]}]`, `cuts[{track, time, length, at}]` |
+   | removing what you don't need | `jiggle-delete` | `tiles[{label, icon, at}]` (3 to 8; a tile with `at` is deleted then), `jiggle{at}`, `done{at}` |
+   | grading a picture | `grade-slider` | `src`, `sliders[{kind, label, from, to, at}]` (contrast, saturation, exposure, temperature) |
+   | picking a colour from a picture | `eyedropper-grade` | `src`, `picks[{color, label, x, y, at}]` (Latte colour names) |
+   | giving a picture a film look | `film-look` | `src`, `at`, `title`, `before`, `after` |
+   | many videos at once | `playing-grid` | `src`, `cols`, `tiles[{label, src, at}]` (4 to 9), `pick{tile, at}` |
+   | one video | `video-card` | `src`, `title`, `channel`, `meta`, `duration`, `start`, `play{at}` |
+   | the reels feed | `reel-feed` | `src`, `reels[{user, caption, likes, comments, shares, at}]` (2 to 3) |
    | need something the library can't show (only when the creator asks) | `custom` | `box{x, y, w, h}`, `html`, `build` (§E6.5) |
 
 2. **Ids** are letters, digits and `_` (the page builds `<id>-...` ids from them), never `stage`, `captions`, `voice`,
    `bg<n>` or `cap<n>`.
 3. **Anchors, not seconds:** every `in`, `out` and item `at` is `word:N`, the Nth display word in `transcript.json`.
    An entrance lands 0.2 s before its word; the kit's beat-check holds it to 0.15 to 0.25 s.
-4. **No dead air:** scenes cover the whole voice; more than 0.3 s with no scene fails the build. Scenes hand over with
-   the old one exiting while the new one enters (at most 0.3 s of overlap). The last scene runs to `"end"`.
+4. **No dead air, no double exposure:** scenes cover the whole voice; more than 0.3 s with no scene fails the build.
+   A scene ends where the next begins (its `out` is the next one's `in`): the old one's exit is over by the cut, and
+   gate E5 checks every cut (SOP S9). The last scene runs to `"end"`. A scene holds at most 8 s (E4; a travelling flow
+   may hold longer), and the hook's items land by 0.8 s (E3, SOP S8).
 5. **One hero element per scene**; never the same scene type three times in a row.
-6. **Backgrounds** mark sections: change `bg` where the script's `section` breaks are, not on every scene.
+6. **Grounds keep a rhythm:** the hook on `ink`, the payoff on `blue`, `mantle`/`base` by section, a `blue` beat every
+   third scene in a section (the planner sets it; MOTION.md §1.3).
 7. **Fit by construction:** each scene knows its height; the composer scales it to fill the scene area, narrows it
-   below y 960, and fails a word wider than its column. Shorten the words, never shrink the type below the scene's
-   minimum. The hub works out its own geometry (every node clears the middle and every other node), a formula shrinks
+   below y 960, and fails a word wider than its column. A scene too tall may shrink to 0.8, never under 28 px text;
+   past that, drop a row or an item (the captions carry the words) and **never split a scene to fix its height**. The hub works out its own geometry (every node clears the middle and every other node), a formula shrinks
    itself to its row, and the kinetic hook sizes each row to the width it is given.
 8. **Start from the planner:** `plan-storyboard.py` writes the draft storyboard from the script's `viz` hints (§E2.7)
    and the aligned words: each hint's items on the words that say them, money and percent figures as count-ups,
@@ -140,7 +168,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    (replacing every draft title with a picture) rather than writing scenes and anchors by hand. The hook is a
    `kinetic` scene from the script's hint; custom scenes only when the creator asks for one.
 9. **Never a bare stage:** something shows on a scene's first word. The build-up scenes and list-cards show every
-   piece dimmed from the start and light each one on its word; any other scene whose first change comes over 0.8 s
+   piece as an empty slot from the start (its outline, its words hidden) and fill each one on its word; any other scene whose first change comes over 0.8 s
    after it starts gets a WARN from the composer (start the scene later, or put an item on its first word).
 10. **Gate E5, a clean picture:** `layout-check.py --index public/index.html` opens every scene in Chromium on the
    creator's machine at the moment it is fully built and fails on text over text, text covered by or crossing a shape
@@ -212,6 +240,13 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 | a gap inside a line over 1.2 s | a comma read as a long pause, or a stumble | split the line or reword it (Writer), regenerate (Voice) |
 | "no scene from a to b" | a scene's `out` before the next `in` | move the anchor (Director) |
 | "overlap by 0.5 s" | the next scene starts before the old one's `out` | end the old scene on the next scene's `in` word (Director) |
+| "the hook is not whole on screen by 1.0 s" | a hook item lands after 0.8 s | anchor the hook's pieces to words 0 and 1 (Director; the planner does it) |
+| "over the 90 s ceiling" | the voice runs past 90 s | trim the lines `script-check.py --voice` lists, with the creator (Writer) |
+| "E4 FAIL: <id> is held 9.0 s" | one picture held over 8 s | split the line's picture into two scenes, or use a flow that travels (Director) |
+| "are both on screen" (E5) | two scenes overlap at a cut | the old scene's `out` on the new one's `in`; a custom scene's exit inside its time (Director, Animator) |
+| "contrast 2.4:1" (E5) | text too close to what is behind it | the scene's colours come from its ground's roles; a UI mock-up uses the paper roles (the Librarian, with a test) |
+| "E6 FAIL: still from 12.3 to 14.0 s" | the rendered picture froze | a build, a camera move or a cut inside that stretch (Director) |
+| "SKILL FAIL: ... changed since the pin" | the skill was updated or edited mid-project | tell the creator; re-pin only when they choose (Producer) |
 | "wider than the column" | a long single word or number at its size | shorter word, or a smaller `size` within the scene's range (Director) |
 | "taller than the scene area" | too many items or long labels | fewer items, or split into two scenes (Director) |
 | a caption shows the misheard word | the display words come from `show`, so the script is wrong | fix `show` (Writer), re-align (Voice) |

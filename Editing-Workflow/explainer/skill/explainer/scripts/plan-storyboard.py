@@ -32,7 +32,13 @@ HOOK_BG, PAYOFF_BG, BEAT_BG = "ink", "blue", "blue"
 STOP = set("a an and are as at be but by for from has have i in is it its me my of on or our so than that the their them then "
            "there these they this to was we were what when which who will with you your".split())
 ORDINALS = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5}
-LIST_KEYS = {"nodes": "label", "items": "label", "steps": "label", "cards": "title", "rows": "label", "parts": "tex"}
+LIST_KEYS = {"nodes": "label", "items": "label", "steps": "label", "cards": "title", "rows": "label", "parts": "tex",
+             "frames": "note", "files": "name", "comments": "text", "messages": "text", "sliders": "label",
+             "picks": "label", "reels": "caption", "tiles": "label"}
+# per scene type: a list whose text sits in another field, or (None) a list where only some entries land on a word
+# (a doc's passages, the tiles a jiggle deletes): those take an "at" written as a word, nothing else
+TYPE_LISTS = {"qa-stack": {"items": "text"}, "gravity-drop": {"items": "text"}, "jiggle-delete": {"tiles": None},
+              "doc": {"blocks": None}, "nle-timeline": {"cuts": None}}
 MONEY = re.compile(r"([$€£₹])\s?(\d[\d,]*(?:\.\d+)?)|(\d[\d,]*(?:\.\d+)?)\s?%")
 
 
@@ -65,7 +71,7 @@ def anchor_list(entries, field, idx, words, same=False):
         if isinstance(e.get("at"), str) and e["at"].startswith("word:"):
             pos.append(int(e["at"][5:]))
             continue
-        key = key_word(e.get(field, ""))
+        key = key_word(e["at"] if isinstance(e.get("at"), str) else e.get(field, ""))   # an "at" written as a word wins
         hit = next((j for j in range(cursor, len(idx)) if matches(words[idx[j]]["text"], key)), None)
         pos.append(idx[hit] if hit is not None else None)
         if hit is not None:
@@ -145,20 +151,27 @@ def from_viz(viz, idx, words):
     sc = json.loads(json.dumps(viz))
     if sc.get("type") == "kinetic":
         return kinetic(sc, idx, words)
-    for key, field in LIST_KEYS.items():
-        if isinstance(sc.get(key), list):
-            f = "text" if sc.get("type") == "qa-stack" and key == "items" else field
-            sc[key] = [dict({f: e}) if isinstance(e, str) else e for e in sc[key]]
-            anchor_list(sc[key], f, idx, words)
+    lists = dict(LIST_KEYS, **TYPE_LISTS.get(sc.get("type"), {}))
+    for key, field in lists.items():
+        if isinstance(sc.get(key), list) and field:
+            sc[key] = [dict({field: e}) if isinstance(e, str) else e for e in sc[key]]
+            anchor_list(sc[key], field, idx, words)
     for side in ("left", "right"):
         if isinstance(sc.get(side), dict) and isinstance(sc[side].get("items"), list):
             sc[side]["items"] = [{"text": e} if isinstance(e, str) else e for e in sc[side]["items"]]
             anchor_list(sc[side]["items"], "text", idx, words)
     if isinstance(sc.get("reveal"), list):
         anchor_list(sc["reveal"], "at", idx, words)
-    for k, v in list(sc.items()):
-        if isinstance(v, dict) and isinstance(v.get("at"), str) and not v["at"].startswith("word:"):
-            v["at"] = "word:%d" % find_word(v["at"], idx, words)
+    def words_to_anchors(o):           # any "at" written as a word, anywhere in the hint, lands on that word
+        if isinstance(o, dict):
+            if isinstance(o.get("at"), str) and not o["at"].startswith("word:"):
+                o["at"] = "word:%d" % find_word(o["at"], idx, words)
+            for v in o.values():
+                words_to_anchors(v)
+        elif isinstance(o, list):
+            for v in o:
+                words_to_anchors(v)
+    words_to_anchors(sc)
     return sc
 
 

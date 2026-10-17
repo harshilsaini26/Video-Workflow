@@ -26,7 +26,9 @@ they are said, and for a rewrite the notes to act on (ids and verbatim words).
 ### Job `write`
 
 1. **Find the one idea** and the promise the hook makes. From notes or a script, keep the creator's words and claims;
-   cut, never add, unless it is a step the idea needs.
+   cut, never add, unless it is a step the idea needs. **From a topic alone, offer two or three angles** (who it is
+   for, the promise, the format) in SCRIPT.md for the creator to pick at Checkpoint A, and write the script for the
+   first; ask for any source material they have (S2).
 2. **Research the facts** (topic route): every number, name or claim gets a source someone can open (publisher, title,
    date, link) in `$W/SOURCES.md` under a key (`s1`, `s2`...). No source, no claim (§E7).
 3. **Write `$W/script.json`:**
@@ -60,12 +62,27 @@ they are said, and for a rewrite the notes to act on (ids and verbatim words).
    - **the hook's hint is kinetic type** (MOTION.md §4): `{"type": "kinetic", "big": "3", "words": ["STEP", "TRICK"],
      "line": "AI INVENTS", "strike": "INVENTS", "punch": "LESS"}`: a number or short capitals as `big`, at most two
      words beside it, an optional claim and the word it crosses out, a one- or two-word punch, all from the hook's
-     own words (in capitals). The planner lands each piece on the word that says it.
+     own words (in capitals). The planner lands each piece on the first words, so the hook is whole by 1.0 s. Put
+     the number in `big`, not inside a word ("5 STEPS" also becomes a big 5, but say it plainly).
+   - **concrete over abstract** (the reference shows "8 HOURS", "+$363", a real course page): every reel has at least
+     one real number with a source and one named, real example; hint each as a picture: `stat` for a hero figure,
+     `chat` for a question and its answer, `doc` for the passage a system found, `browser` with a screenshot for a
+     real page, `logo-card` for a brand.
+   - **pictures for the rest** (`viz`, one or more a line; the full list is PLAYBOOK §E4): `flow` (up to 6 steps),
+     `stack`, `compare`, `timeline`, `cards`, `hub`, `gravity-drop` (words that pile up), `giant-captions` (the words
+     are the picture), `title-card` (a chapter), `icon-strike` (a thing crossed out, and what replaces it),
+     `comment-cta` and `comment-drop` (for the call to action), `prompt-bar`, `storyboard-deck`, `file-drop`,
+     `nle-timeline`, `jiggle-delete`, `grade-slider`, `eyedropper-grade`, `film-look`, `playing-grid`, `video-card`,
+     `reel-feed`. A piece's `at` may be a word of the line ("at": "risk"); without one, it lands on the word its text
+     starts with.
 4. **Check (gate E1):**
    `python3 "$ES/scripts/script-check.py" --script "$W/script.json" --report "$W/SCRIPT.md"`
    It fails on a length outside the target, a hook over 12 words, a numeric or fact line without a source, an unknown
    source key, or a payoff or call to action naming a missing line. Fix and run again until `E1 PASS`.
-5. **Read it aloud in your head at 2.7 words a second.** A line that runs out of breath gets split.
+5. **Budget at the voice's real rate** (S4): script-check estimates the spoken words at the voice's measured rate
+   (`$ES/voice-rates.json`; 2.4 words a second for am_michael) plus the pauses between lines, and holds 30 to 90 s
+   (the target +-15%). At most 3 section breaks every 75 s (S5). A line that runs out of breath gets split. The real
+   length comes from the dry voicing before Checkpoint A.
 
 ### Job `rewrite`
 
@@ -81,6 +98,7 @@ changed.
 - Invent a number, a quote or a source; present an illustration as a real case (§E7.4).
 - Change the creator's claims in the notes or script route without flagging it.
 - Write `say` and `show` that differ in anything but how a number, symbol or term is read.
+- Edit a shared script (script-check.py, the planner): report what must change and why (S11).
 
 ## Report
 

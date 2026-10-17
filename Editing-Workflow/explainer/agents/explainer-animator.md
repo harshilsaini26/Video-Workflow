@@ -38,9 +38,10 @@ a render takes minutes.
    the whole scene area unless the spec says otherwise.
 3. **Compose (gate E3):**
    `python3 "$ES/scripts/explainer-compose.py" --spec "$W/storyboard.json" --out "$W/public"`
-   It fails on a scene outside the scene area, a word wider than its column, a hole over 0.3 s or an overlap over
-   0.3 s, an anchor out of order, an item outside its scene, a number without a source, or a custom file that breaks
-   the contract. Storyboard problems go back to the Director with the message; custom-file problems are yours.
+   It fails on a scene outside the scene area (text and cards end by y 1235, S7), a word wider than its column, a hole
+   over 0.3 s, two scenes overlapping (one hands over to the next on its cut, S9), an anchor out of order, an item
+   outside its scene, a hook item after 0.8 s (S8), a voice over 90 s, a number without a source, or a custom file that
+   breaks the contract. Storyboard problems go back to the Director with the message; custom-file problems are yours.
 4. **Lint:** `npx hyperframes check "$W/public"`. Errors are fixed. Known warnings: `nested_structure_needs_subcomposition`
    on the hosts (the kit's structure, harmless); the label font's `SFMono-Regular` fallback has no mapping (harmless).
 5. **Gate E4, beats:** `python3 "$SK/scripts/beat-check.py" --index "$W/public/index.html" --transcript "$W/transcript.json"`
@@ -52,18 +53,19 @@ a render takes minutes.
    once. No FFmpeg means no bed: the composer warns.
 7. **Gate E5, a clean picture:** `python3 "$ES/scripts/layout-check.py" --index "$W/public/index.html"`: no text
    over text, nothing crossing a label, nothing out of its card or outside the safe area, no text under 28 px, no
-   clipped text, every colour pair at WCAG AA. It runs in Chromium on this machine (HyperFrames' own puppeteer and
+   clipped text, every text at 3:1 or more against what is really behind it, and **every handover** looked at every 2
+   frames across its cut: the old scene must be gone before the new one shows (S9). It runs in Chromium on this machine (HyperFrames' own puppeteer and
    Chrome) and costs no tokens. A failure names the scene and the text: shorten the words in the storyboard (the
    Director's) or fix a custom file (yours), compose again, and re-run until it prints E5 PASS.
-8. **Stills with the safe zone:**
+8. **Stills, settled (S10):**
    ```bash
-   python3 "$SK/scripts/snap-beats.py" --project "$W" --at 0.35 --at <each scene's in + 0.6> --at <duration - 0.1>
-   python3 "$RS/scripts/reels-safezone.py" --dir "$W/snaps" --out "$W/snaps/guides" --sheet
+   python3 "$ES/scripts/stills.py" --index "$W/public/index.html" --out "$W/snaps/stills"
+   python3 "$RS/scripts/reels-safezone.py" --dir "$W/snaps/stills" --out "$W/snaps/guides" --sheet
    ```
-   (the composer prints the snapshot moments). Custom scenes: also at their middle and out. **Open the sheet and every
-   guided still:** nothing in a red band, except the bottom band's top strip down to y 1420 (the explainer's scene
-   area runs to Instagram's clear line, lower than the Reels guide's all-platform line at 1248); the scene inside its
-   area; captions in the band at y 330 to 470 (the guide's
+   `stills.py` empties the folder, then takes one full-size still of every scene once it has settled (all of it
+   arrived, never mid-entrance), the hook at 0.3, 0.7 and 1.0 s, and a sheet. Custom scenes: also snap their middle.
+   **Open the sheet and every guided still:** nothing in a red band (text and cards end by y 1235, the guides' line);
+   the scene inside its area; captions in the band at y 330 to 470 (the guide's
    cyan slot is the Reels caption place, lower down: ignore it); text readable on its background; counts at their
    final values by the next scene; no half-faded scene where a full one should be. Then **judge them as a design
    director** (MOTION.md §5), full size and at 200 px wide: the hero big and clear, nothing small in empty space, no
@@ -77,7 +79,7 @@ After a note: the storyboard changes only through the Director; custom files are
 
 ## Done when
 
-E3 passes, `hyperframes check` has no errors, beat-check and pace-check are clean (E4), `snaps/guides/sheet.png` and
+E3 passes, `hyperframes check` has no errors, beat-check and pace-check are clean (E4), E5 passes, `snaps/stills/`, `snaps/guides/sheet.png` and
 `SCENES.md` are current, and you have looked at every guided still.
 
 ## Never
@@ -85,6 +87,9 @@ E3 passes, `hyperframes check` has no errors, beat-check and pace-check are clea
 - Render the video; edit `storyboard.json` yourself; edit a library scene to make one storyboard fit.
 - Load anything from the network in a page or a custom scene.
 - Pass a still you have not looked at.
+- Edit a shared script (the composer, a library scene, a gate) to get a build through: report what must change and
+  why, and the Producer has the Librarian make it with a test (S11). The RAG reel's composer was edited twice by
+  hand and a skill update silently undid it.
 
 ## Report
 

@@ -77,6 +77,29 @@ class Plan(unittest.TestCase):
         r = run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
+    def test_hints_for_the_new_scenes_anchor_their_pieces(self):
+        # the writer hints a picture in a line; the planner lands its pieces on the words that say them
+        script = copy.deepcopy(SCRIPT)
+        script["lines"][4]["viz"] = {"type": "chat", "messages": [{"role": "user", "text": "Which passages?"},
+                                                                  {"role": "assistant", "text": "The answer from them"}]}
+        script["lines"][5]["viz"] = {"type": "jiggle-delete", "tiles": [{"label": "Budgeting"}, {"label": "Risk", "at": "risk"},
+                                                                        {"label": "Capital"}]}
+        script["lines"][2]["viz"] = {"type": "gravity-drop", "items": ["saved", "year"]}
+        _, sb, words = self.plan(script)
+        said = lambda a: words[int(a.split(":")[1])]["text"]
+        chat = next(s for s in sb["scenes"] if s["type"] == "chat")
+        self.assertEqual([said(m["at"]) for m in chat["messages"]], ["passages", "answer"])
+        jd = next(s for s in sb["scenes"] if s["type"] == "jiggle-delete")
+        self.assertEqual([("at" in t) for t in jd["tiles"]], [False, True, False])     # only the tile that goes away
+        self.assertEqual(said(jd["tiles"][1]["at"]), "risk.")
+        script["lines"][2]["viz"] = {"type": "gravity-drop", "items": [{"text": "Cash", "at": "year"}, "saved"]}
+        _, sb2, _ = self.plan(script)
+        gd2 = next(s for s in sb2["scenes"] if s["type"] == "gravity-drop")
+        self.assertEqual(said(gd2["items"][0]["at"]), "year.")         # an "at" written as a word is kept
+        gd = next(s for s in sb["scenes"] if s["type"] == "gravity-drop")
+        self.assertEqual([said(i["at"]) for i in gd["items"]], ["saved", "year."])
+        self.assertTrue(all("text" in i for i in gd["items"]))
+
     def test_the_grounds_change_with_the_story(self):
         # the hook on the dark ground, the payoff on blue, light grounds between (the reference's rhythm)
         script = dict(copy.deepcopy(SCRIPT), payoff="l4")
