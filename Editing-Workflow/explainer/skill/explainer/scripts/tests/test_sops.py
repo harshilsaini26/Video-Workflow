@@ -40,6 +40,15 @@ class Stills(unittest.TestCase):
         if shutil.which("ffmpeg"):
             self.assertIn("sheet.png", names)
 
+    def test_a_folder_holding_other_work_is_never_wiped(self):
+        # a slip such as --out videos/<project> must not delete the script, the voice and STATUS.md
+        d = scratch(self)
+        keep = write(os.path.join(d, "proj", "STATUS.md"), "# Status")
+        r = run("stills.py", "--index", os.path.join(d, "public", "index.html"), "--out", os.path.join(d, "proj"))
+        self.assertNotEqual(r.returncode, 0)
+        self.assertTrue(os.path.exists(keep))
+        self.assertIn("STATUS.md", r.stdout + r.stderr)
+
 
 class SkillVersion(unittest.TestCase):
     def test_a_skill_changed_after_its_pin_is_named(self):
@@ -60,6 +69,22 @@ class SkillVersion(unittest.TestCase):
         r = go("--check", status)
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("explainer-compose.py", r.stdout)
+
+    def test_the_voice_rates_the_skill_writes_itself_do_not_break_the_pin(self):
+        # tts-kokoro.py --samples writes voice-rates.json into the skill at Checkpoint A, after the pin taken at ingest:
+        # machine-written state is not a change to the skill
+        d = scratch(self)
+        skill = os.path.join(d, "skill")
+        shutil.copytree(os.path.dirname(SCRIPTS), skill, ignore=shutil.ignore_patterns("__pycache__", "vendor", "tests"))
+        status = write(os.path.join(d, "STATUS.md"), "# Status\n\n| Field | Value |\n|---|---|\n| Project | t |\n")
+        tool = os.path.join(skill, "scripts", "skill-version.py")
+        import subprocess, sys
+        go = lambda *a: subprocess.run([sys.executable, tool] + list(a), capture_output=True, text=True, encoding="utf-8", errors="replace")
+        self.assertEqual(go("--pin", status).returncode, 0)
+        write(os.path.join(skill, "voice-rates.json"), '{"am_michael@1": 2.61}')
+        write(os.path.join(skill, ".DS_Store"), "x")
+        r = go("--check", status)
+        self.assertEqual(r.returncode, 0, r.stdout)
 
 
 class Preflight(unittest.TestCase):

@@ -8,13 +8,14 @@
 The RAG reel's skill was updated mid-session and silently undid a composer fix, and makers edited shared scripts in
 .claude/ where nothing is versioned. A pin makes both visible: the Producer pins at ingest and checks before each stage;
 a change is the creator's call (keep the pin, or re-pin and say so in STATUS.md). The hash covers every file but tests,
-caches and the vendor folder; a manifest beside STATUS.md (.skill-manifest.json) names what changed.
+caches, the vendor folder and what the tools write themselves (voice-rates.json); a manifest beside STATUS.md (.skill-manifest.json) names what changed.
 """
 import argparse, hashlib, json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SKIP_DIRS = {"__pycache__", "tests", "vendor", ".git"}
+SKIP_FILES = {"voice-rates.json", ".DS_Store", "Thumbs.db"}   # written by the skill's own tools or the OS, not changes to it
 
 
 def manifest(root=ROOT):
@@ -22,7 +23,7 @@ def manifest(root=ROOT):
     for d, dirs, files in os.walk(root):
         dirs[:] = sorted(x for x in dirs if x not in SKIP_DIRS)
         for f in sorted(files):
-            if f.endswith((".pyc", ".log")):
+            if f.endswith((".pyc", ".log")) or f in SKIP_FILES:
                 continue
             path = os.path.join(d, f)
             with open(path, "rb") as fh:

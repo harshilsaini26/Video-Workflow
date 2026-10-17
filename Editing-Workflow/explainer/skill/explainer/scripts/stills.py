@@ -23,6 +23,10 @@ def main():
     ap.add_argument("--index", required=True)
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
+    if os.path.isdir(a.out):                          # stills are rewritten fresh, so their folder holds nothing else
+        other = sorted(n for n in os.listdir(a.out) if not (n.endswith(".png") or n == "STILLS.md"))
+        if other:
+            sys.exit("%s holds other work (%s): give stills their own folder, such as snaps/stills" % (a.out, ", ".join(other[:5])))
     pub = os.path.dirname(os.path.abspath(a.index))
     mp = os.path.join(pub, "moments.json")
     if not os.path.exists(mp):
@@ -33,8 +37,9 @@ def main():
     if not (shutil.which("node") and pdir and chrome):
         sys.exit("needs node, puppeteer and Chrome: install HyperFrames (npx hyperframes browser ensure)")
     if os.path.isdir(a.out):
-        shutil.rmtree(a.out)                          # fresh: nothing stale from an earlier build
-    os.makedirs(a.out)
+        for n in os.listdir(a.out):
+            os.remove(os.path.join(a.out, n))
+    os.makedirs(a.out, exist_ok=True)
     shots, rows = [], []
     for t in HOOK:
         name = "hook-%.2f.png" % t

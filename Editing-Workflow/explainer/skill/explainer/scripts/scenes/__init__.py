@@ -76,6 +76,10 @@ class Ctx:
             self.fail(str(e))
         if not self.t_in - 1e-6 <= t <= self.t_out + 1e-6:
             self.fail("an item at %s (%.2f s) is outside the scene (%.2f to %.2f s)" % (ref, t, self.t_in, self.t_out))
+        last = self.t_out - E.EXIT - SEEN
+        if t > last + 1e-6 and last > self.t_in:
+            self.fail("an item at %s (%.2f s) lands too close to the scene's end to be seen (the exit starts at %.2f s): "
+                      "anchor it by %.2f s, or end the scene on a later word" % (ref, t, self.t_out - E.EXIT, last))
         return t
 
     def item(self, ref):
@@ -162,6 +166,7 @@ class Ctx:
         return "tl.fromTo(%s, %s, %s, %.3f);" % (sel_js(sel), js_obj(f), js_obj(g), t)
 
 
+SEEN = 0.3          # an item is on screen at least this long before its scene's exit begins
 SLOT = 0.4        # how strong a piece's empty outline is before its word (its words stay hidden until then)
 LUCIDE_INSTALL = "npm pack lucide-static@0.454.0, then copy its icons/*.svg to assets/vendor/lucide/"
 

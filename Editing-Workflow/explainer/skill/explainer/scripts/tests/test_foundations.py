@@ -70,6 +70,26 @@ class Hook(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout)
 
 
+class Seen(unittest.TestCase):
+    def test_an_item_on_its_scenes_cut_fails(self):
+        # the exit runs over the last 0.2 s before the cut: an item landing there (or on the cut) is never seen, so E3
+        # fails it, naming the item and the latest time it can land
+        board = copy.deepcopy(BOARD)
+        board["scenes"][1] = dict(LIST, id="lc", **{"in": "word:8", "out": "word:18"})
+        board["scenes"][1]["items"] = [{"label": "Search", "at": "word:9"}, {"label": "Answer", "at": "word:18"}]
+        r, _ = compose(self, board)
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("E3 FAIL: lc:", r.stdout)
+        self.assertIn("too close to the scene's end to be seen", r.stdout)
+
+    def test_an_item_with_time_to_be_seen_passes(self):
+        board = copy.deepcopy(BOARD)
+        board["scenes"][1] = dict(LIST, id="lc", **{"in": "word:8", "out": "word:18"})
+        board["scenes"][1]["items"] = [{"label": "Search", "at": "word:9"}, {"label": "Answer", "at": "word:16"}]
+        r, _ = compose(self, board)
+        self.assertEqual(r.returncode, 0, r.stdout)
+
+
 class Ceiling(unittest.TestCase):
     def test_a_voice_over_90_s_fails(self):
         board = copy.deepcopy(BOARD)
