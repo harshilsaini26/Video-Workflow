@@ -52,6 +52,7 @@ class Gate(unittest.TestCase):
                        'stroke="#1e66f5" stroke-width="8"/></svg><div style="position:absolute;left:100px;top:210px;font-size:60px;'
                        'color:#4c4f69;font-weight:700">Answer</div>',
             "too small": '<div class="card" style="left:0;top:0;width:360px;font-size:18px">Answer</div>',
+            "contrast": '<div class="card" style="left:0;top:0;width:360px;background:#1e66f5;color:#7287fd">Answer</div>',
         }
         for word, body in cases.items():
             r = self.check(body)
@@ -111,7 +112,8 @@ class Gate(unittest.TestCase):
                 for key in ("screenshot", "src"):
                     if data.get(key):
                         png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
-                sc = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:1", "out": 16.0}, **data)
+                bg = ("mantle", "blue", "base", "ink")[(len(pages) + 1) % 4]     # every scene type meets the dark grounds too
+                sc = dict({"type": typ, "id": "sc", "bg": bg, "in": "word:1", "out": 16.0}, **data)
                 sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [mc.LEAD_IN, sc], "sound": {"music": "none", "sfx": False}})
                 r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", vendor)
                 self.assertEqual(r.returncode, 0, "%s-%s: %s" % (typ, name, r.stdout))

@@ -92,8 +92,8 @@ def render(scene, ctx, box):
             svg = f.read().strip()
         if not svg.startswith("<svg") or re.search(r"<script|on\w+=|href", svg, re.I):
             ctx.fail("vendor/simple-icons/icons/%s.svg is not a plain SVG mark" % name_)
-        info = brand(ctx.vendor_dir, name_) or {"title": name_, "hex": c["ink"][1:]}
-        svg = re.sub(r"<title>.*?</title>", "", svg, flags=re.S).replace("<svg ", '<svg fill="%s" ' % readable(info["hex"], c["ink"]), 1)
+        info = brand(ctx.vendor_dir, name_) or {"title": name_, "hex": ctx.pc["ink"][1:]}
+        svg = re.sub(r"<title>.*?</title>", "", svg, flags=re.S).replace("<svg ", '<svg fill="%s" ' % readable(info["hex"], ctx.pc["ink"]), 1)
         mark = svg
         title = scene.get("name") or info["title"]
         print("note: %s: %s is a trademark of its owner; show it only to name the brand%s"
@@ -108,7 +108,7 @@ def render(scene, ctx, box):
         if scene.get("sub") else '<div class="lc-sub"></div>'
     html = ('<div class="lc"><div class="lc-card" id="%s-card" style="%s"><div class="lc-mark">%s</div>%s</div>'
             '<div class="lc-name" id="%s-n" style="color:%s">%s</div>%s</div>'
-            % (sid, ctx.card(), mark, badge, sid, ctx.ink, ctx.esc(title), sub))
+            % (sid, ctx.paper_card(), mark, badge, sid, ctx.ink, ctx.esc(title), sub))     # the mark on light paper
     t = ctx.t_in
     js = ["tl.fromTo('#%s-card', %s, %s, %.3f);" % (sid, js_obj({"opacity": 0, "scale": 0.6, "y": 60, "rotation": -8}),
                                                     js_obj({"opacity": 1, "scale": 1, "y": 0, "rotation": 0, "duration": 0.6,

@@ -9,6 +9,8 @@
 //                    painted shape with no text in it may run on to area.picture_bottom (1650)
 //         "handover" at a cut, the outgoing and the incoming scene both show content at 30% or more (job handovers)
 //         "small"    text drawn smaller than min_px on the 1080 px frame
+//         "contrast" text under 3:1 against what is really behind it (all text is 28 px or more: WCAG's large-text
+//                    rule), the stage, the background layers and every filled box under it composited
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -110,6 +112,29 @@ for (const s of pg.samples) {
       texts.push({ el, rects, text: nodes.map((n) => n.textContent.trim()).join(" ").slice(0, 40),
                    px: parseFloat(getComputedStyle(el).fontSize) * scale });
     }
+    // the colour really behind a piece of text: the stage, each background layer, then every filled box above them
+    const rgb = (s) => { const m = (s || "").match(/[\d.]+/g); return m ? { r: +m[0], g: +m[1], b: +m[2], a: m.length > 3 ? +m[3] : 1 } : null; };
+    const over = (top, under, a) => ({ r: top.r * a + under.r * (1 - a), g: top.g * a + under.g * (1 - a), b: top.b * a + under.b * (1 - a) });
+    const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+                         return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+    const ratio = (a, b) => { const [h, l] = [lum(a), lum(b)].sort((x, y) => y - x); return (h + 0.05) / (l + 0.05); };
+    const behind = (el) => {
+      const stage = document.getElementById("stage") || document.body;
+      let c = rgb(getComputedStyle(stage).backgroundColor) || { r: 255, g: 255, b: 255 };
+      for (const bg of document.querySelectorAll(".bg")) {
+        const v = rgb(getComputedStyle(bg).backgroundColor), a = alpha(bg);
+        if (v && a > 0) c = over(v, c, a * v.a);
+      }
+      const chain = [];
+      for (let e = el; e && e !== stage; e = e.parentElement) chain.unshift(e);
+      for (const e of chain) {
+        const cs = getComputedStyle(e);
+        if (cs.backgroundImage !== "none" && e !== el) return null;      // a gradient or a picture: not judged here
+        const v = rgb(cs.backgroundColor), a = alpha(e);
+        if (v && v.a > 0.02 && a > 0) c = over(v, c, a * v.a);
+      }
+      return c;
+    };
     const related = (a, b) => a === b || a.contains(b) || b.contains(a);
     // where the letters are: a line box is taller than its glyphs (ascent and descent), so two snug lines of a
     // headline touch boxes without touching letters; collisions are judged on the middle 60% of each line
@@ -118,6 +143,14 @@ for (const s of pg.samples) {
     const hit = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
     for (const t of texts) {
       if (!t.formula && t.px < minPx) out.push({ kind: "small", text: t.text, detail: "text drawn at " + t.px.toFixed(0) + " px (at least " + minPx + "): too small" });
+      if (!t.formula && !t.el.closest("svg")) {
+        const g = behind(t.el), fg = rgb(getComputedStyle(t.el).color);
+        if (g && fg) {
+          const seen = over(fg, g, fg.a * alpha(t.el));
+          const k = ratio(seen, g);
+          if (k < 3) out.push({ kind: "contrast", text: t.text, detail: "contrast " + k.toFixed(2) + ":1 against its ground (3:1 at least)" });
+        }
+      }
       // judged on the letters, not the font's box (a 220 px number's box reaches far above its digits)
       for (const r of t.rects.map((r) => clip(t.el, t.formula ? r : core(r)))) if (r.width > 1 && outside(r)) { out.push({ kind: "outside", text: t.text, detail: "outside the safe area" + where(r) }); break; }
       // its card: the nearest painted element under it (itself included)

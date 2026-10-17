@@ -96,23 +96,23 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.c
+    c = ctx.pc                     # the window is light paper on any ground; only the title under a screenshot is not
     sid = ctx.id
     page_bg, bar_bg, url_bg, dim = c["card"], c["chrome"], c["card"], c["dim"]
     dots = "".join('<i class="br-dot" style="background:%s"></i>' % col for col in (c["bad"], c["warn"], c["good"]))
     url = '<div class="br-url" style="background:%s;color:%s">%s</div>' % (url_bg, dim, ctx.esc(scene.get("domain", "")))
     if scene.get("screenshot"):
         return shot(scene, ctx, box, page_bg, bar_bg, dots, url, dim)
-    parts = ['<div class="br-title" style="color:%s">%s</div>' % (ctx.ink, ctx.esc(scene["title"]))]
+    parts = ['<div class="br-title" style="color:%s">%s</div>' % (c["ink"], ctx.esc(scene["title"]))]
     if scene.get("subtitle"):
         parts.append('<div class="br-sub" style="color:%s">%s</div>' % (dim, ctx.esc(scene["subtitle"])))
     if scene.get("badges"):
         parts.append('<div class="br-badges">%s</div>' % "".join(
-            '<span class="br-badge" style="background:%s;color:%s">%s</span>' % (c["accent_soft"], ctx.ink, ctx.esc(b)) for b in scene["badges"]))
+            '<span class="br-badge" style="background:%s;color:%s">%s</span>' % (c["accent_soft"], c["ink"], ctx.esc(b)) for b in scene["badges"]))
     if scene.get("button"):
         parts.append('<div class="br-btn" style="background:%s;color:%s">%s</div>' % (c["accent"], c["on_accent"], ctx.esc(scene["button"])))
     html = ('<div class="br-win" id="%s-win" style="background:%s;box-shadow:inset 0 0 0 2px %s, %s"><div class="br-bar" style="background:%s">%s%s</div>'
-            '<div class="br-page">%s</div></div>' % (sid, page_bg, c["card_line"], c["shadow"], bar_bg, dots, url, "".join(parts)))
+            '<div class="br-page">%s</div></div>' % (sid, page_bg, c["card_line"], ctx.c["shadow"], bar_bg, dots, url, "".join(parts)))
     n = 1 + bool(scene.get("subtitle")) + len(scene.get("badges", [])) + bool(scene.get("button"))
     js = [ctx.enter("#%s-win" % sid, ctx.t_in, {"y": -60}),
           ctx.enter("#%s .br-title, #%s .br-sub, #%s .br-badge, #%s .br-btn" % (sid, sid, sid, sid), ctx.t_in + 0.2, {"y": 16},
@@ -127,12 +127,12 @@ def shot(scene, ctx, box, page_bg, bar_bg, dots, url, dim):
     size = png_size(src)
     if not size:
         ctx.fail("screenshot %s is not a PNG (take one with snap-page.py)" % scene["screenshot"])
-    cap = '<div class="br-title" style="color:%s">%s</div>' % (ctx.ink, ctx.esc(scene["title"]))
+    cap = '<div class="br-title" style="color:%s">%s</div>' % (ctx.ink, ctx.esc(scene["title"]))       # on the ground
     if scene.get("subtitle"):
-        cap += '<div class="br-sub" style="color:%s">%s</div>' % (dim, ctx.esc(scene["subtitle"]))
+        cap += '<div class="br-sub" style="color:%s">%s</div>' % (ctx.c["dim"], ctx.esc(scene["subtitle"]))
     html = ('<div class="br-win" id="%s-win" style="background:%s;box-shadow:inset 0 0 0 2px %s, %s"><div class="br-bar" style="background:%s">%s%s</div>'
             '<div class="br-view" style="background:%s"><img id="%s-shot" src="%s" alt="" /></div></div><div class="br-cap">%s</div>'
-            % (sid, page_bg, ctx.c["card_line"], ctx.c["shadow"], bar_bg, dots, url, page_bg, sid, ctx.esc(rel), cap))
+            % (sid, page_bg, ctx.pc["card_line"], ctx.c["shadow"], bar_bg, dots, url, page_bg, sid, ctx.esc(rel), cap))
     js = [ctx.enter("#%s-win" % sid, ctx.t_in, {"y": -60, "scale": 0.94}),
           ctx.enter("#%s .br-title, #%s .br-sub" % (sid, sid), ctx.t_in + 0.25, {"y": 16}, stagger=0.08)]
     f = scene.get("focus")

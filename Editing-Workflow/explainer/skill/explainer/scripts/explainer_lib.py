@@ -94,18 +94,28 @@ def rgba(hexcol, alpha):
 def theme(tokens, bg):
     """The colours a scene on background `bg` uses, by role (tokens.json: palette, backgrounds, roles, series):
     bg, card, card_line, ink, dim, muted, line, accent, on_accent, accent2, good, bad, warn, accent_soft, track,
-    shadow, series [(fill, text on it)], highlight {fill, text, handle, handle_border}. One colour means one thing:
-    accent is "what the voice is talking about now"; good, bad and warn are signals, always beside a label."""
+    shadow, series [(fill, text on it)], highlight {fill, text, handle, handle_border}, and the paper roles (paper,
+    paper_ink, paper_dim, paper_line, paper_chrome): a UI mock-up (a browser, a chat, an editor) stays light paper on
+    any ground, like the reference's white windows on blue. One colour means one thing: accent is "what the voice is
+    talking about now"; good, bad and warn are signals, always beside a label.
+
+    A background may override roles, series and highlight (tokens.backgrounds.<bg>): on `blue` and `ink` the text is
+    light, cards are a see-through light glass ([colour, alpha]), and the accent is one that shows on that ground."""
     p = tokens["palette"]
     b = tokens["backgrounds"][bg]
-    c = {k: p[v] for k, v in tokens["roles"].items()}
-    c.update(bg=p[b["fill"]], card=p[b["card"]], card_line=p[b["card_line"]])
-    c["accent_soft"] = rgba(c["accent"], 0.12)
-    c["track"] = rgba(c["ink"], 0.08)
+    col = lambda v: rgba(p[v[0]], v[1]) if isinstance(v, list) else p[v]
+    roles = dict(tokens["roles"], **b.get("roles", {}))
+    c = {k: p[v] for k, v in roles.items()}
+    c.update(bg=p[b["fill"]], card=col(b["card"]), card_line=col(b["card_line"]))
+    dark = bool(b.get("dark"))
+    c["dark"] = dark
+    c["accent_soft"] = rgba(c["accent"], 0.2 if dark else 0.12)
+    c["track"] = rgba(c["ink"], 0.16 if dark else 0.08)
     sh = tokens["shadow"]
-    c["shadow"] = sh["card"] % rgba(p[sh["color"]], sh["alpha"])
-    c["series"] = [(p[f], p[o]) for f, o in tokens["series"]]
-    c["highlight"] = {k: p[v] for k, v in tokens["highlight"].items()}
+    c["shadow"] = sh["card"] % rgba(p[sh["color"]] if not dark else p["text"], b.get("shadow_alpha", sh["alpha"]))
+    c["series"] = [(p[f], p[o]) for f, o in b.get("series", tokens["series"])]
+    c["highlight"] = {k: p[v] for k, v in b.get("highlight", tokens["highlight"]).items()}
+    c.update({k: p[v] for k, v in tokens["paper"].items()})
     return c
 
 

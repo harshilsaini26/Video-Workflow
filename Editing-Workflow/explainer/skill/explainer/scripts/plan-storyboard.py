@@ -14,7 +14,9 @@ Each script line becomes one or more scenes, anchored to its own words:
   the start → number; a brand whose mark is in the local simple-icons set → logo-card; line 0 → a title of the hook;
   anything else → title beats of at most 2.5 s, each showing the line's emphasis word or its last key words (a draft:
   replace them with pictures).
-- a line's source goes on its scenes; a `section` break moves the background along mantle → base → mantle.
+- a line's source goes on its scenes. The grounds keep a rhythm, like the reference's: the hook on the dark `ink`, the
+  payoff on `blue`, the light surfaces between (a `section` break moves them along mantle → base → mantle), and inside a
+  section every third scene on `blue`, so the frame never sits on one colour for long.
 Every scene's out is the next scene's in; the last runs to "end". The report lists each scene and the rule that made it.
 """
 import argparse, json, os, re, sys
@@ -25,7 +27,8 @@ from scenes import logo_card
 
 BEAT = 2.5
 HOOK_BY, LEAD = 0.8, 0.2          # explainer_lib's: the hook's items land by 0.8 s, an entrance 0.2 s before its word
-BGS = ["mantle", "base"]          # the two Latte surfaces (tokens.json), alternating at each section break
+BGS = ["mantle", "base"]          # the two light Latte surfaces (tokens.json), alternating at each section break
+HOOK_BG, PAYOFF_BG, BEAT_BG = "ink", "blue", "blue"
 STOP = set("a an and are as at be but by for from has have i in is it its me my of on or our so than that the their them then "
            "there these they this to was we were what when which who will with you your".split())
 ORDINALS = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5}
@@ -241,7 +244,7 @@ def main():
     if not all("line" in w for w in words):
         sys.exit("transcript.json has no line ids: align it with align-script.py")
     brands = logos(a.vendor)
-    scenes, rows, bg, used = [], [], 0, set()
+    scenes, rows, bg, used, in_section = [], [], 0, set(), 0
     for li, ln in enumerate(S.get("lines", [])):
         idx = [i for i, w in enumerate(words) if w["line"] == ln["id"]]
         if not idx:
@@ -253,7 +256,16 @@ def main():
             while sid in used:
                 sid += "_"
             used.add(sid)
-            full = dict({"type": sc["type"], "id": sid, "bg": BGS[bg % len(BGS)], "in": "word:%d" % start}, **{x: y for x, y in sc.items() if x != "type"})
+            ground = BGS[bg % len(BGS)]
+            if not scenes:
+                ground = HOOK_BG
+            elif k == 0 and ln["id"] == S.get("payoff"):
+                ground = PAYOFF_BG
+            else:
+                in_section += 1
+                if in_section % 3 == 0:
+                    ground = BEAT_BG
+            full = dict({"type": sc["type"], "id": sid, "bg": ground, "in": "word:%d" % start}, **{x: y for x, y in sc.items() if x != "type"})
             if ln.get("source"):
                 full["source"] = ln["source"]
             if k == 0 and ln["id"] == S.get("payoff"):
@@ -262,6 +274,7 @@ def main():
             rows.append((ln["id"], sid, sc["type"], rule, " ".join(words[i]["text"] for i in idx)[:60]))
         if ln.get("break") == "section":
             bg += 1
+            in_section = 0
     if not scenes:
         sys.exit("no scenes: no transcript words carry the script's line ids")
     scenes[0]["in"] = "word:0"

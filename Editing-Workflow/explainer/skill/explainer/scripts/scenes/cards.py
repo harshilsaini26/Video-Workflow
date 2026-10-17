@@ -18,7 +18,7 @@ CSS = """
   .cd { position:relative; width:100%%; }
   .cd-card { position:absolute; width:%dpx; height:%dpx; opacity:0; }
   .cd-face { position:absolute; inset:0; border-radius:24px; padding:26px; overflow:hidden; }
-  .cd-tag { font-family: var(--label); font-weight:500; font-size:24px; letter-spacing:.14em; opacity:.7; }
+  .cd-tag { font-family: var(--label); font-weight:500; font-size:24px; letter-spacing:.14em; }
   .cd-n { font-weight:700; font-style:italic; font-size:150px; line-height:1; margin-top:10px; letter-spacing:-.04em; }
   .cd-bar { height:12px; border-radius:6px; margin-top:16px; opacity:.28; }
   .cd-star { position:absolute; right:22px; top:20px; width:46px; height:46px; border-radius:50%%; border:4px solid; }

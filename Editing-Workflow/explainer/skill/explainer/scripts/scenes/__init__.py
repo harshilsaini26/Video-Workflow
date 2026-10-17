@@ -33,7 +33,8 @@ class Ctx:
         self.words, self.tokens = words, tokens
         self.vendor_dir, self.out_dir = vendor_dir, out_dir
         self.bg = bg
-        self.c = E.theme(tokens, bg)          # the colours, by role (explainer_lib.theme)
+        self.c = E.theme(tokens, bg)          # the colours, by role (explainer_lib.theme), on this ground
+        self.pc = E.theme(tokens, "base")     # light paper: inside a UI mock-up (a window, a sheet, a chat) on any ground
         self.ink = self.c["ink"]
         self.ambient_lines = []   # idle motion (a float, a pulse, a slow turn): on the page, but not a change for pace-check
 
@@ -42,6 +43,12 @@ class Ctx:
         soft shadow."""
         c = self.c
         return "background:%s;box-shadow:inset 0 0 0 2px %s, %s" % (c["card"], c["card_line"], c["shadow"])
+
+    def paper_card(self):
+        """A light paper surface on any ground (a window, a sheet, a chat): the paper fill, its hairline, the ground's
+        shadow."""
+        p = self.pc
+        return "background:%s;box-shadow:inset 0 0 0 2px %s, %s" % (p["card"], p["card_line"], self.c["shadow"])
 
     def ambient(self, line):
         self.ambient_lines.append(line)

@@ -77,6 +77,14 @@ class Plan(unittest.TestCase):
         r = run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
+    def test_the_grounds_change_with_the_story(self):
+        # the hook on the dark ground, the payoff on blue, light grounds between (the reference's rhythm)
+        script = dict(copy.deepcopy(SCRIPT), payoff="l4")
+        _, sb, _ = self.plan(script)
+        self.assertEqual(sb["scenes"][0]["bg"], "ink")
+        self.assertEqual([s for s in sb["scenes"] if s["id"].startswith("l4")][0]["bg"], "blue")
+        self.assertIn(sb["scenes"][1]["bg"], ("mantle", "base"))
+
     def test_the_payoff_chimes_and_the_brand_carries_over(self):
         script = dict(copy.deepcopy(SCRIPT), payoff="l4", brand={"handle": "@harshil", "part": 1})
         d, sb, _ = self.plan(script)
@@ -102,7 +110,7 @@ class Plan(unittest.TestCase):
         long_line = [s for s in sb["scenes"] if s["id"].startswith("l4")]
         self.assertGreaterEqual(len(long_line), 2)                       # 16 words, 5.6 s: split into beats
         self.assertTrue(any("passages" in s.get("text", "").lower() for s in long_line))
-        self.assertEqual(sb["scenes"][0]["bg"], "mantle")
+        self.assertEqual(sb["scenes"][0]["bg"], "ink")                     # the hook on the dark ground
         self.assertEqual(next(s for s in sb["scenes"] if s["id"].startswith("l2"))["bg"], "base")   # after the section break
         self.assertIn("passages", sb["captions"]["emphasis"])
 
