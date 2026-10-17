@@ -16,7 +16,7 @@ def clip(path, seconds, fps=30, audio="stereo"):
 
 def audio_info(path):
     j = json.loads(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=channels,sample_rate",
-                                   "-of", "json", path], capture_output=True, text=True, check=True).stdout)
+                                   "-of", "json", path], capture_output=True, text=True, check=True, encoding="utf-8", errors="replace").stdout)
     return [(s["channels"], int(s["sample_rate"])) for s in j["streams"]]
 
 

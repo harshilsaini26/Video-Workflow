@@ -15,11 +15,11 @@ needs_kit = unittest.skipUnless(KIT_SCRIPTS, "the kit's youtube-edit scripts wer
 
 
 def run(script, *args, cwd=None):
-    return subprocess.run([sys.executable, os.path.join(SCRIPTS, script)] + [str(a) for a in args], capture_output=True, text=True, cwd=cwd)
+    return subprocess.run([sys.executable, os.path.join(SCRIPTS, script)] + [str(a) for a in args], capture_output=True, text=True, cwd=cwd, encoding="utf-8", errors="replace")
 
 
 def run_kit(script, *args):
-    return subprocess.run([sys.executable, os.path.join(KIT_SCRIPTS, script)] + [str(a) for a in args], capture_output=True, text=True)
+    return subprocess.run([sys.executable, os.path.join(KIT_SCRIPTS, script)] + [str(a) for a in args], capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
 def scratch(test):
@@ -30,13 +30,13 @@ def scratch(test):
 
 def write(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(data if isinstance(data, str) else json.dumps(data))
     return path
 
 
 def read(path):
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return f.read()
 
 
@@ -46,7 +46,7 @@ def ffmpeg(*args):
 
 def probe(path):
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,width,height,r_frame_rate,avg_frame_rate,duration",
-                        "-show_entries", "format=duration", "-of", "json", path], capture_output=True, text=True, check=True)
+                        "-show_entries", "format=duration", "-of", "json", path], capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
     return json.loads(r.stdout)
 
 

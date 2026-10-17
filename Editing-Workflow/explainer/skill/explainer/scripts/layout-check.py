@@ -26,7 +26,7 @@ def main():
     if not os.path.exists(os.path.join(pub, "moments.json")):
         print("E5 ERROR: no moments.json next to %s: compose the page first (explainer-compose.py writes it)" % a.index)
         sys.exit(2)
-    with open(os.path.join(pub, "moments.json")) as f:
+    with open(os.path.join(pub, "moments.json"), encoding="utf-8") as f:
         moments = json.load(f)
     smp = LC.samples(moments)
     try:

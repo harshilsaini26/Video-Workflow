@@ -43,7 +43,7 @@ per = lambda n, dur, span: span * n / dur if dur else 0.0
 
 def write(path, text):
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    open(path, "w").write(text)
+    open(path, "w", encoding="utf-8").write(text)
 
 # ================================================================================================================
 # full-frame types on the brand wash (compose.py's "cut" layer), and beats that push the footage (#video-wrap in and out)
@@ -63,7 +63,7 @@ def onscreen_words(b):
     return n
 
 def storyboard(path):
-    S = json.load(open(path)); D = float(S["duration"])
+    S = json.load(open(path, encoding="utf-8")); D = float(S["duration"])
     tags = S.get("tags") or ([S["tag"]] if S.get("tag") else [])
     beats = S.get("beats", [])
     words = sum(wc(t.get("label", "")) for t in tags)
@@ -113,7 +113,7 @@ ROWS = [("Duration", lambda r: "%.1f s (%s)" % (r["duration"], mmss(r["duration"
         ("On-screen words / min", lambda r: "%.1f" % r["onscreen_words_per_min"] if "onscreen_words_per_min" in r else "")]
 
 def compare(paths):
-    R = [json.load(open(p)) for p in paths]
+    R = [json.load(open(p, encoding="utf-8")) for p in paths]
     names = [r.get("name") or os.path.basename(os.path.dirname(os.path.abspath(p))) for r, p in zip(R, paths)]
     rows = [(k, [f(r) for r in R]) for k, f in ROWS]
     rows = [(k, v) for k, v in rows if any(v)]
@@ -131,7 +131,7 @@ def compare(paths):
 def meta(path, key):
     """ffmpeg metadata=print file -> [(pts_time, value)]."""
     out, t = [], None
-    for line in open(path):
+    for line in open(path, encoding="utf-8"):
         m = re.search(r"pts_time:([-\d.e]+)", line)
         if m:
             t = float(m.group(1)); continue
@@ -157,7 +157,7 @@ def video(path):
     os.makedirs(args.out, exist_ok=True)
     for f in glob.glob(os.path.join(args.out, "sheet_*.png")): os.remove(f)
     p = json.loads(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,width,height,r_frame_rate",
-                                   "-show_entries", "format=duration", "-of", "json", path], capture_output=True, text=True, check=True).stdout)
+                                   "-show_entries", "format=duration", "-of", "json", path], capture_output=True, text=True, check=True, encoding="utf-8", errors="replace").stdout)
     vs = next(s for s in p["streams"] if s["codec_type"] == "video")
     n, d = [int(x) for x in vs["r_frame_rate"].split("/")]; fps = n / d
     dur = float(p["format"]["duration"]); has_audio = any(s["codec_type"] == "audio" for s in p["streams"])
@@ -230,7 +230,7 @@ def video(path):
     # ---- transcript ----------------------------------------------------------------------------------------------
     wpm, spoken = None, []
     if args.transcript:
-        raw = json.load(open(args.transcript))
+        raw = json.load(open(args.transcript, encoding="utf-8"))
         ws = raw if isinstance(raw, list) else raw.get("words") or [w for sg in raw.get("segments", []) for w in sg.get("words", [])]
         if not ws and isinstance(raw, dict):      # segment-level whisper JSON: spread each segment's words across it
             for sg in raw.get("segments", []):

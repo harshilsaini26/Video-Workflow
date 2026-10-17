@@ -30,7 +30,7 @@ ap.add_argument("--lead", type=float, default=0.25, help="target lead for --sugg
 ap.add_argument("--suggest", action="store_true")
 args = ap.parse_args()
 
-raw = json.load(open(args.transcript))
+raw = json.load(open(args.transcript, encoding="utf-8"))
 words = raw["words"] if isinstance(raw, dict) and "words" in raw else raw
 norm = lambda s: re.sub(r"[^a-z0-9' ]+", " ", s.lower()).split()
 toks = [(norm(w["text"]), float(w["start"])) for w in words]
@@ -68,7 +68,7 @@ if os.path.exists(video):
 else:
     stale = "(no video at %s: staleness not checked)" % video
 
-src = open(args.index).read()
+src = open(args.index, encoding="utf-8").read()
 rows = []   # (id, entry, anchor, word, slack, status, key)
 for m in re.finditer(r"<(div|video)\b([^>]*)>", src):
     tag, attrs = m.group(1), m.group(2)

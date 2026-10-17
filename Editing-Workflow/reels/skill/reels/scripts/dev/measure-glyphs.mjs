@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { launch } from "./_browser.mjs";
+import { pathToFileURL } from "node:url";
 
 const dir = path.resolve(process.argv[2] || ".");
 const chars = [];
@@ -22,7 +23,7 @@ const probe = path.join(dir, "_glyphs.html");   // a file page beside the fonts:
 fs.writeFileSync(probe, `<!doctype html><style>${faces} span { font-size: 1000px; white-space: pre; position: absolute; }</style><body></body>`);
 const browser = await launch();
 const page = await browser.newPage();
-await page.goto("file://" + probe);
+await page.goto(pathToFileURL(probe).href);
 const out = await page.evaluate(async (fonts, chars) => {
   const res = {};
   for (const [key, [fam, w]] of Object.entries(fonts)) {

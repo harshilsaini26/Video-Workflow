@@ -105,7 +105,7 @@ class Ctx:
         path = os.path.join(self.vendor_dir, "lucide", "%s.svg" % name)
         if not os.path.exists(path):
             self.fail("unknown icon %r: no vendor/lucide/%s.svg (browse lucide.dev/icons; get the set with: %s)" % (name, name, LUCIDE_INSTALL))
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             svg = re.sub(r"^(\s*<!--.*?-->)*\s*", "", f.read(), flags=re.S).strip()   # Lucide files open with a licence comment
         if not svg.startswith("<svg") or re.search(r"<script|on\w+=", svg, re.I):
             self.fail("vendor/lucide/%s.svg is not a plain SVG icon" % name)

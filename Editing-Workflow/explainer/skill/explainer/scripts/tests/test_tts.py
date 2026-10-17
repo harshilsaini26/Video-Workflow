@@ -80,7 +80,7 @@ class Voice(unittest.TestCase):
         write(rates, {"_note": "kept", "am_michael@1": 2.4})
         _, _, _, r = self.make(lines, extra=("--samples", os.path.join(d, "samples"), "--rates", rates))
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        got = json.load(open(rates))
+        got = json.load(open(rates, encoding="utf-8"))
         self.assertEqual(got["_note"], "kept")
         for v in ("af_heart", "am_michael", "bf_emma"):
             self.assertGreaterEqual(duration(os.path.join(d, "samples", v + ".wav")), 10.0, v)

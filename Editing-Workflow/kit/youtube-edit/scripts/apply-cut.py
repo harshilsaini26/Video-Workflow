@@ -32,7 +32,7 @@ args = ap.parse_args()
 
 def probe(path, *entries):
     r = subprocess.run(["ffprobe", "-v", "error"] + [x for e in entries for x in ("-show_entries", e)] + ["-of", "json", path],
-                       capture_output=True, text=True, check=True)
+                       capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
     return json.loads(r.stdout)
 
 def num(x, default=0.0):
@@ -56,7 +56,7 @@ half = 0.5 / float(rate)
 snap = lambda t: int(round((Fraction(t) - Fraction(origin)) * rate))
 at = lambda k: origin + float(Fraction(k) / rate)
 
-cl = json.load(open(args.cut_list))
+cl = json.load(open(args.cut_list, encoding="utf-8"))
 FADE = 0.02
 parts, chain, cut_map, skipped = [], [], [], []
 flat = Fraction(0)
@@ -88,7 +88,7 @@ subprocess.run(cmd, check=True)
 flat_d = round(float(flat), 3)
 json.dump({"cuts": [c["flat_start"] for c in cut_map[1:]], "segments": cut_map, "flat_duration": flat_d,
            "source_fps": "%d/%d" % (rate.numerator, rate.denominator), "frame_origin": round(origin, 6)},
-          open(os.path.join(os.path.dirname(args.cut_list), "cut-map.json"), "w"), indent=1)
+          open(os.path.join(os.path.dirname(args.cut_list), "cut-map.json"), "w", encoding="utf-8"), indent=1)
 for s in skipped:
     print("skipped %.3f-%.3f: shorter than half a frame" % (s["start"], s["end"]))
 print("flat cut %.3fs, %d segments, %d jump cuts, snapped to the %s fps grid -> %s"

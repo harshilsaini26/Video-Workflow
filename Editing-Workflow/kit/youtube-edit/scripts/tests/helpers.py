@@ -8,7 +8,7 @@ needs_ffmpeg = unittest.skipUnless(HAS_FFMPEG, "ffmpeg / ffprobe not on PATH")
 
 
 def run(script, *args):
-    return subprocess.run([sys.executable, os.path.join(SCRIPTS, script)] + [str(a) for a in args], capture_output=True, text=True)
+    return subprocess.run([sys.executable, os.path.join(SCRIPTS, script)] + [str(a) for a in args], capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
 def scratch(test):
@@ -19,13 +19,13 @@ def scratch(test):
 
 def write(path, text):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(text if isinstance(text, str) else json.dumps(text))
     return path
 
 
 def read(path):
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return f.read()
 
 
@@ -39,6 +39,6 @@ def ffmpeg(*args):
 
 def probe(path):
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,duration", "-show_entries", "format=duration",
-                        "-of", "json", path], capture_output=True, text=True, check=True)
+                        "-of", "json", path], capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
     p = json.loads(r.stdout)
     return {s["codec_type"]: float(s["duration"]) for s in p["streams"]}, float(p["format"]["duration"])

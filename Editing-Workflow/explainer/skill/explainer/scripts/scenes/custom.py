@@ -118,7 +118,7 @@ def render(scene, ctx, box):
     path = scene["html"] if os.path.isabs(scene["html"]) else os.path.join(ctx.spec_dir, scene["html"])
     if not os.path.exists(path):
         ctx.fail("no custom file at %s" % path)
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         src = f.read()
     errs = lint(src, ctx.id, scene["build"])
     if errs:

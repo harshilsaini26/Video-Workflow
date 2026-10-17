@@ -27,8 +27,8 @@ w = wave.open(os.path.join(D, "audio.wav")); FR = w.getframerate() // 100       
 x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(float)
 if w.getnchannels() > 1: x = x.reshape(-1, w.getnchannels()).mean(axis=1)
 n = len(x) // FR; r = np.sqrt((x[: n * FR].reshape(n, FR) ** 2).mean(axis=1))
-cm = json.load(open(os.path.join(D, "cut-map.json"))); cuts = cm["cuts"]; T = float(cm["flat_duration"])
-W = json.load(open(os.path.join(D, "transcript.json"))); W = W["words"] if isinstance(W, dict) else W
+cm = json.load(open(os.path.join(D, "cut-map.json"), encoding="utf-8")); cuts = cm["cuts"]; T = float(cm["flat_duration"])
+W = json.load(open(os.path.join(D, "transcript.json"), encoding="utf-8")); W = W["words"] if isinstance(W, dict) else W
 sp = np.where(r > a.speech)[0]
 word_before = lambda t: ([q["text"] for q in W if q["start"] < t] or ["(start)"])[-1]
 word_after = lambda t: ([q["text"] for q in W if q["start"] >= t - 0.05] or ["(end)"])[0]
@@ -112,4 +112,4 @@ if "tail_drop" in edges: print("  tail %.2f s: drop %.3f-%.3f" % (tail, *edges["
 if a.plan:
     print("PLAN " + " ".join("--drop-flat %.3f-%.3f" % ab for ab in sorted(plan)) if plan else "PLAN none")
 if a.json:
-    json.dump({"section": a.section, "rows": rows, "edges": edges, "plan": sorted(plan)}, open(a.json, "w"), indent=1)
+    json.dump({"section": a.section, "rows": rows, "edges": edges, "plan": sorted(plan)}, open(a.json, "w", encoding="utf-8"), indent=1)

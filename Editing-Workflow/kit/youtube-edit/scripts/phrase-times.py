@@ -7,7 +7,7 @@ Usage: python3 phrase-times.py --transcript W/transcript.json "most important pa
 import argparse, json, re
 ap = argparse.ArgumentParser(); ap.add_argument("--transcript", required=True); ap.add_argument("phrases", nargs="+"); ap.add_argument("--after", type=float, default=0.0)
 a = ap.parse_args()
-d = json.load(open(a.transcript)); W = d["words"] if isinstance(d, dict) and "words" in d else d
+d = json.load(open(a.transcript, encoding="utf-8")); W = d["words"] if isinstance(d, dict) and "words" in d else d
 norm = lambda s: re.sub(r"[^a-z0-9' ]", "", s.lower()).split()
 toks = [(norm(w["text"]), float(w["start"]), float(w["end"])) for w in W]
 toks = [(t[0][0] if t[0] else "", t[1], t[2]) for t in toks]

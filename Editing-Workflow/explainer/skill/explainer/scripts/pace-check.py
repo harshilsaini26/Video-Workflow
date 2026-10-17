@@ -30,7 +30,7 @@ def main():
     path = a.moments or os.path.join(os.path.dirname(os.path.abspath(a.index)), "moments.json")
     if not os.path.exists(path):
         sys.exit("no %s: compose the page again with explainer-compose.py" % path)
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         M = json.load(f)
     D, scenes, spans = float(M["duration"]), M["scenes"], sorted(M["spans"])
 

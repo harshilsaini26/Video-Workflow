@@ -117,7 +117,7 @@ class Gate(unittest.TestCase):
                 sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [mc.LEAD_IN, sc], "sound": {"music": "none", "sfx": False}})
                 r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", vendor)
                 self.assertEqual(r.returncode, 0, "%s-%s: %s" % (typ, name, r.stdout))
-                with open(os.path.join(d, "public", "moments.json")) as f:
+                with open(os.path.join(d, "public", "moments.json"), encoding="utf-8") as f:
                     pages.append({"index": os.path.join(d, "public", "index.html"), "samples": LC.samples(json.load(f))})
         issues = LC.probe_pages(pages)
         self.assertEqual([], ["%s: %s %s" % (os.path.basename(os.path.dirname(os.path.dirname(i["page"]))), i["text"], i["detail"])

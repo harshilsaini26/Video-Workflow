@@ -39,7 +39,7 @@ def audio(path, rate, seconds):
 
 def duration(path):
     return float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of",
-                                 "default=nk=1:nw=1", path], capture_output=True, text=True).stdout.strip())
+                                 "default=nk=1:nw=1", path], capture_output=True, text=True, encoding="utf-8", errors="replace").stdout.strip())
 
 a = audio(args.a, args.rate, args.window)
 b = audio(args.b, args.rate, args.window)

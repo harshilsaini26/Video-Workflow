@@ -24,17 +24,17 @@ args = ap.parse_args()
 if not os.path.exists(FINDER):
     sys.exit("find-cut-candidates.mjs not found at %s (it ships next to this script)" % FINDER)
 
-raw = json.load(open(args.transcript))
+raw = json.load(open(args.transcript, encoding="utf-8"))
 words = raw["words"] if isinstance(raw, dict) and "words" in raw else raw
 words = [{"text": w["text"], "start": float(w["start"]), "end": float(w["end"]), "type": "word"} for w in words if w.get("text")]
 os.makedirs(args.out_dir, exist_ok=True)
 kit_json = os.path.join(args.out_dir, "flat-transcript.json")
 json.dump({"language_code": "en", "audio_duration_secs": words[-1]["end"] if words else 0,
-           "text": " ".join(w["text"] for w in words), "words": words}, open(kit_json, "w"))
-res = subprocess.run(["node", FINDER, kit_json, "--out-dir", args.out_dir], capture_output=True, text=True)
+           "text": " ".join(w["text"] for w in words), "words": words}, open(kit_json, "w", encoding="utf-8"))
+res = subprocess.run(["node", FINDER, kit_json, "--out-dir", args.out_dir], capture_output=True, text=True, encoding="utf-8", errors="replace")
 if res.returncode != 0:
     sys.exit(res.stderr)
 summary = json.loads(res.stdout)
 md = summary["outputs"]["md"]
 print("candidates: %d %s -> %s" % (summary["candidates"], json.dumps(summary["counts"]), md))
-print(open(md).read())
+print(open(md, encoding="utf-8").read())

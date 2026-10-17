@@ -24,7 +24,7 @@ for n in os.listdir(a.public):
     if os.path.isdir(s): shutil.copytree(s, d)
     elif n.endswith((".mp4", ".mov", ".webm")) and os.path.getsize(s) > 50e6: os.link(s, d)
     else: shutil.copy2(s, d)
-html = open(os.path.join(a.public, "index.html")).read()
+html = open(os.path.join(a.public, "index.html"), encoding="utf-8").read()
 html = re.sub(r"\n\s*<audio [^>]*></audio>", "", html)
 def fix(m):
     tag = m.group(0)
@@ -49,5 +49,5 @@ reg = re.search(r'window\.__timelines\["([^"]+)"\] = tl;', html)
 if not reg: raise SystemExit("no window.__timelines registration found")
 html = html.replace(reg.group(0), "const __outer = window.gsap.timeline({ paused: true }); tl.pause(0);\n        __outer.add(tl.tweenFromTo(%.4f, %.4f, { ease: 'none', duration: %.4f }), 0);\n"
                     "        window.__timelines[\"%s\"] = __outer;" % (T0, T1, W, reg.group(1)))
-open(os.path.join(dst, "index.html"), "w").write(html)
+open(os.path.join(dst, "index.html"), "w", encoding="utf-8").write(html)
 print("window %.3f-%.3f (%.3f s, %d frames) -> %s" % (T0, T1, W, round(W * a.fps), dst))

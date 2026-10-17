@@ -39,7 +39,7 @@ ap.add_argument("--work", help="work folder (default: <manifest dir>/assembly-wo
 args = ap.parse_args()
 
 mdir = os.path.dirname(os.path.abspath(args.manifest))
-M = json.load(open(args.manifest))
+M = json.load(open(args.manifest, encoding="utf-8"))
 W, H, FPS = int(M.get("width", 3840)), int(M.get("height", 2160)), int(M.get("fps", 30))
 LUFS = M.get("loudness", -14)
 work = args.work or os.path.join(mdir, "assembly-work")
@@ -56,7 +56,7 @@ def resolve(p):
 def probe(path):
     j = json.loads(subprocess.run(["ffprobe", "-v", "error", "-show_entries",
         "stream=codec_type,codec_name,width,height,r_frame_rate,pix_fmt,sample_rate,channels,color_transfer:format=duration",
-        "-of", "json", path], capture_output=True, text=True, check=True).stdout)
+        "-of", "json", path], capture_output=True, text=True, check=True, encoding="utf-8", errors="replace").stdout)
     v = next((s for s in j["streams"] if s["codec_type"] == "video"), {})
     a = next((s for s in j["streams"] if s["codec_type"] == "audio"), None)
     return {"dur": float(j["format"]["duration"]), "w": v.get("width"), "h": v.get("height"),
@@ -68,7 +68,7 @@ def measure_loudness(path, ss, to):
     if ss: cmd += ["-ss", str(ss)]
     if to: cmd += ["-to", str(to)]
     cmd += ["-vn", "-af", "loudnorm=I=%s:TP=-1.5:LRA=11:print_format=json" % LUFS, "-f", "null", "-"]
-    out = subprocess.run(cmd, capture_output=True, text=True).stderr
+    out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace").stderr
     blob = out[out.rfind("{"):out.rfind("}") + 1]
     return json.loads(blob)
 
@@ -117,7 +117,7 @@ lst = os.path.join(work, "concat.txt")
 joined = os.path.join(work, "joined.mp4")
 written += [lst, joined]
 # absolute: ffmpeg reads each name relative to concat.txt, so a relative --work would be counted twice
-open(lst, "w").write("".join("file '%s'\n" % os.path.abspath(c).replace("'", "'\\''") for c in conformed))
+open(lst, "w", encoding="utf-8").write("".join("file '%s'\n" % os.path.abspath(c).replace("'", "'\\''") for c in conformed))
 subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", "-movflags", "+faststart", joined], check=True)
 
 final_src = joined
@@ -155,8 +155,8 @@ for i, r in enumerate(rows):
 lines += ["", "Loudness target per segment: %s LUFS (true peak -1.5 dBTP)." % LUFS,
           "Music: %s" % ("%s at %s dB" % (os.path.basename(resolve(music["file"])), music.get("db", -26)) if music and music.get("file") else "none (silence by default)"),
           "", "## YouTube chapters", ""] + ["%s %s" % c for c in chapters]
-open(os.path.join(os.path.dirname(os.path.abspath(args.out)), "ASSEMBLY.md"), "w").write("\n".join(lines) + "\n")
-open(os.path.join(os.path.dirname(os.path.abspath(args.out)), "chapters.txt"), "w").write("".join("%s %s\n" % c for c in chapters))
+open(os.path.join(os.path.dirname(os.path.abspath(args.out)), "ASSEMBLY.md"), "w", encoding="utf-8").write("\n".join(lines) + "\n")
+open(os.path.join(os.path.dirname(os.path.abspath(args.out)), "chapters.txt"), "w", encoding="utf-8").write("".join("%s %s\n" % c for c in chapters))
 if not args.keep_work:
     if work_is_ours:
         shutil.rmtree(work, ignore_errors=True)

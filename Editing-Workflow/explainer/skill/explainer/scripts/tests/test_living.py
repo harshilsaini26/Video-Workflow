@@ -33,7 +33,7 @@ class Living(unittest.TestCase):
         # turn alternating from scene to scene; the scene's own fit (its .live scale) is never animated
         html, out = self.build(BOARD)
         cam = TOK["ambient"]["camera"]
-        m = json.load(open(os.path.join(out, "moments.json")))
+        m = json.load(open(os.path.join(out, "moments.json"), encoding="utf-8"))
         for k, sc in enumerate(m["scenes"]):
             yaw = cam["yaw"] * (1 if k % 2 == 0 else -1)
             self.assertIn("tl.fromTo('#%s-cam', { scale: %s, y: %s, rotationY: %s }, { scale: %s, y: %s, rotationY: %s, duration: %s, "
@@ -102,7 +102,7 @@ class Living(unittest.TestCase):
 
     def test_ambient_motion_is_not_a_change(self):
         _, out = self.build(BOARD)
-        with open(os.path.join(out, "moments.json")) as f:
+        with open(os.path.join(out, "moments.json"), encoding="utf-8") as f:
             spans = json.load(f)["spans"]
         self.assertLess(max(e - s for s, e in spans), 2.0)        # idle floats and glow shifts are not changes
         board = copy.deepcopy(BOARD)

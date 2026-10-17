@@ -19,11 +19,11 @@ class Heights(unittest.TestCase):
         r = run("reels-compose.py", "--spec", sp, "--out", os.path.join(d, "public"))
         if r.returncode:
             return None, r.stderr.strip()[-200:]
-        with open(os.path.join(d, "public", "layout.json")) as f:
+        with open(os.path.join(d, "public", "layout.json"), encoding="utf-8") as f:
             return json.load(f)[0]["height"], ""
 
     def test_predictions_match_chromium(self):
-        with open(FIX) as f:
+        with open(FIX, encoding="utf-8") as f:
             rows = json.load(f)
         self.assertGreaterEqual(len(rows), 40)
         bad = []

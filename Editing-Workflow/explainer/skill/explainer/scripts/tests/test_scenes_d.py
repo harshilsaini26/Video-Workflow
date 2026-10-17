@@ -96,7 +96,7 @@ class Shared(Case):
 
     def test_no_hex_colours_in_the_modules(self):
         for t in GOOD:
-            with open(os.path.join(SCRIPTS, "scenes", "%s.py" % t)) as f:
+            with open(os.path.join(SCRIPTS, "scenes", "%s.py" % t), encoding="utf-8") as f:
                 self.assertNotRegex(f.read(), r"#[0-9A-Fa-f]{6}\b", t)
 
 

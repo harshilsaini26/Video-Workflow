@@ -32,5 +32,5 @@ for w in words:
 chunks = L.chunk_words(words, a.max_words, a.max_chars * 2, gap=0.6, tail=0.8, min_dur=1.0)
 if a.duration and chunks:
     chunks[-1]["end"] = min(chunks[-1]["end"], a.duration)
-open(a.out, "w").write(L.to_srt(chunks, a.max_chars))
+open(a.out, "w", encoding="utf-8").write(L.to_srt(chunks, a.max_chars))
 print("wrote %s: %d cues" % (a.out, len(chunks)))

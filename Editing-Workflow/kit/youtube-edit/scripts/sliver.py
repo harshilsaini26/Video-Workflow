@@ -21,7 +21,7 @@ n = len(x) // FR; r = np.sqrt((x[: n * FR].reshape(n, FR) ** 2).mean(axis=1))
 F = lambda t: int(round(t * 100))
 rm = lambda a, b: float(np.sqrt(np.mean(x[int(a * sr):max(int(b * sr), int(a * sr) + 1)] ** 2)))
 LEAD, TAIL, Q, QRUN = 0.08, 0.10, 70, 5
-P = A.cut_list; sec = os.path.basename(os.path.dirname(os.path.abspath(P))); d = json.load(open(P)); out, changes = [], []
+P = A.cut_list; sec = os.path.basename(os.path.dirname(os.path.abspath(P))); d = json.load(open(P, encoding="utf-8")); out, changes = [], []
 def quiet_runs(i0, i1):
     runs, k = [], i0
     while k < i1:
@@ -70,4 +70,4 @@ for c in changes: print("  " + c)
 if fix and changes:
     d["kept"] = out; d["kept_seconds"] = round(sum(k["end"] - k["start"] for k in out), 3)
     d.setdefault("hand_fixes", []).extend("sliver.py: " + c for c in changes)
-    json.dump(d, open(P, "w"), indent=1); print("wrote %s (%d segments, %.2f s)" % (P, len(out), d["kept_seconds"]))
+    json.dump(d, open(P, "w", encoding="utf-8"), indent=1); print("wrote %s (%d segments, %.2f s)" % (P, len(out), d["kept_seconds"]))

@@ -166,7 +166,7 @@ def compose(root, vendor, only=None):
             case = "%s-%s" % (typ, name)
             d = os.path.join(root, case)
             os.makedirs(d, exist_ok=True)
-            with open(os.path.join(d, "transcript.json"), "w") as f:
+            with open(os.path.join(d, "transcript.json"), "w", encoding="utf-8") as f:
                 json.dump({"words": [{"text": w, "start": 0.5 + i * 0.4, "end": 0.8 + i * 0.4} for i, w in enumerate(WORDS)]}, f)
             with wave.open(os.path.join(d, "voice.wav"), "wb") as w:
                 w.setnchannels(1); w.setsampwidth(2); w.setframerate(8000)
@@ -175,22 +175,22 @@ def compose(root, vendor, only=None):
                 if data.get(key):
                     png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
             scene = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:1", "out": D}, **data)
-            with open(os.path.join(d, "storyboard.json"), "w") as f:
+            with open(os.path.join(d, "storyboard.json"), "w", encoding="utf-8") as f:
                 json.dump({"id": case, "scenes": [LEAD_IN, scene]}, f)
             r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "explainer-compose.py"), "--spec", os.path.join(d, "storyboard.json"),
-                                "--out", os.path.join(d, "public"), "--vendor", vendor], capture_output=True, text=True)
+                                "--out", os.path.join(d, "public"), "--vendor", vendor], capture_output=True, text=True, encoding="utf-8", errors="replace")
             if r.returncode:
                 sys.exit("%s: %s" % (case, r.stdout + r.stderr))
             cases.append({"case": case, "type": typ, "scene": scene})
-    with open(os.path.join(root, "cases.json"), "w") as f:
+    with open(os.path.join(root, "cases.json"), "w", encoding="utf-8") as f:
         json.dump(cases, f, indent=1)
     print("composed %d cases in %s" % (len(cases), root))
 
 
 def merge(root, measured, fixture=FIXTURE):
-    cases = {c["case"]: c for c in json.load(open(os.path.join(root, "cases.json")))}
+    cases = {c["case"]: c for c in json.load(open(os.path.join(root, "cases.json"), encoding="utf-8"))}
     rows = []
-    for line in open(measured):
+    for line in open(measured, encoding="utf-8"):
         m = json.loads(line)
         c = cases[m["case"]]
         rows.append({"case": m["case"], "type": c["type"], "scene": c["scene"], "width": m["width"], "height": m["height"]})

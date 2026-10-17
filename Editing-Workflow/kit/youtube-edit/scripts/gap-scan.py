@@ -21,7 +21,7 @@ ap.add_argument("--body", type=float, default=20.0)
 ap.add_argument("--max", type=float, default=30.0)
 args = ap.parse_args()
 
-html = open(args.index).read()
+html = open(args.index, encoding="utf-8").read()
 root = re.search(r'<div[^>]*data-composition-id="([^"]+)"[^>]*data-duration="([\d.]+)"', html)
 if not root:
     sys.exit("no root composition found")

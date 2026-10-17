@@ -85,7 +85,7 @@ ENGINES = {"fake": fake_engine, "kokoro": kokoro_engine}
 
 
 def ffmpeg(*args):
-    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-y"] + list(args), capture_output=True, text=True)
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-y"] + list(args), capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode:
         sys.exit("ffmpeg failed: " + r.stderr[-800:])
     return r.stderr
@@ -139,7 +139,7 @@ def main():
     ap.add_argument("--samples", help="write the opening (10 s or more) in each sample voice here, measure each voice's rate, then stop")
     ap.add_argument("--rates", default=os.path.join(HERE, "..", "voice-rates.json"), help="where --samples writes the rates")
     a = ap.parse_args()
-    with open(a.script) as f:
+    with open(a.script, encoding="utf-8") as f:
         S = json.load(f)
     lines = S["lines"]
     if a.only and a.only not in {ln["id"] for ln in lines}:
@@ -183,7 +183,7 @@ def main():
         if a.only is None or ln["id"] == a.only or not os.path.exists(p):
             text = say(ln)
             write_wav(p, synth(text, voice, a.speed))
-            with open(os.path.join(ldir, ln["id"] + ".txt"), "w") as f:
+            with open(os.path.join(ldir, ln["id"] + ".txt"), "w", encoding="utf-8") as f:
                 f.write(text + "\n")
         paths.append(p)
     pauses = [PAUSE.get(ln.get("break") or "sentence", PAUSE["sentence"]) for ln in lines[:-1]] + [0.0]

@@ -203,7 +203,7 @@ def main():
     ap.add_argument("--kit", default="", help="the kit's youtube-edit folder (for its gsap.min.js); found automatically when installed")
     a = ap.parse_args()
 
-    with open(a.spec) as f:
+    with open(a.spec, encoding="utf-8") as f:
         S = json.load(f)
     spec_dir = os.path.dirname(os.path.abspath(a.spec))
     rel = lambda p: p if os.path.isabs(p) else os.path.join(spec_dir, p)
@@ -216,7 +216,7 @@ def main():
     spath = rel(S.get("script", "script.json"))
     source_keys = None
     if os.path.exists(spath):
-        with open(spath) as f:
+        with open(spath, encoding="utf-8") as f:
             source_keys = set((json.load(f).get("sources") or {}).keys())
     if not os.path.exists(tpath):
         fail("no transcript at %s: run align-script.py first" % tpath)
@@ -548,12 +548,12 @@ def main():
 </html>
 """ % (CSS, "".join(h + "\n" for h in head), html.escape(str(S["id"]), quote=True), D, bg_html, voice_len, bed, "".join(hosts), cap_html, gsap_src, HELPERS,
        "\n        ".join(bg_js), "\n        ".join(js), "\n        ".join(cap_js), D, js_str(S["id"]))
-    with open(os.path.join(out, "index.html"), "w") as f:
+    with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as f:
         f.write(page)
     moments["spans"].sort()
-    with open(os.path.join(out, "moments.json"), "w") as f:
+    with open(os.path.join(out, "moments.json"), "w", encoding="utf-8") as f:
         json.dump(moments, f, indent=1)
-    with open(os.path.join(out, "hyperframes.json"), "w") as f:
+    with open(os.path.join(out, "hyperframes.json"), "w", encoding="utf-8") as f:
         json.dump({"$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
                    "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",
                    "paths": {"blocks": "compositions", "components": "compositions/components", "assets": "assets"},

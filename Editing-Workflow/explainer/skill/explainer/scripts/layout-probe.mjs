@@ -14,6 +14,7 @@
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const job = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const req = createRequire(path.join(job.puppeteer_dir, "noop.js"));
@@ -25,7 +26,7 @@ const page = await browser.newPage();
 await page.setViewport({ width: 1080, height: 1920 });
 const issues = [];
 for (const pg of job.pages || [{ index: job.index, samples: job.samples }]) {
-await page.goto("file://" + path.resolve(pg.index), { waitUntil: "load" });
+await page.goto(pathToFileURL(path.resolve(pg.index)).href, { waitUntil: "load" });
 await page.evaluate(async () => { await Promise.all([...document.fonts].map((f) => f.load())); await document.fonts.ready; });
 await page.addStyleTag({ content: "* { pointer-events: auto !important; }" });   // elementsFromPoint must see every layer
 for (const s of pg.samples) {

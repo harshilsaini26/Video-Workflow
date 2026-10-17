@@ -34,7 +34,7 @@ def brand(vendor_dir, name):
     if path not in _DATA:
         _DATA[path] = {}
         if os.path.exists(path):
-            with open(path) as f:
+            with open(path, encoding="utf-8") as f:
                 for it in json.load(f).get("icons", []):
                     _DATA[path][it.get("slug") or slug(it["title"])] = it
     return _DATA[path].get(name)
@@ -88,7 +88,7 @@ def render(scene, ctx, box):
         if not re.match(r"^[a-z0-9]+$", name_) or not os.path.exists(path):
             ctx.fail("unknown logo %r: no vendor/simple-icons/icons/%s.svg (find the slug at simpleicons.org; get the set with: %s)"
                      % (name_, name_, INSTALL))
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             svg = f.read().strip()
         if not svg.startswith("<svg") or re.search(r"<script|on\w+=|href", svg, re.I):
             ctx.fail("vendor/simple-icons/icons/%s.svg is not a plain SVG mark" % name_)

@@ -54,7 +54,7 @@ class Craft(unittest.TestCase):
             self.assertTrue(E.inside_scene(left, top, w, h), sid)
             self.assertGreaterEqual(top, E.SCENE["top"], sid)
             self.assertLessEqual(top + h, E.SCENE["bottom"], sid)
-        with open(os.path.join(out, "moments.json")) as f:
+        with open(os.path.join(out, "moments.json"), encoding="utf-8") as f:
             sc = {x["id"]: x for x in json.load(f)["scenes"]}
         for sid, b in bx.items():
             self.assertEqual(sc[sid]["box"], list(b[:4]), sid)

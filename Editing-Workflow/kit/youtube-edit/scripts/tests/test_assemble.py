@@ -34,7 +34,7 @@ class Assemble(unittest.TestCase):
         d = scratch(self)
         clip(os.path.join(d, "a.mp4"), 1.5)
         r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "assemble.py"), "--manifest", self.manifest(d, [{"name": "Hook", "file": "a.mp4"}]),
-                            "--out", os.path.join(d, "deliver", "t.mp4"), "--work", "renders"], cwd=d, capture_output=True, text=True)
+                            "--out", os.path.join(d, "deliver", "t.mp4"), "--work", "renders"], cwd=d, capture_output=True, text=True, encoding="utf-8", errors="replace")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertTrue(os.path.exists(os.path.join(d, "deliver", "t.mp4")))
 

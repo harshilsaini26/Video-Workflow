@@ -19,7 +19,7 @@ SECTIONS = ["Paths", "Your brief gives you", "Procedure", "Done when", "Never", 
 
 
 def read(p):
-    with open(p) as f:
+    with open(p, encoding="utf-8") as f:
         return f.read()
 
 

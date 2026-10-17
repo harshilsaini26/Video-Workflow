@@ -110,7 +110,7 @@ ap.add_argument("--spec", required=True)
 ap.add_argument("--out", required=True)
 ap.add_argument("--shared", default="")
 args = ap.parse_args()
-S = json.load(open(args.spec))
+S = json.load(open(args.spec, encoding="utf-8"))
 OUT = args.out
 os.makedirs(OUT, exist_ok=True)
 
@@ -2199,8 +2199,8 @@ page = """<!doctype html>
 </html>
 """ % (CSS, S["id"], D, S.get("video", "input-video.mp4"), D, "".join(html_parts), S.get("raw_html", ""), "".join(audio_parts),
        GSAP_SRC, HELPERS, "\n        ".join(cam), "\n        ".join(js_parts), S.get("raw_js", ""), D, S["id"])
-open(os.path.join(OUT, "index.html"), "w").write(page)
-open(os.path.join(OUT, "hyperframes.json"), "w").write(json.dumps({
+open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(page)
+open(os.path.join(OUT, "hyperframes.json"), "w", encoding="utf-8").write(json.dumps({
     "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
     "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",
     "paths": {"blocks": "compositions", "components": "compositions/components", "assets": "assets"},

@@ -74,7 +74,7 @@ def load_lexicon(path=None):
     path = path or os.path.join(HERE, "..", "lexicon.json")
     if not os.path.exists(path):
         return {}
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -122,7 +122,7 @@ def theme(tokens, bg):
 def load_tokens(path=None):
     """The look: fonts, the Catppuccin Latte palette and its roles, backgrounds, motion timing (tokens.json next to
     scripts/). Scenes read colours through theme(), never from the palette directly."""
-    with open(path or os.path.join(HERE, "..", "tokens.json")) as f:
+    with open(path or os.path.join(HERE, "..", "tokens.json"), encoding="utf-8") as f:
         return json.load(f)
 
 

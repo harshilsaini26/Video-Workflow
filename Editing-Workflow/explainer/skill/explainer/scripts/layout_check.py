@@ -29,7 +29,7 @@ def area():
 def npx_dirs():
     dirs = []
     try:
-        cache = subprocess.run(["npm", "config", "get", "cache"], capture_output=True, text=True, timeout=30).stdout.strip()
+        cache = subprocess.run(["npm", "config", "get", "cache"], capture_output=True, text=True, timeout=30, encoding="utf-8", errors="replace").stdout.strip()
         if cache:
             dirs += sorted(glob.glob(os.path.join(cache, "_npx", "*", "node_modules")), key=os.path.getmtime, reverse=True)
     except (OSError, subprocess.SubprocessError):
@@ -55,7 +55,7 @@ def find_chrome():
     if os.environ.get("CHROME") and os.path.exists(os.environ["CHROME"]):
         return os.environ["CHROME"]
     try:
-        r = subprocess.run(["npx", "--no-install", "hyperframes", "browser", "path"], capture_output=True, text=True, timeout=120)
+        r = subprocess.run([shutil.which("npx") or "npx", "--no-install", "hyperframes", "browser", "path"], capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace")
         p = (r.stdout.strip().splitlines() or [""])[-1].strip()
         if p and os.path.exists(p):
             return p
@@ -103,7 +103,7 @@ def probe_pages(pages):
         json.dump({"pages": pages, "area": area(), "min_px": MIN_PX, "puppeteer_dir": pdir, "chrome": chrome}, f)
         job = f.name
     try:
-        r = subprocess.run(["node", os.path.join(HERE, "layout-probe.mjs"), job], capture_output=True, text=True, timeout=1800)
+        r = subprocess.run(["node", os.path.join(HERE, "layout-probe.mjs"), job], capture_output=True, text=True, timeout=1800, encoding="utf-8", errors="replace")
     finally:
         os.unlink(job)
     if r.returncode:
@@ -147,8 +147,8 @@ def hf_findings(report, scenes):
 
 
 def hf_check(pub, smp):
-    r = subprocess.run(["npx", "--no-install", "hyperframes", "check", pub, "--json", "--at", ",".join("%.2f" % s["t"] for s in smp)],
-                       capture_output=True, text=True, timeout=1200)
+    r = subprocess.run([shutil.which("npx") or "npx", "--no-install", "hyperframes", "check", pub, "--json", "--at", ",".join("%.2f" % s["t"] for s in smp)],
+                       capture_output=True, text=True, timeout=1200, encoding="utf-8", errors="replace")
     try:
         return json.loads(r.stdout)
     except ValueError:

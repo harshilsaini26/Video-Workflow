@@ -36,7 +36,7 @@ ap.add_argument("--tail", type=float, default=0.60)
 ap.add_argument("--speech", help="auto-editor v1 JSON (audio-based speech chunks). When given, segment ends come from the audio, not the transcript, because ASR word ends stretch into pauses.")
 args = ap.parse_args()
 
-raw = json.load(open(args.transcript))
+raw = json.load(open(args.transcript, encoding="utf-8"))
 words = raw["words"] if isinstance(raw, dict) and "words" in raw else raw
 words = [{"text": w["text"], "start": float(w["start"]), "end": float(w["end"])} for w in words]
 
@@ -172,7 +172,7 @@ for r in runs:
         r["clamp"] = words[nxt]["start"]
 segments = []
 if args.speech and kept_words:
-    d = json.load(open(args.speech)); num, den = [int(x) for x in str(d.get("timebase", "30/1")).split("/")]; fps = num / den
+    d = json.load(open(args.speech, encoding="utf-8")); num, den = [int(x) for x in str(d.get("timebase", "30/1")).split("/")]; fps = num / den
     chunks = [(a / fps, b / fps) for a, b, sp in d["chunks"] if sp not in (99999, 0)]
     # speech chunks overlapping each run [first word start, last word start]; starts trust the ASR, ends trust the audio
     for r in runs:
@@ -217,7 +217,7 @@ removed.sort(key=lambda r: r["start"])
 
 os.makedirs(args.out_dir, exist_ok=True)
 json.dump({"source_duration": args.duration, "kept_seconds": round(kept_total, 2), "kept": segments, "removed": removed},
-          open(os.path.join(args.out_dir, "cut-list.json"), "w"), indent=1)
+          open(os.path.join(args.out_dir, "cut-list.json"), "w", encoding="utf-8"), indent=1)
 
 lines = ["# Paper cut", "", "Raw %.1fs -> kept %.1fs (%d segments). Struck-through = removed, reason in brackets." %
          (args.duration, kept_total, len(segments)), ""]
@@ -230,6 +230,6 @@ for s in S:
     lines.append("%s  ~~%s~~  [%s]" % (stamp, s["text"], s["remove"]) if s["remove"] else "%s  %s" % (stamp, s["text"]))
 sil = [r for r in removed if r["reason"].startswith("silence")]
 if sil: lines += ["", "Silence trimmed: %d gaps, %.1fs total." % (len(sil), sum(r["end"] - r["start"] for r in sil))]
-open(os.path.join(args.out_dir, "PAPER-CUT.md"), "w").write("\n".join(lines) + "\n")
+open(os.path.join(args.out_dir, "PAPER-CUT.md"), "w", encoding="utf-8").write("\n".join(lines) + "\n")
 print("kept %.1fs of %.1fs in %d segments; %d sentences removed; %d restarts; %d silences trimmed" %
       (kept_total, args.duration, len(segments), sum(1 for s in S if s["remove"]), len(restarts), len(sil)))

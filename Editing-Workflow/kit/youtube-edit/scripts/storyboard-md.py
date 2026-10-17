@@ -145,7 +145,7 @@ if args.concern:
     out += ["## Concerns to check", ""] + ["- " + c for c in args.concern] + [""]
 for spec in args.project:
     d, slug, title = spec.split(":", 2)
-    with open(os.path.join(d, "storyboard.json")) as f:
+    with open(os.path.join(d, "storyboard.json"), encoding="utf-8") as f:
         s = json.load(f)
     out += ["## %s: %s (%s, %.1f s)" % (slug, title, s.get("id", "?"), num(s.get("duration"))), "", "| Time | Beat | On screen |", "|---|---|---|"]
     if s.get("tag"):
@@ -158,6 +158,6 @@ for spec in args.project:
     moves = [op for op in s.get("camera", []) if isinstance(op, (list, tuple)) and len(op) > 1 and op[0] != "set"]
     out.append("| camera | %d moves | %s |" % (len(moves), ", ".join("%s %.1f" % (op[0], num(op[1])) for op in moves)))
     out.append("")
-with open(args.out, "w") as f:
+with open(args.out, "w", encoding="utf-8") as f:
     f.write("\n".join(out))
 print("wrote", args.out, len(out), "lines")

@@ -265,7 +265,7 @@ def report(path, lines, words, stats):
         if ws:
             out.append("| %s | %.2f | %.2f | %d | %s |" % (ln["id"], ws[0]["start"], ws[-1]["end"],
                                                          stats["missing"].get(ln["id"], 0), ln["show"].replace("|", "\\|")))
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
 
 
@@ -278,15 +278,15 @@ def main():
     ap.add_argument("--lexicon", default=os.path.join(HERE, "..", "lexicon.json"),
                     help="the pronunciations tts-kokoro.py applied (default: the skill's lexicon.json)")
     a = ap.parse_args()
-    with open(a.script) as f:
+    with open(a.script, encoding="utf-8") as f:
         lines = json.load(f)["lines"]
-    with open(a.asr) as f:
+    with open(a.asr, encoding="utf-8") as f:
         d = json.load(f)
     words, st = align(lines, d["words"] if isinstance(d, dict) else d, load_lexicon(a.lexicon))
     spans = [{"id": ln["id"], "start": ws[0]["start"], "end": ws[-1]["end"]}
              for ln in lines for ws in [[w for w in words if w["line"] == ln["id"]]] if ws]
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
-    with open(a.out, "w") as f:
+    with open(a.out, "w", encoding="utf-8") as f:
         json.dump({"words": words, "lines": spans}, f, indent=1)
     if a.report:
         report(a.report, lines, words, st)

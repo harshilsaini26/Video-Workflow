@@ -238,9 +238,9 @@ def main():
     ap.add_argument("--report")
     ap.add_argument("--vendor", default=os.path.join(HERE, "..", "assets", "vendor"))
     a = ap.parse_args()
-    with open(a.script) as f:
+    with open(a.script, encoding="utf-8") as f:
         S = json.load(f)
-    with open(a.transcript) as f:
+    with open(a.transcript, encoding="utf-8") as f:
         T = json.load(f)
     words = T["words"] if isinstance(T, dict) else T
     if not all("line" in w for w in words):
@@ -291,10 +291,10 @@ def main():
              "voice": "voice.wav", "transcript": "transcript.json", "captions": {"emphasis": emphasis}, "scenes": scenes}
     if S.get("brand"):
         board["brand"] = S["brand"]          # the handle and the series part, on every frame
-    with open(a.out, "w") as f:
+    with open(a.out, "w", encoding="utf-8") as f:
         json.dump(board, f, indent=1)
     if a.report:
-        with open(a.report, "w") as f:
+        with open(a.report, "w", encoding="utf-8") as f:
             f.write("# Draft plan\n\nFrom plan-storyboard.py. Replace every \"draft title\" with a picture (a `viz` hint in the "
                     "script, or a scene in storyboard.json).\n\n| line | scene | type | why | words |\n|---|---|---|---|---|\n")
             f.write("".join("| %s | %s | %s | %s | %s |\n" % r for r in rows))

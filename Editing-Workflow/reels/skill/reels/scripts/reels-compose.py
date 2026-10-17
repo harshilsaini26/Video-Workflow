@@ -56,7 +56,7 @@ def fail(msg):
     print("FAIL " + msg, file=sys.stderr)
     sys.exit(1)
 
-S = json.load(open(args.spec))
+S = json.load(open(args.spec, encoding="utf-8"))
 SPEC_DIR = os.path.dirname(os.path.abspath(args.spec))
 OUT = args.out
 os.makedirs(OUT, exist_ok=True)
@@ -625,9 +625,9 @@ page = """<!doctype html>
 """ % (CSS, esc(S["id"]), D, FPS, esc(S.get("video", "input-video.mp4")), D, "".join(html_parts), cap_html, S.get("raw_html", ""),
        "".join(audio_parts), GSAP_SRC, HELPERS, "\n        ".join(cam), "\n        ".join(js_parts), "\n        ".join(cap_js),
        S.get("raw_js", ""), D, json.dumps(str(S["id"])).replace("<", "\\u003c"))   # a JS string: the browser decodes the attribute, not script text
-open(os.path.join(OUT, "index.html"), "w").write(page)
-open(os.path.join(OUT, "layout.json"), "w").write(json.dumps(layout, indent=1))
-open(os.path.join(OUT, "hyperframes.json"), "w").write(json.dumps({
+open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(page)
+open(os.path.join(OUT, "layout.json"), "w", encoding="utf-8").write(json.dumps(layout, indent=1))
+open(os.path.join(OUT, "hyperframes.json"), "w", encoding="utf-8").write(json.dumps({
     "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
     "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",
     "paths": {"blocks": "compositions", "components": "compositions/components", "assets": "assets"},
