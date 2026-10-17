@@ -101,6 +101,14 @@ class HoldTime(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout)
 
 
+class Decor(unittest.TestCase):
+    def test_ui_furniture_numbers_need_no_source(self):
+        # a timecode or a like count in a mock-up is furniture, not a claim: a scene names those keys in DECOR_KEYS
+        from . import explainer_compose_shim as C
+        self.assertFalse(C.shows_number({"type": "x", "time": "0:12", "likes": 1200}, decor={"time", "likes"}))
+        self.assertTrue(C.shows_number({"type": "x", "time": "0:12", "text": "3 steps"}, decor={"time"}))
+
+
 class Discovery(unittest.TestCase):
     def test_a_scene_module_is_found_without_a_list(self):
         d = scratch(self)

@@ -52,18 +52,19 @@ NOT_SHOWN = {"type", "id", "bg", "in", "out", "at", "source", "icon", "html", "b
 BAD_DATA = (TypeError, ValueError, KeyError, AttributeError, IndexError)
 
 
-def shows_number(node, key=None):
-    """True when any text the scene puts on screen has a digit, %, or a currency sign (formula TeX aside)."""
-    if key in NOT_SHOWN:
+def shows_number(node, key=None, decor=()):
+    """True when any text the scene puts on screen has a digit, %, or a currency sign (formula TeX aside). `decor` names
+    a scene's UI furniture (its module's DECOR_KEYS: a timecode, a like count in a mock-up): not a claim, no source."""
+    if key in NOT_SHOWN or key in decor:
         return False
     if isinstance(node, str):
         return bool(re.search(r"[\d%$€£₹]", node))
     if isinstance(node, (int, float)) and not isinstance(node, bool):   # 1500000 in a sheet is on screen too
         return True
     if isinstance(node, dict):
-        return any(shows_number(v, k) for k, v in node.items())
+        return any(shows_number(v, k, decor) for k, v in node.items())
     if isinstance(node, list):
-        return any(shows_number(v, key) for v in node)
+        return any(shows_number(v, key, decor) for v in node)
     return False
 
 
@@ -250,7 +251,7 @@ def main():
             fail("%s: unknown bg %r (one of: %s)" % (sid, bg, ", ".join(tok["backgrounds"])))
         if sc.get("transition") is not None and sc["transition"] not in X.KINDS:
             fail("%s: unknown transition %r (one of: %s)" % (sid, sc["transition"], ", ".join(X.KINDS)))
-        if (getattr(mod, "NEEDS_SOURCE", False) or shows_number(sc)) and not sc.get("source"):
+        if (getattr(mod, "NEEDS_SOURCE", False) or shows_number(sc, decor=set(getattr(mod, "DECOR_KEYS", ())))) and not sc.get("source"):
             fail("%s: the %s scene shows a number or a claim and needs a source (a key in SOURCES.md)" % (sid, sc["type"]))
         if sc.get("source") and source_keys is not None and sc["source"] not in source_keys:
             fail("%s: source %r is not in script.json's sources (%s)" % (sid, sc["source"], ", ".join(sorted(source_keys)) or "none"))

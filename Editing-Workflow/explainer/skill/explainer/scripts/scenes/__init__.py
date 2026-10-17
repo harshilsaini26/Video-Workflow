@@ -4,6 +4,12 @@ Each module has
   TYPE                          the storyboard "type"
   CSS                           its styles (scoped by class; the composer adds each used module's CSS once)
   NEEDS_SOURCE                  optional, True when the scene shows a number or a claim
+  DECOR_KEYS                    optional, keys whose values are UI furniture (a timecode, a like count): no source needed
+  MAX_SCALE / max_scale(scene)  optional, how far the composer may scale it up (default 1.8)
+  place(scene)                  optional, its own box (left, top, width, height): never scaled, only checked
+  BAKED                         optional, True when its sizes depend on the width it is given (measured at that width)
+  travels(scene)                optional, True when its camera moves to each new item (E4 lets it hold longer)
+  SHRINK_WIDTH                  optional, True when its width is geometry, not a word (the composer may shrink it to fit)
   validate(scene) -> [str]      data-shape errors
   height(scene, width) -> int   the box height at that width, from the module's own CSS constants
   min_width(scene) -> int       the widest text that cannot wrap, plus padding
@@ -11,7 +17,10 @@ Each module has
                                 the HTML inside <div class="box" id="<scene id>">, and GSAP lines for the shared `tl`
 
 Every entrance is an opacity 0 -> 1 fromTo with the enter ease (ctx.enter); exits belong to the composer. Staggers
-are written as { amount: total } and never pass tokens.motion.stagger_total_max.
+are written as { amount: total } and never pass tokens.motion.stagger_total_max. A build's pieces wait as empty slots
+(ctx.slot, ctx.fill; their words in .gt). Colours come only from ctx.c (this ground) and ctx.pc (light paper, for a UI
+mock-up on any ground), never as hex. All text is drawn at 28 px or more (the composer never scales a scene's smallest
+CSS font-size under that), and holds 3:1 against what is behind it (gate E5).
 """
 import html as _html, importlib, importlib.util, json, math, os, re, shutil, struct
 
