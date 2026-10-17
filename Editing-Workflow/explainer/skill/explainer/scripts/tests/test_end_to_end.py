@@ -56,7 +56,7 @@ class EndToEnd(unittest.TestCase):
         r = run("script-check.py", "--script", os.path.join(d, "script.json"))
         # a 12 s render keeps the suite fast; E1's length bound (81 to 240 words) is the one rule it may break
         errors = [l for l in r.stdout.splitlines() if l.startswith("  ") or "FAIL" in l]
-        self.assertTrue(r.returncode == 0 or all("under 81 words" in l or l.startswith("E1 FAIL") for l in errors), r.stdout)
+        self.assertTrue(r.returncode == 0 or all("under 30 s" in l or l.startswith("E1 FAIL") for l in errors), r.stdout)
         self.assertNotIn("no source", r.stdout)
         self.assertEqual(len([l for l in r.stdout.splitlines() if l.startswith("  - ")]), 1, r.stdout)
         self.check(run("tts-kokoro.py", "--script", os.path.join(d, "script.json"), "--out", os.path.join(d, "voice.wav"), "--engine", "fake"), "tts")

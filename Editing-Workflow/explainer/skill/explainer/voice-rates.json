@@ -1,0 +1,4 @@
+{
+  "_note": "Words a second per voice and speed (voice@speed), measured from each voice's samples by tts-kokoro.py --samples (SOP S4). script-check.py budgets a script with these. am_michael was measured on the RAG reel.",
+  "am_michael@1": 2.4
+}

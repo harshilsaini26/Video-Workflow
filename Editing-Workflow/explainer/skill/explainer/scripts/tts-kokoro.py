@@ -11,7 +11,9 @@ compression, two-pass loudnorm to -16 LUFS with the true peak at most -1 dBTP, 4
 
 It prints {"duration", "lufs", "peak"} and exits 1 when the true peak is over -1 dBTP or the length is more than
 10% off `target_seconds` (gate E2).
---samples DIR writes 10 s of line 0 in three voices for the creator to choose from (Checkpoint A).
+--samples DIR writes the script's opening (at least 30 words, so 10 s or more) in three voices for the creator to
+listen to and choose from at Checkpoint A, and writes each voice's measured words a second to --rates
+(voice-rates.json beside the skill), which script-check.py budgets the script with (SOP S4).
 The fake engine (tests) writes a 220 Hz tone, 0.32 s a word, with no model and no network.
 """
 import argparse, array, json, math, os, re, subprocess, sys, wave
@@ -42,6 +44,18 @@ def write_wav(path, samples):
         w.setsampwidth(2)
         w.setframerate(RATE)
         w.writeframes(pcm.tobytes())
+
+
+SAMPLE_WORDS = 30
+
+
+def voiced_seconds(pcm, floor=0.01):
+    """Seconds from the first to the last sample above `floor`: the speech, without the silence around it."""
+    first = next((i for i, s in enumerate(pcm) if abs(s) > floor), None)
+    if first is None:
+        return 0.0
+    last = next(i for i in range(len(pcm) - 1, -1, -1) if abs(pcm[i]) > floor)
+    return (last - first + 1) / float(RATE)
 
 
 def fake_engine(text, voice, speed):
@@ -122,7 +136,8 @@ def main():
     ap.add_argument("--only", help="regenerate just this line id, then rebuild voice.wav")
     ap.add_argument("--engine", choices=sorted(ENGINES), default="kokoro")
     ap.add_argument("--lexicon", default=os.path.join(HERE, "..", "lexicon.json"))
-    ap.add_argument("--samples", help="write 10 s of line 0 in each sample voice here, then stop")
+    ap.add_argument("--samples", help="write the opening (10 s or more) in each sample voice here, measure each voice's rate, then stop")
+    ap.add_argument("--rates", default=os.path.join(HERE, "..", "voice-rates.json"), help="where --samples writes the rates")
     a = ap.parse_args()
     with open(a.script) as f:
         S = json.load(f)
@@ -138,9 +153,27 @@ def main():
 
     if a.samples:
         os.makedirs(a.samples, exist_ok=True)
+        text = []
+        for ln in lines:                       # the opening, to 30 words at least: 10 s or more at any rate
+            text.append(say(ln))
+            if len(" ".join(text).split()) >= SAMPLE_WORDS:
+                break
+        text = " ".join(text)
+        rates = {}
+        if os.path.exists(a.rates):
+            with open(a.rates, encoding="utf-8") as f:
+                rates = json.load(f)
         for v in SAMPLE_VOICES:
-            write_wav(os.path.join(a.samples, v + ".wav"), synth(say(lines[0]), v, a.speed)[:10 * RATE])
-        print(json.dumps({"samples": [os.path.join(a.samples, v + ".wav") for v in SAMPLE_VOICES]}))
+            pcm = synth(text, v, a.speed)
+            write_wav(os.path.join(a.samples, v + ".wav"), pcm)
+            spoken = voiced_seconds(pcm)
+            if spoken > 0:
+                rates["%s@%g" % (v, a.speed)] = round(len(text.split()) / spoken, 3)
+        with open(a.rates, "w", encoding="utf-8") as f:
+            json.dump(rates, f, indent=2)
+            f.write("\n")
+        print(json.dumps({"samples": [os.path.join(a.samples, v + ".wav") for v in SAMPLE_VOICES],
+                          "rates": {v: rates.get("%s@%g" % (v, a.speed)) for v in SAMPLE_VOICES}}))
         return
 
     ldir = os.path.join(os.path.dirname(os.path.abspath(a.out)), "lines")
