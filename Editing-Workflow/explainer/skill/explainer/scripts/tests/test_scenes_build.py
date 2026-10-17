@@ -118,6 +118,24 @@ class Build(unittest.TestCase):
         self.assertIn("tl.fromTo('#sc .tm-rail, #sc .tm-dot', { opacity: 0, y: -16 }", html)
         self.assertNotIn("WARN sc: nothing shows", r.stdout)
 
+    def test_a_long_flow_travels_from_step_to_step(self):
+        # five or six steps don't fit the area at a readable size: the column runs past a window and the camera moves
+        # to each step as it arrives (a new framing on every step, so E4 lets the scene hold longer)
+        from scenes import flow
+        sc = {"type": "flow", "nodes": [{"label": "Step " + "ABCDEF"[i], "at": W(5 + 2 * i)} for i in range(6)]}
+        self.assertEqual(flow.validate(sc), [])
+        self.assertTrue(flow.travels(sc))
+        self.assertFalse(flow.travels(GOOD["flow"]))
+        self.assertLess(flow.height(sc, 780), 6 * flow.NODE + 5 * flow.LINK)
+        self.assertIn("2 to 6", " ".join(flow.validate(dict(sc, nodes=sc["nodes"] + [{"label": "G", "at": W(17)}]))))
+        r, html = self.build(sc)
+        self.assertEqual(r.returncode, 0, r.stdout)
+        moves = re.findall(r"tl\.to\('#sc-mv', \{ y: (-?[\d.]+), duration: [\d.]+, ease: 'expo\.out' \}, ([\d.]+)\);", html)
+        self.assertGreaterEqual(len(moves), 3)
+        ys = [float(y) for y, _ in moves]
+        self.assertEqual(ys, sorted(ys, reverse=True))            # always further down the column
+        self.assertIn('"travels": true', read(os.path.join(os.path.dirname(re.search(r"(/tmp/[^\s\"]+)/public/index.html", r.stdout).group(1) + "/public/index.html"), "moments.json")))
+
     def test_heights_are_fixed(self):
         for t, sc in GOOD.items():
             mod = REGISTRY[t]

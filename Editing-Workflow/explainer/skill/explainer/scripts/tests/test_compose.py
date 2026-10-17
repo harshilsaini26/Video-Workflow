@@ -209,7 +209,8 @@ class Compose(unittest.TestCase):
         self.assertTrue(tweens)
         entrances = exits = 0
         for tw in tweens:
-            if re.search(r"ease: 'none'", tw) and re.search(r"\b(x|y|scale): ", tw):
+            if re.search(r"ease: 'none'", tw) and re.search(r"\b(x|y|scale): ", tw) and not re.match(r"tl\.fromTo\('#bg\d+-p\d+'", tw):
+                # (the background's particles drift at a constant speed: a slow rise, not a move with a start and an end)
                 self.fail("linear easing on movement: " + tw)
             if tw.startswith("tl.fromTo(") and re.search(r"^tl\.fromTo\([^{]*\{ opacity: 0[,} ]", tw):
                 entrances += 1

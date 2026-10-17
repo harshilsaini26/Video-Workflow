@@ -142,7 +142,8 @@ for (const s of pg.samples) {
                            width: r.width - 4, height: r.height * 0.6 });
     const hit = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
     for (const t of texts) {
-      if (!t.formula && t.px < minPx) out.push({ kind: "small", text: t.text, detail: "text drawn at " + t.px.toFixed(0) + " px (at least " + minPx + "): too small" });
+      // half a pixel of grace: the camera's push-in ends at 0.995, so 28 px type settles at 27.9
+      if (!t.formula && t.px < minPx - 0.5) out.push({ kind: "small", text: t.text, detail: "text drawn at " + t.px.toFixed(0) + " px (at least " + minPx + "): too small" });
       if (!t.formula && !t.el.closest("svg")) {
         const g = behind(t.el), fg = rgb(getComputedStyle(t.el).color);
         if (g && fg) {

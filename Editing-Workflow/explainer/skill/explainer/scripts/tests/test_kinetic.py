@@ -32,7 +32,7 @@ class Kinetic(unittest.TestCase):
             self.assertLessEqual(E.text_width("90%", z["big"], spacing=mod.TRACK) + z["gap"]
                                  + E.text_width("SCRIPTS", z["word"], spacing=mod.TRACK), w)
         self.assertLessEqual(mod.min_width(long), 780)
-        self.assertGreater(mod.sizes(HOOK, 950)["big"], mod.sizes(long, mod.min_width(long))["big"])   # a long hook shrinks
+        self.assertGreater(mod.sizes(HOOK, 780)["big"], mod.sizes(long, mod.min_width(long))["big"])   # a long hook shrinks
 
     def test_every_piece_rises_on_its_word(self):
         r, html = self.build(HOOK)

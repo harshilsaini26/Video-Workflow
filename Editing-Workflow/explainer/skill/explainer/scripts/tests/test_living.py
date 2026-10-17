@@ -1,6 +1,7 @@
-"""Motion with a reason (MOTION.md): no scene breathes or pushes in on its own; the background's glows move only on a
-cut, travelling with it, and hold still between cuts; no ease overshoots. None of that ambient motion counts as a change
-for pace-check (gate E4 still wants a new picture)."""
+"""A picture that is never still (MOTION.md, after measuring the reference: 7% of its frames still, ours 67%): every
+scene drifts with a slow camera move over its whole life, and a field of particles rises behind the scenes for the
+whole reel. The background's glows still move only on a cut, travelling with it; no ease overshoots. None of this
+ambient motion counts as a change for pace-check (gate E4 still wants a new picture)."""
 import copy, json, os, re, unittest
 from .helpers import read, run, scratch, write
 from .test_compose import BOARD, D, VOICE, silent_wav, t_word, words30
@@ -9,6 +10,11 @@ import explainer_lib as E
 from scenes import icon_row
 
 TOK = E.load_tokens()
+
+
+def _n(v):
+    """A number as js_obj writes it."""
+    return ("%.3f" % v).rstrip("0").rstrip(".") if isinstance(v, float) else str(v)
 
 
 class Living(unittest.TestCase):
@@ -22,11 +28,32 @@ class Living(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         return read(os.path.join(out, "index.html")), out
 
-    def test_no_scene_breathes(self):
-        # HyperFrames' motion language: no lazy breathing, no slow push-in; a held scene is still unless it says something
-        html, _ = self.build(BOARD)
+    def test_every_scene_drifts_with_the_camera(self):
+        # the camera keeps moving through a scene: a slow push-in with a slight turn, over the scene's whole life, the
+        # turn alternating from scene to scene; the scene's own fit (its .live scale) is never animated
+        html, out = self.build(BOARD)
+        cam = TOK["ambient"]["camera"]
+        m = json.load(open(os.path.join(out, "moments.json")))
+        for k, sc in enumerate(m["scenes"]):
+            yaw = cam["yaw"] * (1 if k % 2 == 0 else -1)
+            self.assertIn("tl.fromTo('#%s-cam', { scale: %s, y: %s, rotationY: %s }, { scale: %s, y: %s, rotationY: %s, duration: %s, "
+                          "ease: 'sine.inOut', immediateRender: false }, %.3f);"
+                          % (sc["id"], _n(cam["from"]), cam["y"], _n(-yaw), _n(cam["to"]), -cam["y"], _n(yaw), _n(round(sc["out"] - sc["in"], 3)), sc["in"]),
+                          html, sc["id"])
+            self.assertRegex(html, r'<div class="box" id="%s"[^>]*><div class="cam" id="%s-cam"><div class="live" id="%s-live"' % ((sc["id"],) * 3))
         self.assertNotRegex(html, r"tl\.\w+\('#\w+-live'")
-        self.assertNotIn("push", TOK["ambient"])
+
+    def test_particles_rise_behind_the_scenes_for_the_whole_reel(self):
+        html, out = self.build(BOARD)
+        p = TOK["ambient"]["particles"]
+        for i in (0, 1):                                   # each background layer has its own field
+            dots = re.findall(r'<i class="pt" id="bg%d-p(\d+)"' % i, html)
+            self.assertEqual(len(dots), p["count"])
+            tweens = re.findall(r"tl\.fromTo\('#bg%d-p\d+', \{[^}]*\}, \{[^}]*duration: ([\d.]+), ease: 'none'" % i, html)
+            self.assertEqual(len(tweens), p["count"])
+            self.assertTrue(all(abs(float(d) - D) < 1e-3 for d in tweens))
+        a, b = self.build(BOARD)[0], self.build(BOARD)[0]
+        self.assertEqual(re.findall(r'class="pt"[^>]*>', a), re.findall(r'class="pt"[^>]*>', b))   # seeded: the same every time
 
     def test_each_background_has_its_own_glows(self):
         html, _ = self.build(BOARD)                      # black, black, then light at the count-up: two background layers

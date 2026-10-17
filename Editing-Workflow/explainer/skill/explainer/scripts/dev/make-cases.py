@@ -34,8 +34,8 @@ def lengths(short, mid, long):
 CASES = {
     "title": lengths({"text": "Three certificates"},
                      {"text": "Three certificates finance bros gatekeep", "kicker": "IF YOU'RE NEW TO FINANCE"},
-                     {"text": "The three certificates that finance people quietly gatekeep from everyone new",
-                      "kicker": "A LONG KICKER THAT RUNS OVER MORE THAN ONE LINE AT THIS SIZE", "size": 96}),
+                     {"text": "The three certificates finance people quietly gatekeep",
+                      "kicker": "A LONG KICKER THAT RUNS OVER MORE THAN ONE LINE", "size": 96}),
     "number": lengths({"n": 1}, {"n": 2, "name": "Coursera finance"},
                       {"n": 3, "name": "The Corporate Finance Institute's financial modelling certificate"}),
     "count-up": lengths({"value": 1000, "prefix": "$", "source": "s"}, {"value": 2.5, "decimals": 1, "suffix": "%", "sub": "a year", "source": "s"},
@@ -125,6 +125,9 @@ SHOTS = [("shot-short", {"title": "Coursera", "domain": "coursera.org", "screens
          ("shot-long", {"title": "Introduction to Corporate Finance", "subtitle": "The Wharton School",
                         "domain": "coursera.org", "screenshot": "shot.png"})]
 CASES["browser"] = CASES["browser"] + SHOTS
+# a flow too long for the area travels down a window
+CASES["flow"] = CASES["flow"] + [("travel", {"nodes": [{"label": l, "at": at(2 + 2 * i)} for i, l in
+                                                     enumerate(["Question", "Search", "Passages", "Prompt", "Answer", "Cite"])]})]
 
 
 def load_groups(folder=HERE):

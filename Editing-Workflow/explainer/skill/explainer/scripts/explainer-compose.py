@@ -160,6 +160,40 @@ def glows(i, bg, tok, cuts, bg_js):
     return "".join(out)
 
 
+def particles(i, bg, tok, D, bg_js):
+    """A field of small squares and dots inside background layer i, rising slowly for the whole reel (one linear tween
+    each, seeded: every render is the same). Behind the scenes; ambient, never a change for pace-check."""
+    pt = tok["ambient"]["particles"]
+    rng = random.Random(pt["seed"] * 101 + i)
+    cols = pt["colors"][bg]
+    out = []
+    for k in range(pt["count"]):
+        size = rng.randint(pt["size"][0], pt["size"][1])
+        x, y = rng.randint(20, 1060), rng.randint(120, 1880)
+        name, alpha = cols[k % len(cols)]
+        round_ = rng.random() < 0.5
+        out.append('<i class="pt" id="bg%d-p%d" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:%s;border-radius:%s"></i>'
+                   % (i, k, x, y, size, size, E.rgba(tok["palette"][name], alpha), "50%" if round_ else "3px"))
+        dx = rng.randint(-pt["drift"], pt["drift"])
+        rise = int(pt["rise"] * rng.uniform(0.6, 1.0))
+        bg_js.append("tl.fromTo('#bg%d-p%d', %s, %s, 0);" % (i, k, js_obj({"x": 0, "y": 0, "rotation": 0}),
+                                                             js_obj({"x": dx, "y": -rise, "rotation": rng.choice([-90, 90]),
+                                                                     "duration": round(D, 3), "ease": "none", "immediateRender": False})))
+    return "".join(out)
+
+
+def camera(sid, k, t_in, t_out, tok):
+    """The camera through a scene: a slow push-in and a slight turn over its whole life (the turn alternates scene to
+    scene), on the scene's own .cam wrapper, between the transitions (on the box) and the fit (on .live). It pushes in
+    from just under the box's size to just under it again (0.97 to 0.995), so the turn never carries a word past the
+    column's edge."""
+    cam = tok["ambient"]["camera"]
+    yaw = cam["yaw"] * (1 if k % 2 == 0 else -1)
+    return "tl.fromTo('#%s-cam', %s, %s, %.3f);" % (sid, js_obj({"scale": cam["from"], "y": cam["y"], "rotationY": -yaw}),
+                                                     js_obj({"scale": cam["to"], "y": -cam["y"], "rotationY": yaw, "duration": round(t_out - t_in, 3),
+                                                             "ease": "sine.inOut", "immediateRender": False}), t_in)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--spec", required=True)
@@ -348,11 +382,13 @@ def main():
         anchor = ' data-unanchored="1"' if word == "-" else ' data-anchor="%s"' % html.escape(word, quote=True)
         hosts.append('    <div class="card-host clip" id="host-%s" data-start="%.3f" data-duration="%.3f" data-track-index="%d"%s\n'
                      '      style="left:0;top:0;width:1080px;height:1920px;visibility:hidden;">'
-                     '<div class="box" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx"><div class="live" id="%s-live"%s style="width:%dpx;height:%dpx;transform:scale(%s)">%s</div></div></div>\n'
-                     % (sid, t_in, end - t_in, 3 + k, anchor, sid, left, top, width, h, sid, ' data-baked="1"' if getattr(mod, "BAKED", False) else "", iw, ih, ("%.2f" % scale).rstrip("0").rstrip(".") if scale != 1 else "1", inner))
+                     '<div class="box" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx"><div class="cam" id="%s-cam"><div class="live" id="%s-live"%s style="width:%dpx;height:%dpx;transform:scale(%s)">%s</div></div></div></div>\n'
+                     % (sid, t_in, end - t_in, 3 + k, anchor, sid, left, top, width, h, sid, sid, ' data-baked="1"' if getattr(mod, "BAKED", False) else "", iw, ih, ("%.2f" % scale).rstrip("0").rstrip(".") if scale != 1 else "1", inner))
         js.append("// %s (%s) %.2f to %.2f s" % (sid, mod.TYPE, t_in, t_out))
         js.extend(lines)
         js.extend(ctx.ambient_lines)
+        if mod.TYPE != "custom":         # a custom scene moves itself
+            js.append(camera(sid, k, t_in, t_out, tok))
         if t_out < D - 1e-6:
             gone = X.exit(kinds[k + 1] if k + 1 < len(kinds) else "fade", sid, t_out)
             lines = lines + gone
@@ -374,8 +410,9 @@ def main():
         if k and layer_of[-1] == i:
             cuts.setdefault(i, []).append(t_in)
         layer_of.append(i)
-    bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d">%s</div>\n'
-                      % (i, E.theme(tok, b)["bg"], 0 if i else 1, glows(i, b, tok, cuts.get(i, []), bg_js)) for i, (b, _) in enumerate(bgs))
+    bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d">%s%s</div>\n'
+                      % (i, E.theme(tok, b)["bg"], 0 if i else 1, glows(i, b, tok, cuts.get(i, []), bg_js), particles(i, b, tok, D, bg_js))
+                      for i, (b, _) in enumerate(bgs))
 
     def bg_at(t):
         cur = timed[0][2]
@@ -421,11 +458,13 @@ def main():
   #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:%s; font-family: %s; --label: %s; }
   .bg { position:absolute; inset:0; overflow:hidden; }
   .orb { position:absolute; border-radius:50%%; pointer-events:none; will-change:transform; }
+  .pt { position:absolute; pointer-events:none; will-change:transform; }
+  .cam { position:absolute; left:0; top:0; width:100%%; height:100%%; transform-origin:50%% 50%%; will-change:transform; }
   .live { position:absolute; left:0; top:0; transform-origin:0 0; display:flex; flex-direction:column; align-items:center; justify-content:center; will-change:transform; }
   .card-host { position:absolute; pointer-events:none; overflow:hidden; z-index:10; }
   .tx-layer { position:absolute; inset:0; z-index:20; pointer-events:none; overflow:hidden; }
   .tx-p { position:absolute; opacity:0; border-radius:5px; will-change:transform; }
-  .box { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .box { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; perspective:1800px; }
   .brand { position:absolute; left:%dpx; width:%dpx; z-index:31; display:flex; align-items:center; justify-content:space-between;
     font-family: var(--label); font-weight:500; font-size:30px; letter-spacing:.06em; pointer-events:none; }
   .cap-layer { position:absolute; left:0; top:0; width:1080px; height:1920px; z-index:30; pointer-events:none; }

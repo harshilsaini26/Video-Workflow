@@ -17,7 +17,7 @@ def boxes(html):
     """{id: (left, top, width, height, inner width, inner height, scale)} for every scene box on the page."""
     out = {}
     for m in re.finditer(r'<div class="box" id="(\w+)" style="left:(\d+)px;top:(\d+)px;width:(\d+)px;height:(\d+)px">'
-                         r'<div class="live" id="\1-live" style="width:(\d+)px;height:(\d+)px;transform:scale\(([\d.]+)\)">', html):
+                         r'<div class="cam" id="\1-cam"><div class="live" id="\1-live" style="width:(\d+)px;height:(\d+)px;transform:scale\(([\d.]+)\)">', html):
         out[m.group(1)] = tuple(int(x) for x in m.groups()[1:7]) + (float(m.group(8)),)
     return out
 
