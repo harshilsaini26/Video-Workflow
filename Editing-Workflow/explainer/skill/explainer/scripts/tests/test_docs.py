@@ -96,3 +96,11 @@ class Docs(unittest.TestCase):
             self.assertIn(needle, brief)
         pack = text[text.index("`reels-packager`:"):text.index("`reels-librarian`:")]
         self.assertIn("captions.srt` from `$W/transcript.json`", pack)
+
+    def test_the_packager_makes_a_small_upload_copy(self):
+        # the RAG reel was delivered at 120 MB and had to be compressed by hand: flat motion graphics at CRF 18 are about
+        # a tenth of the 20 Mb/s master and look the same (SSIM 0.998 on the RAG demo)
+        text = read(SKILL)
+        pack = text[text.index("`reels-packager`:"):text.index("`reels-librarian`:")]
+        for needle in ("reel-upload.mp4", "-crf 18", "ssim", "reel.mp4"):
+            self.assertIn(needle, pack)

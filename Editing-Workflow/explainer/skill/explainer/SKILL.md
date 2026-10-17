@@ -129,7 +129,12 @@ chooses (S12).
 - `reels-packager`: the music is already in the render (the composer's sound bed, §E3.7): level the reel to -14 LUFS and
   never mix music in again (the music row of its report: "in the render"); `captions.srt` from `$W/transcript.json`
   (the shown words, matching the burned-in captions) with the brief's terms; skip `STORYBOARD.md` (the Reels script reads Reels beats) and attach the Animator's
-  `snaps/SCENES.md` instead; the posting checklist gets the AI-voice line (§E3).
+  `snaps/SCENES.md` instead; the posting checklist gets the AI-voice line (§E3). **A small copy to upload:** the
+  20 Mb/s master (`reel.mp4`, the file QA verified) runs past 100 MB; flat motion graphics need far less, so also write
+  `$D/reel-upload.mp4` with `ffmpeg -i "$D/reel.mp4" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -color_primaries
+  bt709 -color_trc bt709 -colorspace bt709 -c:a copy -movflags +faststart "$D/reel-upload.mp4"` (about a tenth of the
+  size) and check it against the master with FFmpeg's `ssim` filter: All 0.995 or more, else upload the master. Report
+  both sizes; the creator uploads the small one from the phone.
 - `reels-librarian`: also keeps `$ES/lexicon.json` (new pronunciations) and promotes custom scenes the creator liked
   into `$ES/scripts/scenes/` with a test (§E6).
 - `reels-analyst`: also compares reels by format, length and goal, so the next brief starts from what worked.
