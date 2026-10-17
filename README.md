@@ -125,7 +125,7 @@ Every profile builds on the kit's `youtube-edit` skill (its scripts, rules and f
 > check everything it needs, install what's missing, and run its tests.
 
 Claude copies the skill, installs FFmpeg, HyperFrames, auto-editor, Parakeet and the Python packages, and runs the
-kit's tests. You should see **53 tests, OK**.
+kit's tests. You should see **56 tests, OK**.
 
 ### 3.4 Install the team for the videos you make
 
@@ -169,15 +169,24 @@ The explainer also needs local copies of GSAP, KaTeX (formulas), Lucide (icons),
 Claude *"set up the explainer's vendor folder as its README says"*. Its layout check opens every scene in the Chrome
 HyperFrames uses; if Chrome is missing, run `npx hyperframes browser ensure`.
 
+Once per machine (Windows especially), prepare it and write down how it runs everything:
+
+```bash
+python .claude/skills/explainer/scripts/preflight.py --out videos/_preflight
+```
+
+It records the Python command that works there, turns on UTF-8, checks every tool, runs all three skills' tests and
+names any that fail, in `videos/_preflight/PREFLIGHT.md`. Every brief links to it.
+
 ### 3.5 Check everything works
 
 From each installed skill's `scripts` folder:
 
 | Skill | Command | Expect |
 |---|---|---|
-| kit | `cd .claude/skills/youtube-edit/scripts && python3 -m unittest tests` | 53 tests, OK |
-| Reels | `cd .claude/skills/reels/scripts && python3 -m unittest tests` | 48 tests, OK |
-| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 190 tests, OK (a few skip without Kokoro, Chrome or the local vendor folder) |
+| kit | `cd .claude/skills/youtube-edit/scripts && python3 -m unittest tests` | 56 tests, OK |
+| Reels | `cd .claude/skills/reels/scripts && python3 -m unittest tests` | 51 tests, OK |
+| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 296 tests, OK (a few skip without Kokoro, Chrome or the local vendor folder) |
 
 ### 3.6 Open a new conversation
 
@@ -351,13 +360,18 @@ More detail: [`Editing-Workflow/reels/README.md`](Editing-Workflow/reels/README.
 No camera. A voice explains one idea while code-drawn scenes land on its words:
 - **the hook** as kinetic type: a big number or word, a claim, a word struck through, a punch line;
 - **diagrams that build** piece by piece as each one is said: a flow, a stack, a comparison, a timeline, cards, a hub;
+  empty slots fill in as they are said;
+- **objects, not boxes**: a chat, a document with its passage marked, a big hero number, a prompt bar being typed, a
+  storyboard deck, an editor's timeline, a grade slider, a reel feed, a comment call to action and more;
+- **giant captions**: the voice's own words, huge in the middle of the frame;
 - titles, numbered steps, count-ups, charts, bars, lists, formulas and icons;
 - **real brand logos and real page screenshots**, which can zoom in on one line;
 - custom scenes, only when nothing in the library fits.
 
 Scenes move from one to the next with transitions. A soft sound bed sits under the voice, with a whoosh on each
-transition, a pop as each item lands and a chime on the payoff. The look is
-[Catppuccin Latte](https://github.com/catppuccin/catppuccin): light, soft backgrounds with calm accents.
+transition, a pop as each item lands and a chime on the payoff. The picture is never still: a slow camera drift and
+drifting particles sit under every scene. The look is [Catppuccin Latte](https://github.com/catppuccin/catppuccin), on
+four grounds with a rhythm: the hook on dark ink, the payoff and every third scene on blue, the rest light.
 
 ### Step 1. Start
 
@@ -368,7 +382,7 @@ You can also paste notes or a finished script instead of a topic.
 
 ### Step 2. Answer the brief
 
-The Producer asks for:
+The Producer asks its questions in one numbered message, each with a default you can accept by saying "defaults":
 - the input: a topic, notes or a script;
 - **who it is for**: one viewer, described in a line;
 - **the goal**: follow, comment, save, share, a link, or simply teach;
@@ -390,7 +404,8 @@ hint for its picture, so planning the scenes costs few tokens.
 
 ### Step 4. ✋ Checkpoint A: the script (and, the first time, the voice)
 
-You get the script (`SCRIPT.md`), its sources and the estimated length. On your first project you also get **three
+You get the script (`SCRIPT.md`), its sources and its length, timed at your voice's own measured speed; the length
+is decided here. On your first project you also get **three
 10-second voice samples** to choose your channel's voice from; it stays the same on every video after that. Answer:
 *"Line 3 is too long. Use the second voice."* Nothing is voiced before you approve.
 
@@ -415,8 +430,10 @@ Every scene and item is anchored to a word, so nothing drifts from the voice. Th
 The Animator then builds the page. Each scene is scaled up to fill the frame.
 
 Before you see anything, the checks make sure that:
-- every scene fits the screen;
-- something changes every 3 seconds;
+- every scene fits the screen, with text and cards ending by y 1235;
+- the hook is whole on screen by 1 second;
+- something changes every 3 seconds, and no picture is held longer than 8;
+- the old scene is gone by the cut, so two scenes are never on screen together;
 - every number on screen has its source;
 - the **layout check** passes. It opens every scene in Chrome on your computer and fails on:
   - text over text, or text covered by a shape;
@@ -424,12 +441,12 @@ Before you see anything, the checks make sure that:
   - anything outside the safe area;
   - text too small to read;
   - text clipped by its box;
-  - text with poor contrast.
+  - text with poor contrast on its ground.
 
 ### Step 7. ✋ Checkpoint B: the stills and the voiceover
 
-A still of every scene (with the app's covered areas drawn on), a list of what is on screen when, and the full
-voiceover to listen to. Answer: *"The chart comes in too late. Say 'EBITDA' slower."*
+A still of every scene once it has settled (with the app's covered areas drawn on), the hook at 0.3, 0.7 and 1.0 s,
+a list of what is on screen when, and the full voiceover to listen to: listening is yours, no check replaces it. Answer: *"The chart comes in too late. Say 'EBITDA' slower."*
 
 ### Step 8. Render, check, package
 
@@ -505,7 +522,8 @@ Between the stages, automatic **gates** check the work before it moves on. A few
 | Gap scan / pace check | stretches where nothing on screen changes for too long |
 | Safe zone (Reels, explainer) | text under the app's buttons or caption strip (prevented by construction, then checked on stills) |
 | Script check (explainer) | too long or short, a long hook, a number without a source; it also warns when the script never says "you", asks no question, gives no example, skips its format's shape, or ends with a call to action that doesn't ask for your goal |
-| Layout check (explainer) | in Chrome, on every scene: text over text or under a shape, text out of its card or the safe area, small or clipped text, poor contrast |
+| Layout check (explainer) | in Chrome, on every scene and every handover: text over text or under a shape, text out of its card or the safe area, small or clipped text, poor contrast, two scenes at once |
+| Motion check (explainer) | on the rendered file: a picture still for over 1 s, or still more than 15% of the reel |
 | Voice check (explainer) | a word the voice skipped or misread, a long gap, a peak too loud, the wrong length |
 | Render verify | black frames or flashes, wrong size or frame rate, missing colour tags, low bitrate, clipped words |
 | Loudness | the whole video at -14 LUFS, the voice clear over the music |

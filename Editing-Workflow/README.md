@@ -974,7 +974,7 @@ come from, and a few rules.
 | Record | 4K, 30 fps | 4K **vertical** (2160x3840), 60 fps | nothing: a script, voiced by Kokoro (free, local) |
 | Length | 8 to 25 min | 15 to 60 s (up to 3 min) | 30 to 90 s (81 to 240 words) |
 | Captions | none burned in; a closed-caption SRT (long form: two or three key words on screen) | burned in, word by word, from the final cut, in the caption slot (y 1050 to 1248) | burned in, word by word, from the aligned script, in the band at y 330 to 470 |
-| Hero text | ~100 px | hook 96 px, headline 84 px, max 60 characters for the hook | a scene library (19 types) sized by construction and scaled up to fill the scene area (y 520 to 1420) |
+| Hero text | ~100 px | hook 96 px, headline 84 px, max 60 characters for the hook | a scene library (40 types) sized by construction and scaled up to fill the scene area (y 520 to 1235 for text, 1650 for bare shapes) |
 | Cards | sized to the face-safe zone | inside the platforms' safe zone (65 / 269 / 672 px), narrower near the button column | the same safe zone; one scene at a time, anchored to its words |
 | Keep clear | your face | your face, the top 14 %, the bottom 35 %, 6 % each side, the button column | the top 14 %, the bottom 35 %, 6 % each side, the button column |
 | Music | ducked bed on the master | none in the file (added in the app) or a free licensed track, about 18 dB under the voice | as Reels |
@@ -1025,7 +1025,7 @@ flowchart LR
 | Script | `explainer-writer`; `script-check.py` (gate E1: 81 to 240 words, a hook of 12 words at most, every number sourced; warnings when the script is not aimed at one viewer, has no example, skips its format's shape, or ends with a call to action that doesn't match the goal) |
 | Voice | `explainer-voice`; `tts-kokoro.py` line by line, -16 LUFS; Parakeet + `align-script.py` (gate E2: 98% of words heard) |
 | Plan | `explainer-director`: `storyboard.json`, every scene and item anchored to a word |
-| Compose | `explainer-animator`; `explainer-compose.py` (gate E3: fits by construction, no holes, sources), then the kit's beat-check and `pace-check.py` (E4: something changes at least every 3 s), then `layout-check.py` (E5: every scene opened in Chromium, no overlap, spill, unsafe, small or clipped text, WCAG contrast) |
+| Compose | `explainer-animator`; `explainer-compose.py` (gate E3: fits by construction, no holes, sources), then the kit's beat-check and `pace-check.py` (E4: something changes at least every 3 s), then `layout-check.py` (E5: every scene and every handover opened in Chromium, no overlap, spill, unsafe, small or clipped text, contrast on its ground); after the render, `motion-check.py` (E6: never still over 1 s) |
 | Render, verify, package, learn | `reels-renderer`, `reels-qa`, `reels-packager`, `reels-librarian`, `reels-analyst` |
 
 ---
@@ -1068,12 +1068,12 @@ From the kit's `PROMPTS.md`, placed in the workflow.
 | GSAP (optional local copy) | `assets/vendor/gsap.min.js` | ✅ |
 | yt-dlp (optional, Analyst only) | `yt-dlp --version` | ✅ |
 
-3. The tests, from the skill's scripts folder: `python3 -m unittest tests` → 53 tests, `OK` (and 48 in the Reels skill's scripts folder).
+3. The tests, from the skill's scripts folder: `python3 -m unittest tests` → 56 tests, `OK` (and 51 in the Reels skill's scripts folder).
 4. `new` The agent team for your profile. **YouTube long-form:** install the Producer skill, the playbook, the
    templates and the 13 agent files as in [`longform/README.md`](longform/README.md) § 2. **Reels:** the Producer
    skill, the playbook, the scripts, the templates and the 11 agent files as in [`reels/README.md`](reels/README.md) § 2.
    **Explainer:** the Reels team first, then the explainer skill, its 4 agent files, Kokoro and the local libraries as
-   in [`explainer/README.md`](explainer/README.md) § 2 (its tests: 190, `OK`).
+   in [`explainer/README.md`](explainer/README.md) § 2 (its tests: 296, `OK`).
 5. Open a **new** conversation: skills and agents load at the start of a conversation.
 
 ---
