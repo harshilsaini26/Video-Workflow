@@ -182,14 +182,24 @@ def particles(i, bg, tok, D, bg_js):
     return "".join(out)
 
 
-def camera(sid, k, t_in, t_out, tok):
+def cam_from(mod, scale, tok):
+    """Where a scene's camera push starts: the token's depth (0.95), or shallower when the scene's smallest text, at its
+    fit, would be drawn under 28 px there; never past the push's end."""
+    cam = tok["ambient"]["camera"]
+    fonts = [int(x) for x in re.findall(r"font-size:\s*(\d+)px", getattr(mod, "CSS", "") or "")]
+    need = E.MIN_TEXT / (min(fonts) * scale) if fonts else 0.0
+    return min(cam["to"], max(cam["from"], math.ceil(need * 1000 - 1e-6) / 1000.0))   # rounded up: never a hair under
+
+
+def camera(sid, k, t_in, t_out, tok, start=None):
     """The camera through a scene: a steady push-in and a slight turn over its whole life (the turn alternates scene to
     scene), on the scene's own .cam wrapper, between the transitions (on the box) and the fit (on .live). It pushes in
-    from under the box's size to just under it (0.93 to 0.995), so the turn never carries a word past the column's
-    edge; linear, so it never comes to rest (an eased push stops at both ends, and gate E6 sees those ends still)."""
+    from under the box's size to just under it (0.95 to 0.995, or from `start`: cam_from), so the turn never carries a
+    word past the column's edge and never draws text under 28 px; linear, so it never comes to rest (an eased push
+    stops at both ends, and gate E6 sees those ends still)."""
     cam = tok["ambient"]["camera"]
     yaw = cam["yaw"] * (1 if k % 2 == 0 else -1)
-    return "tl.fromTo('#%s-cam', %s, %s, %.3f);" % (sid, js_obj({"scale": cam["from"], "y": cam["y"], "rotationY": -yaw}),
+    return "tl.fromTo('#%s-cam', %s, %s, %.3f);" % (sid, js_obj({"scale": cam["from"] if start is None else start, "y": cam["y"], "rotationY": -yaw}),
                                                      js_obj({"scale": cam["to"], "y": -cam["y"], "rotationY": yaw, "duration": round(t_out - t_in, 3),
                                                              "ease": "none", "immediateRender": False}), t_in)
 
@@ -337,7 +347,9 @@ def main():
             print("WARN %s: the same layout (%s) as the scene before; change the picture, or merge the two into one build"
                   % (a2["id"], m2.TYPE))
     if timed[0][3] > GAP_MAX:
-        fail("no scene from 0.00 to %.2f s: the first scene starts late" % timed[0][3])
+        fail("no scene from 0.00 to %.2f s: the first scene starts late%s" % (timed[0][3], (
+            "; the voice's first word starts at %.2f s: trim its leading silence (the hook must be on screen by 1.0 s)"
+            % words[0]["start"]) if words and words[0]["start"] - E.LEAD > GAP_MAX else ""))
     if timed[-1][5] < D - GAP_MAX:
         fail("no scene from %.2f to %.2f s: the last scene ends early (out at the end: %.3f)" % (timed[-1][5], D, D))
 
@@ -372,8 +384,10 @@ def main():
                   % (sid, min(starts) - t_in))
         mine = [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner)]
         if k == 0 and mine and max(mine) > E.HOOK_BY + 1e-6:
-            fail("%s: the hook is not whole on screen by 1.0 s: an item lands at %.2f s (every hook item by %.1f s); anchor "
-                 "the hook's pieces to word 0 or 1 (SOP S8)" % (sid, max(mine), E.HOOK_BY))
+            late = words[0]["start"] - E.LEAD > E.HOOK_BY if words else False
+            fail("%s: the hook is not whole on screen by 1.0 s: an item lands at %.2f s (every hook item by %.1f s); %s (SOP S8)"
+                 % (sid, max(mine), E.HOOK_BY, "the voice's first word starts at %.2f s: trim its leading silence" % words[0]["start"]
+                    if late else "anchor the hook's pieces to word 0 or 1"))
         item_times += mine
         lines = X.enter(kinds[k], sid, t_in) + lines
         if kinds[k] == "burst":
@@ -390,7 +404,7 @@ def main():
         js.extend(lines)
         js.extend(ctx.ambient_lines)
         if mod.TYPE != "custom":         # a custom scene moves itself
-            js.append(camera(sid, k, t_in, t_out, tok))
+            js.append(camera(sid, k, t_in, t_out, tok, cam_from(mod, scale, tok)))
         if t_out < D - 1e-6:
             gone = X.exit(kinds[k + 1] if k + 1 < len(kinds) else "fade", sid, t_out)
             lines = lines + gone
@@ -426,7 +440,6 @@ def main():
     # ---- captions -------------------------------------------------------------------------------------------------
     C = S.get("captions", {}) or {}
     em = {L.norm(x) for x in C.get("emphasis", [])}
-    hl = E.theme(tok, timed[0][2])["highlight"]
     chunks = L.chunk_words([w for w in words if w["start"] < D], 4, 24)
     giant = [(t_in, t_out) for sc, m_, _, t_in, t_out, _ in timed if m_.TYPE == "giant-captions"]
     # while giant captions run, the words are the picture: the band steps aside, never the same words twice
@@ -435,12 +448,13 @@ def main():
     for i, ch in enumerate(chunks):
         b = bg_at(ch["start"])
         th = E.theme(tok, b)
-        dim, on = th["muted"], th["ink"]      # a word not yet said, a word said
+        dim, on, hl = th["muted"], th["ink"], th["highlight"]      # a word not yet said, a word said, an emphasised word
         spans = []
         for j, w in enumerate(ch["words"]):
             cid = "cw%d-%d" % (i, j)
             if L.norm(w["text"]) in em:
-                spans.append('<span class="cw em" id="%s"><i class="hd a"></i><i class="hd b"></i>%s</span>' % (cid, html.escape(w["text"])))
+                hd = ' style="background:%s;border-color:%s"' % (hl["handle"], hl["handle_border"])   # the chip's handles, on its ground
+                spans.append('<span class="cw em" id="%s"><i class="hd a"%s></i><i class="hd b"%s></i>%s</span>' % (cid, hd, hd, html.escape(w["text"])))
                 cap_js.append("tl.set('#%s', { backgroundColor: '%s', color: '%s' }, %.3f);" % (cid, hl["fill"], hl["text"], w["start"]))
                 cap_js.append("tl.set('#%s .hd', { opacity: 1 }, %.3f);" % (cid, w["start"]))
             else:
@@ -478,10 +492,10 @@ def main():
     text-align:center; }
   .cap .cw { position:relative; display:inline-block; padding:0 .14em; border-radius:6px; }
   .cap .cw.em { transform: scale(1.12); margin:0 .1em; }
-  .cap .hd { position:absolute; width:14px; height:14px; background:%s; border:3px solid %s; opacity:0; }
+  .cap .hd { position:absolute; width:14px; height:14px; border:3px solid; opacity:0; }
   .cap .hd.a { left:-7px; top:-7px; } .cap .hd.b { right:-7px; bottom:-7px; }
 %s""" % (tok["fonts"]["label_file"], stage_bg, stage_bg, tok["fonts"]["display"], tok["fonts"]["label"], WIDE[0], WIDE[1], WIDE[0], WIDE[1], band_top,
-         band_bottom - band_top, CAP_SIZE, hl["handle"], hl["handle_border"], "".join(css.values()))
+         band_bottom - band_top, CAP_SIZE, "".join(css.values()))
 
     HELPERS = """
         const countUp = function (sel, from, to, t, dur, prefix, suffix, dec) {   // the page starts at fmt(first from)

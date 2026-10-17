@@ -37,6 +37,21 @@ class KineticHook(unittest.TestCase):
         self.assertRegex(html, r'<span class="kn-big" id="hk-b"[^>]*>5</span>')
 
 
+    def test_pieces_sharing_a_word_land_a_tenth_apart(self):
+        # a filler-led hook ("So, 5 steps...") puts several pieces on its first words: they rise one after another,
+        # 0.1 s apart, never as one block
+        r, html, _ = compose(self, [{"type": "kinetic", "id": "hk", "bg": "ink", "in": "word:0", "out": "word:8",
+                                     "big": {"text": "5", "at": "word:0"}, "words": [{"text": "STEPS", "at": "word:0"},
+                                     {"text": "AI LOOKS IT UP", "at": "word:0"}], "source": "s1"},
+                                    dict(BOARD["scenes"][2], **{"in": "word:8"})])
+        self.assertEqual(r.returncode, 0, r.stdout)
+        at = {i: float(t) for i, t in re.findall(r'id="hk-(b|w0|w1)" data-at="([\d.]+)"', html)}
+        self.assertAlmostEqual(at["w0"] - at["b"], 0.1, places=3)
+        self.assertAlmostEqual(at["w1"] - at["w0"], 0.1, places=3)
+        for k in ("b", "w0", "w1"):
+            self.assertIn("tl.fromTo('#hk-%s', { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: 'expo.out', immediateRender: false }, %.3f);" % (k, at[k]), html)
+
+
 class GiantCaptions(unittest.TestCase):
     SC = {"type": "giant-captions", "id": "gc", "bg": "blue", "in": "word:8", "out": "word:18", "keywords": ["word12"]}
 
@@ -73,6 +88,28 @@ class GiantCaptions(unittest.TestCase):
         html = read(os.path.join(d, "public", "index.html"))
         for bg, w in (("blue", 8), ("ink", 18)):
             self.assertIn("tl.set('#brand', { color: '%s' }, %.3f);" % (E.theme(TOK, bg)["muted"], t_word(w) - E.LEAD), html, bg)
+
+    def test_the_caption_highlight_follows_the_ground(self):
+        # an emphasised word takes its own ground's highlight and handles: a mantle hook's blue chip on a blue scene
+        # would vanish into the ground
+        d = scratch(self)
+        write(os.path.join(d, "transcript.json"), {"words": words30()})
+        silent_wav(os.path.join(d, "voice.wav"), VOICE)
+        board = {"id": "t", "captions": {"emphasis": ["NPV"]},
+                 "scenes": [dict(BOARD["scenes"][0], bg="mantle", out="word:8"), dict(BOARD["scenes"][1], bg="blue", **{"in": "word:8", "out": "word:18"}),
+                            dict(BOARD["scenes"][2], bg="base", **{"in": "word:18"})]}
+        sp = write(os.path.join(d, "storyboard.json"), board)
+        r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
+        self.assertEqual(r.returncode, 0, r.stdout[-300:])
+        html = read(os.path.join(d, "public", "index.html"))
+        for bg, w in (("mantle", 3), ("blue", 17)):
+            hl = E.theme(TOK, bg)["highlight"]
+            sets = re.findall(r"tl\.set\('#(cw\d+-\d+)', \{ backgroundColor: '([^']+)', color: '([^']+)' \}, ([\d.]+)\);", html)
+            at = [x for x in sets if abs(float(x[3]) - t_word(w)) < 1e-3]
+            self.assertEqual(len(at), 1, (bg, sets))
+            self.assertEqual(at[0][1:3], (hl["fill"], hl["text"]), bg)
+            self.assertIn('<span class="cw em" id="%s"><i class="hd a" style="background:%s;border-color:%s"></i>' % (at[0][0], hl["handle"], hl["handle_border"]), html)
+        self.assertNotEqual(E.theme(TOK, "mantle")["highlight"]["fill"], E.theme(TOK, "blue")["highlight"]["fill"])
 
     def test_emphasised_caption_words_carry_more_weight(self):
         r, html, _ = compose(self, [dict(BOARD["scenes"][0], out="end")], emphasis=["NPV"])

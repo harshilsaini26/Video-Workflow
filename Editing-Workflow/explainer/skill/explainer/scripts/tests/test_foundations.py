@@ -63,6 +63,14 @@ class Hook(unittest.TestCase):
         self.assertIn("E3 FAIL: lc: the hook", r.stdout)
         self.assertIn("0.8 s", r.stdout)
 
+    def test_a_voice_that_starts_late_is_named(self):
+        # a leading silence puts even word 0 after 0.8 s: the advice is to trim the voice, not to re-anchor
+        board = copy.deepcopy(BOARD)
+        board["scenes"] = [copy.deepcopy(LIST), dict(BOARD["scenes"][2], **{"in": "word:12"})]
+        r, _ = compose(self, board, words=[dict(w, start=w["start"] + 1.5, end=w["end"] + 1.5) for w in words30()])
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("leading silence", r.stdout)
+
     def test_a_hook_on_its_first_words_passes(self):
         board = copy.deepcopy(BOARD)
         board["scenes"] = [copy.deepcopy(LIST), dict(BOARD["scenes"][2], **{"in": "word:12"})]
@@ -127,6 +135,22 @@ class Decor(unittest.TestCase):
         from . import explainer_compose_shim as C
         self.assertFalse(C.shows_number({"type": "x", "time": "0:12", "likes": 1200}, decor={"time", "likes"}))
         self.assertTrue(C.shows_number({"type": "x", "time": "0:12", "text": "3 steps"}, decor={"time"}))
+
+
+class Floor(unittest.TestCase):
+    def test_no_text_is_drawn_under_28_px_even_as_the_camera_pushes_in(self):
+        # a scene shrunk to fit is then drawn smaller still by the camera at the start of its push: its push starts only
+        # as deep as its smallest text allows
+        from . import explainer_compose_shim as C
+
+        class Tall:                          # 32 px text, a little too tall for the area at full size
+            TYPE, CSS, MAX_SCALE = "tall", ".t { font-size:32px; }", 1.0
+            min_width = staticmethod(lambda sc: 300)
+            height = staticmethod(lambda sc, w: 740)
+        s = C.place("tall", Tall, {})[-1]
+        start = C.cam_from(Tall, s, E.load_tokens())
+        self.assertGreaterEqual(32 * s * start, E.MIN_TEXT - 1e-6, (s, start))
+        self.assertLessEqual(start, E.load_tokens()["ambient"]["camera"]["to"])
 
 
 class Discovery(unittest.TestCase):

@@ -178,13 +178,24 @@ def place(scene):
     return best[1]
 
 
+STAGGER = 0.1      # pieces of the hook that share a word land this far apart (the plan's ruling 4)
+
+
 def render(scene, ctx, box):
     c, sid = ctx.c, ctx.id
     z = sizes(scene, box[2])
     js = []
 
+    taken = []
+
     def rise(sel, at, size, color, cls, text, extra=""):
         t, attrs = ctx.item(at) if at is not None else (ctx.t_in, "")
+        if at is not None:            # pieces sharing a word rise one after another, STAGGER apart, never as one block
+            k = sum(1 for x in taken if abs(x - t) < 1e-6)
+            taken.append(t)
+            if k:
+                t = round(t + STAGGER * k, 3)
+                attrs = re.sub(r'data-at="[\d.]+"', 'data-at="%.3f"' % t, attrs)
         # below its mask from the start (set through GSAP: a CSS translate would be read as pixels and never undone)
         js.append("tl.set('%s', { yPercent: 110 }, 0);" % sel)
         js.append("tl.fromTo('%s', { yPercent: 110 }, %s, %.3f);" % (sel, js_obj({"yPercent": 0, "duration": 0.6, "ease": "expo.out",
@@ -192,6 +203,8 @@ def render(scene, ctx, box):
         return t, ('<div class="kn-m" style="height:%dpx%s"><span class="%s" id="%s"%s style="color:%s;font-size:%dpx;line-height:%dpx">%s</span></div>'
                    % (lh(size), extra, cls, sel[1:], attrs, color, size, lh(size), text))
 
+    hero = rise("#%s-b" % sid, scene["big"].get("at"), z["big"], c["accent"], "kn-big", ctx.esc(scene["big"]["text"]))[1] \
+        if scene.get("big") else None          # the hero rises first when it shares a word with the rest
     words = scene.get("words") or []
     stack = []
     for i, w in enumerate(words):
@@ -199,9 +212,8 @@ def render(scene, ctx, box):
                     ";margin-top:-%dpx" % tuck(z["word"]) if i else "")
         stack.append(h)
     row = []
-    if scene.get("big"):
-        _, h = rise("#%s-b" % sid, scene["big"].get("at"), z["big"], c["accent"], "kn-big", ctx.esc(scene["big"]["text"]))
-        row.append(h)
+    if hero:
+        row.append(hero)
     if stack:
         pad = int(round(DESC * (z["big"] - z["word"]))) if scene.get("big") else 0
         row.append('<div class="kn-stack" style="padding-bottom:%dpx;margin-left:%dpx">%s</div>'

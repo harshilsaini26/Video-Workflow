@@ -47,8 +47,8 @@ Distilled from three free, open sources, read as references (none of their code 
 ## 2. Motion with a reason
 
 1. **The picture is never still** (changed 2026-10-17, measured: the earlier "nothing moves without a reason" left
-   two thirds of the RAG reel's frames frozen). The camera moves through every scene: a steady push-in from 0.93 to
-   0.995 (linear, so it never comes to rest) with a 1.5° turn that alternates scene to scene (`.cam`, the composer's), and a field of small squares and
+   two thirds of the RAG reel's frames frozen). The camera moves through every scene: a steady push-in from 0.95 to
+   0.995 (linear, so it never comes to rest; shallower where the scene's smallest text would drop under 28 px) with a 1.5° turn that alternates scene to scene (`.cam`, the composer's), and a field of small squares and
    dots rises behind the scenes for the whole reel. Both are quiet enough to read through and never count as a new
    picture for pace-check. Gate E6 (`motion-check.py`) measures the rendered file: no still stretch over 1 s, under
    15% still (a frame is still when under 0.1% of it changes visibly). **Pieces still arrive on the words that name them**; a screenshot punches in on its `focus` word; a

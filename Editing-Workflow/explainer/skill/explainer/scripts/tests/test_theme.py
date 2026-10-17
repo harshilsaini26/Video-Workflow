@@ -76,6 +76,18 @@ class Theme(unittest.TestCase):
             hl = c["highlight"]
             self.assertGreaterEqual(ratio(hl["text"], hl["fill"]), 3.0, name)
 
+    def test_text_reads_over_the_glows_at_their_brightest(self):
+        # the glows sit behind the scenes, the captions and the handle band; the probe sees only the flat ground, so the
+        # tokens hold every text role at 3:1 over each glow's centre on its ground (the worst place text can sit)
+        for name in TOK["backgrounds"]:
+            c = E.theme(TOK, name)
+            for g in TOK["ambient"]["glows"][name]:
+                under = flat(E.rgba(TOK["palette"][g["color"]], g["alpha"]), c["bg"])
+                for role in ("ink", "dim", "muted", "accent"):
+                    self.assertGreaterEqual(ratio(c[role], under), 3.0, (name, g["color"], g["alpha"], role))
+                hl = c["highlight"]
+                self.assertGreaterEqual(ratio(hl["fill"], under), 1.5, (name, g["color"], "the caption chip shows"))
+
     def test_one_colour_means_one_thing(self):
         c = E.theme(TOK, "mantle")
         self.assertEqual(c["accent"].lower(), LATTE["blue"])
