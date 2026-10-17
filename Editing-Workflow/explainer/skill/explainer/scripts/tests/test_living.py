@@ -29,15 +29,18 @@ class Living(unittest.TestCase):
         return read(os.path.join(out, "index.html")), out
 
     def test_every_scene_drifts_with_the_camera(self):
-        # the camera keeps moving through a scene: a slow push-in with a slight turn, over the scene's whole life, the
-        # turn alternating from scene to scene; the scene's own fit (its .live scale) is never animated
+        # the camera keeps moving through a scene: a steady push-in with a slight turn, over the scene's whole life, the
+        # turn alternating from scene to scene; the scene's own fit (its .live scale) is never animated. It never comes
+        # to rest (a linear move: an eased one stops at both ends, and E6 measured those ends still on the RAG demo),
+        # and it pushes far enough to be seen (the 0.97 to 0.995 push measured under E6's threshold)
         html, out = self.build(BOARD)
         cam = TOK["ambient"]["camera"]
+        self.assertGreaterEqual(round(cam["to"] - cam["from"], 3), 0.05)
         m = json.load(open(os.path.join(out, "moments.json"), encoding="utf-8"))
         for k, sc in enumerate(m["scenes"]):
             yaw = cam["yaw"] * (1 if k % 2 == 0 else -1)
             self.assertIn("tl.fromTo('#%s-cam', { scale: %s, y: %s, rotationY: %s }, { scale: %s, y: %s, rotationY: %s, duration: %s, "
-                          "ease: 'sine.inOut', immediateRender: false }, %.3f);"
+                          "ease: 'none', immediateRender: false }, %.3f);"
                           % (sc["id"], _n(cam["from"]), cam["y"], _n(-yaw), _n(cam["to"]), -cam["y"], _n(yaw), _n(round(sc["out"] - sc["in"], 3)), sc["in"]),
                           html, sc["id"])
             self.assertRegex(html, r'<div class="box" id="%s"[^>]*><div class="cam" id="%s-cam"><div class="live" id="%s-live"' % ((sc["id"],) * 3))

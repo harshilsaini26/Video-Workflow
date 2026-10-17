@@ -122,7 +122,7 @@ scene that sets a colour; `test_theme.py`, `test_plan.py`, `test_layout.py`.
 - `ctx.slot(sel)`: outline at 0.35, its `.gt` text hidden; `ctx.fill(sel, t)` brings both in. Replaces `ctx.ghost`.
 - `flow`: 2 to 6 nodes; when the column is taller than the area it travels: a mover recentres on each node.
 - `motion-check.py --video F [--max-still-share 0.15 --max-still 1.0]`: frames at 10 fps, 180x320 grey; a frame is
-  still under 0.25/255 mean change; fails with the still stretches' times.
+  still under 0.25/255 mean change; fails with the still stretches' times. (Ruling at the demo: a frame is still when under 0.1% of it changes by more than 5/255; the mean diluted small visible motion. Reference 3% still, the RAG reel 48%.)
 
 ### Task 4: Hook, captions, giant captions
 

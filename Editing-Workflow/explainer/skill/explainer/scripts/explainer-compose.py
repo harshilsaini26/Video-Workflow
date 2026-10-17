@@ -183,15 +183,15 @@ def particles(i, bg, tok, D, bg_js):
 
 
 def camera(sid, k, t_in, t_out, tok):
-    """The camera through a scene: a slow push-in and a slight turn over its whole life (the turn alternates scene to
+    """The camera through a scene: a steady push-in and a slight turn over its whole life (the turn alternates scene to
     scene), on the scene's own .cam wrapper, between the transitions (on the box) and the fit (on .live). It pushes in
-    from just under the box's size to just under it again (0.97 to 0.995), so the turn never carries a word past the
-    column's edge."""
+    from under the box's size to just under it (0.93 to 0.995), so the turn never carries a word past the column's
+    edge; linear, so it never comes to rest (an eased push stops at both ends, and gate E6 sees those ends still)."""
     cam = tok["ambient"]["camera"]
     yaw = cam["yaw"] * (1 if k % 2 == 0 else -1)
     return "tl.fromTo('#%s-cam', %s, %s, %.3f);" % (sid, js_obj({"scale": cam["from"], "y": cam["y"], "rotationY": -yaw}),
                                                      js_obj({"scale": cam["to"], "y": -cam["y"], "rotationY": yaw, "duration": round(t_out - t_in, 3),
-                                                             "ease": "sine.inOut", "immediateRender": False}), t_in)
+                                                             "ease": "none", "immediateRender": False}), t_in)
 
 
 def main():

@@ -47,11 +47,11 @@ Distilled from three free, open sources, read as references (none of their code 
 ## 2. Motion with a reason
 
 1. **The picture is never still** (changed 2026-10-17, measured: the earlier "nothing moves without a reason" left
-   two thirds of the RAG reel's frames frozen). The camera moves through every scene: a slow push-in from 0.97 to
-   0.995 with a 1.5° turn that alternates scene to scene (`.cam`, the composer's), and a field of small squares and
+   two thirds of the RAG reel's frames frozen). The camera moves through every scene: a steady push-in from 0.93 to
+   0.995 (linear, so it never comes to rest) with a 1.5° turn that alternates scene to scene (`.cam`, the composer's), and a field of small squares and
    dots rises behind the scenes for the whole reel. Both are quiet enough to read through and never count as a new
    picture for pace-check. Gate E6 (`motion-check.py`) measures the rendered file: no still stretch over 1 s, under
-   15% still. **Pieces still arrive on the words that name them**; a screenshot punches in on its `focus` word; a
+   15% still (a frame is still when under 0.1% of it changes visibly). **Pieces still arrive on the words that name them**; a screenshot punches in on its `focus` word; a
    build keeps one small alive thing while it waits.
 2. **The background moves on the cut.** Its glows travel with each cut (expo.out, about 1.2 s) and hold between cuts.
 3. **A new picture at least every 8 s** (E4). A long process travels: `flow` with 5 or 6 steps runs down a window
@@ -59,7 +59,7 @@ Distilled from three free, open sources, read as references (none of their code 
 4. **Eases:** arrivals decelerate (`power3.out` for pieces, `expo.out` for scenes and cuts); exits accelerate
    (`power3.in`, 0.2 s, over before the cut). **Never `back`, `elastic` or `bounce`**: an overshoot reads as cheap. A
    `gravity-drop` falls and rebounds as physics (power2 in, then smaller power2 out and in), not as an eased overshoot.
-   Linear only for counts, draws, the hub's slow turn and the particles' rise.
+   Linear only for counts, draws, the hub's slow turn, the camera's drift and the particles' rise.
 5. **One object changing shape** beats a fade: a bar that grows, a line that draws, a card that turns. A build shows
    where it is going as **empty slots** (outlines, their words hidden), never as faint text, then fills each on its word.
 6. **Deterministic, on the timeline.** No `Math.random` or `Date.now`, no `repeat` or `yoyo`, no `infinite` CSS

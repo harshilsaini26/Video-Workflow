@@ -3,27 +3,30 @@
 
   motion-check.py --video output.mp4 [--max-still 1.0] [--max-share 0.15] [--fps 10]
 
-FFmpeg reads the reel at 10 frames a second, 180x320, in grey; a frame is still when it differs from the one before by
-under 0.25/255 on average (an eye cannot see that). Fails (exit 1) on a still stretch over --max-still seconds, naming
-its times, or when more than --max-share of the reel is still. The reference reel this gate was set against is still
-7% of the time and never for more than 0.5 s; the RAG reel that prompted it was still 67% of the time. Ambient motion
-(the camera's drift, the particles) counts here: it is what keeps the picture alive. No tokens: FFmpeg and numpy.
+FFmpeg reads the reel at 10 frames a second, 180x320, in grey; a frame is still when under 0.1% of it (58 pixels)
+changes visibly, by more than 5/255, from the one before. Counting what visibly moves, not the average change, lets a
+small thing moving (a cursor, a particle) count, as the eye counts it, and a faint change over the whole frame (a ground
+brightening) not. Fails (exit 1) on a still stretch over --max-still seconds, naming its times, or when more than
+--max-share of the reel is still. The reference reel this gate was set against is still 3% of the time and never for
+more than 0.4 s; the RAG reel that prompted it was still 48% of the time. Ambient motion (the camera's drift, the
+particles) counts here: it is what keeps the picture alive. No tokens: FFmpeg and numpy.
 """
 import argparse, shutil, subprocess, sys
 
 W, H = 180, 320
-STILL = 0.25          # mean absolute change, out of 255, under which a frame is still
+LEVEL = 5             # a pixel changes visibly when it moves by more than this, out of 255
+STILL = 0.001         # the share of the frame changing visibly under which a frame is still
 
 
 def changes(path, fps):
-    """The mean change from each frame to the next, one value per 1/fps seconds after the first frame."""
+    """The share of the frame changing visibly from each frame to the next, one value per 1/fps seconds after the first."""
     import numpy as np
     raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-vf", "fps=%g,scale=%d:%d,format=gray" % (fps, W, H),
                           "-f", "rawvideo", "-"], capture_output=True).stdout
     frames = np.frombuffer(raw, np.uint8).reshape(-1, H, W).astype(np.float32)
     if len(frames) < 2:
         return []
-    return list(np.abs(np.diff(frames, axis=0)).mean(axis=(1, 2)))
+    return list((np.abs(np.diff(frames, axis=0)) > LEVEL).mean(axis=(1, 2)))
 
 
 def still_runs(ch, fps):
