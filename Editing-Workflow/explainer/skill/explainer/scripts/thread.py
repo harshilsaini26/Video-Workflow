@@ -14,6 +14,8 @@ Shapes (frame pixels, N points each, so any shape morphs into any other):
 - rule: a vertical line at `x` from `from` to `to` (540, 345 to 1105), a ruler for a timeline;
 - underline: a horizontal line at `y` (330) from `x0` to `x1` (65 to 1015);
 - off: the line lifts straight up out of the frame where it last was.
+No shape may pass through the captions (the band y 1130 to 1235 inside the column x 150 to 930): a stem goes down the
+outer edge, a loop or a wave sits above or below the band (gate E3 names the key).
 The first key draws the line on (0.8 s); each later key morphs into its shape on its word (0.6 s, power3.inOut). One
 tween runs for the whole reel and its onUpdate draws the shape for the timeline's own time, so any frame a seek lands
 on is the same picture. The layer sits above the ground and under the scenes and the captions (z-index 5); gate E5
@@ -62,6 +64,12 @@ def points(shape, p, prev=None):
     raise ValueError("no thread shape %r (the shapes are %s)" % (shape, ", ".join(SHAPES)))
 
 
+def crosses_captions(pts):
+    """True when a shape passes through the caption band inside the caption column (it would strike the words through)."""
+    (y0, y1), (x0, x1) = E.CAPTION_BAND, (E.L.NARROW["left"], E.L.NARROW["right"])
+    return any(x0 <= x <= x1 and y0 <= y <= y1 for x, y in pts)
+
+
 def validate(spec, words):
     if not isinstance(spec, dict) or not isinstance(spec.get("keys"), list) or not spec["keys"]:
         return ["the thread is {\"keys\": [{\"at\": \"word:N\", \"shape\": ...}], \"color\", \"width\"}"]
@@ -70,10 +78,17 @@ def validate(spec, words):
         errs.append("color is ink or accent (got %r)" % spec.get("color"))
     if not 4 <= float(spec.get("width", 8)) <= 16:
         errs.append("width is 4 to 16 px")
-    last = -1.0
+    last, prev = -1.0, None
     for i, k in enumerate(spec["keys"]):
         if k.get("shape") not in SHAPES:
             errs.append("key %d: no shape %r (the shapes are %s)" % (i, k.get("shape"), ", ".join(SHAPES)))
+        else:
+            prev = points(k["shape"], k, prev)
+            if k["shape"] != "off" and crosses_captions(prev):
+                errs.append("key %d (%s) runs through the captions (y %d to %d, x %d to %d): keep a stem to the outer edge "
+                            "(x under %d or over %d) and a loop or wave above or below the band"
+                            % (i, k["shape"], E.CAPTION_BAND[0], E.CAPTION_BAND[1], E.L.NARROW["left"], E.L.NARROW["right"],
+                               E.L.NARROW["left"], E.L.NARROW["right"]))
         try:
             t = E.resolve(k.get("at"), words, lead=True)
         except (ValueError, TypeError) as e:

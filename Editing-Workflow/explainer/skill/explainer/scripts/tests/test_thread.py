@@ -49,6 +49,21 @@ class Shapes(unittest.TestCase):
         self.assertTrue(thread.validate({"keys": []}, words))
         self.assertTrue(thread.validate(dict(THREAD, color="neon"), words))
 
+    def test_no_key_runs_through_the_captions(self):
+        # the captions are the one place the line must never cross (it would strike through the words being said):
+        # a stem down the middle into a loop below them, or a wave at their height, is refused with the key named
+        import thread
+        words = words30()
+        for key in ({"shape": "loop", "x": 540, "y": 1450, "rx": 300, "ry": 80}, {"shape": "wave", "y": 1180},
+                    {"shape": "drop", "x": 540, "to": 1500}):
+            bad = copy.deepcopy(THREAD)
+            bad["keys"][2].update(key)
+            errs = thread.validate(bad, words)
+            self.assertTrue(any(e.startswith("key 2") and "captions" in e for e in errs), (key, errs))
+        edge = copy.deepcopy(THREAD)
+        edge["keys"][0].update({"x": 1040, "to": 1600})               # down the outer edge, clear of the caption column
+        self.assertEqual(thread.validate(edge, words), [])
+
 
 class OnThePage(unittest.TestCase):
     def test_the_thread_draws_on_and_morphs_on_its_words(self):

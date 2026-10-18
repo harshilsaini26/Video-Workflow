@@ -10,7 +10,7 @@ It makes three kinds of video:
 |---|---|---|---|
 | **YouTube long-form** | your raw talking-head clips and screen recordings | an edited 8 to 25 minute video: tight cuts, on-screen text and graphics, B-roll, sound, music, chapters, captions | 16:9, 4K, 30 fps |
 | **Reels** | a vertical clip, or a long video to cut reels from | a 15 to 60 second reel: hook first, word captions, graphics kept clear of the app's buttons, cover frames, a post caption | 9:16, 1080x1920, 60 fps |
-| **Explainer** | a topic, notes or a script (no camera) | a 30 to 90 second animated explainer: a free local AI voice, a kinetic-type hook, diagrams that build on every word, captions, a sound bed, sources for every number, in a soft Catppuccin Latte look | 9:16, 1080x1920, 60 fps |
+| **Explainer** | a topic, notes or a script (no camera) | a 30 to 90 second animated explainer: a free local AI voice, a kinetic-type hook, diagrams that build on every word, captions, a sound bed, sources for every number, in a soft Catppuccin Latte look or an editorial paper look (big top-left headlines, one line running through the reel) | 9:16, 1080x1920, 60 fps |
 
 This page walks you through everything: what you need, how to set it up, and what happens, step by step, when you
 make your first video of each kind. The detailed design lives in [`Editing-Workflow/README.md`](Editing-Workflow/README.md).
@@ -186,7 +186,7 @@ From each installed skill's `scripts` folder:
 |---|---|---|
 | kit | `cd .claude/skills/youtube-edit/scripts && python3 -m unittest tests` | 56 tests, OK |
 | Reels | `cd .claude/skills/reels/scripts && python3 -m unittest tests` | 51 tests, OK |
-| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 308 tests, OK (a few skip without Kokoro, Chrome or the local vendor folder) |
+| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 436 tests, OK (a few skip without Kokoro, Chrome or the local vendor folder) |
 
 ### 3.6 Open a new conversation
 
@@ -370,8 +370,12 @@ No camera. A voice explains one idea while code-drawn scenes land on its words:
 
 Scenes move from one to the next with transitions. A soft sound bed sits under the voice, with a whoosh on each
 transition, a pop as each item lands and a chime on the payoff. The picture is never still: a slow camera drift and
-drifting particles sit under every scene. The look is [Catppuccin Latte](https://github.com/catppuccin/catppuccin), on
-four grounds with a rhythm: the hook on dark ink, the payoff and every third scene on blue, the rest light.
+drifting particles sit under every scene. There are two looks. [Catppuccin Latte](https://github.com/catppuccin/catppuccin)
+(the default) runs on four grounds with a rhythm: the hook on dark ink, the payoff and every third scene on blue, the
+rest light. **Paper** (`"look": "paper"` in the script) is editorial: warm paper, near-black ink, one red accent, a
+big wide headline top-left, a serif italic aside, and one line (the *thread*) that drops in, loops, turns into a wave
+and lifts off on the voice's words. It can show your own product cut-outs and photos (each one credited), with
+circles and labels drawn on them. The captions stay small, under the picture, so the centre is always the animation.
 
 ### Step 1. Start
 
@@ -548,7 +552,7 @@ The skills you installed under `.claude/` are the live copies. When the Libraria
 **copy those files back into `Editing-Workflow/`** so this repository keeps what it learned.
 
 To change the whole look (colours, fonts, card style), give it your style guide: *"Here's my style guide. Update the
-youtube-edit skill to match it."* The explainer's look is one file, `tokens.json`: the Catppuccin Latte palette,
+youtube-edit skill to match it."* The explainer's look is one file, `tokens.json`: the Catppuccin Latte palette and the paper look,
 with each colour given a role (text, accent, card, good, bad...), so a new palette changes every scene at once.
 
 ---
@@ -583,8 +587,8 @@ with each colour given a role (text, accent, card, good, bad...), so a new palet
 | Kokoro-82M | the explainer's voice, on your computer | Apache-2.0 |
 | KaTeX · Lucide · three.js | formulas · icons · 3D (explainer) | MIT · ISC · MIT |
 | Simple Icons | brand logos (explainer; each brand's own trademark rules still apply) | CC0 |
-| Catppuccin | the explainer's Latte colour palette | MIT |
-| DM Sans · JetBrains Mono | the fonts (shipped in this repository) | SIL Open Font License |
+| Catppuccin | the explainer's Latte colour palette (the paper look is the kit's own) | MIT |
+| DM Sans · JetBrains Mono · Archivo · Instrument Serif | the fonts (shipped in this repository) | SIL Open Font License |
 
 Stock footage, sounds and music come only from free, licensed sources, and each file's source and licence is written
 into `ASSET-REQUESTS.md`. This repository is under the [MIT License](LICENSE). The kit began from a YouTube creator's

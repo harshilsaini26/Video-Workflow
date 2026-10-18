@@ -974,11 +974,11 @@ come from, and a few rules.
 | Record | 4K, 30 fps | 4K **vertical** (2160x3840), 60 fps | nothing: a script, voiced by Kokoro (free, local) |
 | Length | 8 to 25 min | 15 to 60 s (up to 3 min) | 30 to 90 s (81 to 240 words) |
 | Captions | none burned in; a closed-caption SRT (long form: two or three key words on screen) | burned in, word by word, from the final cut, in the caption slot (y 1050 to 1248) | burned in, word by word, from the aligned script, small (44 px) under the scene, in the band at y 1130 to 1235 |
-| Hero text | ~100 px | hook 96 px, headline 84 px, max 60 characters for the hook | a scene library (40 types) sized by construction and scaled up to fill the scene area in the centre (y 345 to 1105; no text below 1235; bare shapes to 1650) |
+| Hero text | ~100 px | hook 96 px, headline 84 px, max 60 characters for the hook | a scene library (47 types) sized by construction and scaled up to fill the scene area in the centre (y 345 to 1105; no text below 1235; bare shapes to 1650) |
 | Cards | sized to the face-safe zone | inside the platforms' safe zone (65 / 269 / 672 px), narrower near the button column | the same safe zone; one scene at a time, anchored to its words |
 | Keep clear | your face | your face, the top 14 %, the bottom 35 %, 6 % each side, the button column | the top 14 %, the bottom 35 %, 6 % each side, the button column |
 | Music | ducked bed on the master | none in the file (added in the app) or a free licensed track, about 18 dB under the voice | as Reels |
-| Tools | free only: the kit without its Tella, Epidemic Sound and AI B-roll routes | free only: no Tella, no Epidemic Sound, no paid stock, no AI generation | free only: Kokoro (Apache-2.0), KaTeX, Lucide, Simple Icons, the Catppuccin Latte palette, no paid voice or avatar |
+| Tools | free only: the kit without its Tella, Epidemic Sound and AI B-roll routes | free only: no Tella, no Epidemic Sound, no paid stock, no AI generation | free only: Kokoro (Apache-2.0), KaTeX, Lucide, Simple Icons, the Catppuccin Latte palette, OFL fonts (DM Sans, Archivo, Instrument Serif, JetBrains Mono), no paid voice or avatar |
 | Team | [`longform/`](longform/README.md): Producer + 13 agents | [`reels/`](reels/README.md): Producer + 11 agents | [`explainer/`](explainer/README.md): Producer + 4 agents + 5 from Reels |
 
 ### How the Reels profile is built
@@ -1073,7 +1073,7 @@ From the kit's `PROMPTS.md`, placed in the workflow.
    templates and the 13 agent files as in [`longform/README.md`](longform/README.md) § 2. **Reels:** the Producer
    skill, the playbook, the scripts, the templates and the 11 agent files as in [`reels/README.md`](reels/README.md) § 2.
    **Explainer:** the Reels team first, then the explainer skill, its 4 agent files, Kokoro and the local libraries as
-   in [`explainer/README.md`](explainer/README.md) § 2 (its tests: 308, `OK`).
+   in [`explainer/README.md`](explainer/README.md) § 2 (its tests: 436, `OK`).
 5. Open a **new** conversation: skills and agents load at the start of a conversation.
 
 ---

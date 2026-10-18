@@ -16,11 +16,11 @@ explainer/
 ├── skill/explainer/                → install to .claude/skills/explainer/
 │   ├── SKILL.md                    the Producer: runs in your main conversation
 │   ├── PLAYBOOK.md                 the doctrine every agent follows (§E0 to §E8)
-│   ├── tokens.json                 the look: fonts, the Catppuccin Latte palette and its roles, backgrounds, motion timing
+│   ├── tokens.json                 the looks (Catppuccin Latte; paper: warm paper, near-black ink, one red), roles, motion
 │   ├── MOTION.md                   how a reel looks and moves (from motion-graphics-skills, HyperFrames, Remotion)
 │   ├── lexicon.json                pronunciations ("WACC" → "wack"), kept across projects
 │   ├── voice-rates.json            words a second for each voice and speed, measured from its samples
-│   ├── assets/fonts/               DM Sans 500/700 and JetBrains Mono 500 (OFL, licences beside them)
+│   ├── assets/fonts/               DM Sans, JetBrains Mono, Archivo (wide), Instrument Serif italic (OFL, licences beside them)
 │   └── scripts/
 │       ├── script-check.py         gate E1: length, hook, sources, payoff and call to action; writes SCRIPT.md
 │       ├── tts-kokoro.py           the voice, line by line, joined with pauses, levelled to -16 LUFS
@@ -38,10 +38,13 @@ explainer/
 │       ├── preflight.py            prepares a machine once (Windows included) and writes PREFLIGHT.md
 │       ├── skill-version.py        pins the skill's files at the brief; a changed skill stops the next stage
 │       ├── new-version.py          a clean folder for each version of a reel (v2, v3...)
-│       ├── explainer_lib.py        shared: word anchors, the scene area, text measured with real glyph widths
-│       ├── scenes/                 one module per scene type (41, custom included), found without a list
+│       ├── headline.py             the headline layer: a big top-left headline, kicker, sub or serif aside over any scene
+│       ├── thread.py               the thread: one line through the reel that morphs on the words (drop, loop, wave...)
+│       ├── imagesize.py            an image's size from its own header (PNG, JPEG, WebP, GIF)
+│       ├── explainer_lib.py        shared: word anchors, the scene area, the looks, text measured with real glyph widths
+│       ├── scenes/                 one module per scene type (48, custom included), found without a list
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
-│       └── tests/                  308 tests (python3 -m unittest discover -s tests -t .)
+│       └── tests/                  436 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
     explainer-writer.md · explainer-voice.md · explainer-director.md · explainer-animator.md
 ```
@@ -59,8 +62,11 @@ explainer/
 | A scene that sits still too long | `pace-check.py` fails any stretch over 3 s with nothing changing and any picture held over 8 s (a flow that travels may hold longer); on the rendered file, `motion-check.py` (E6) fails a still stretch over 1 s or a reel still more than 15% of the time; a slow camera drift and particles keep every frame alive | §E1, §E6 |
 | A diagram that overflows or collides | gate E5 (`layout-check.py`) opens every scene in Chromium on your machine and fails on text over text, text crossing a shape, text out of its card, anything outside the safe area, small text, clipped text and WCAG contrast; the hub computes its own geometry; every scene type passes it at three lengths of text (`test_every_scene_case_is_clean`) | §E4 |
 | A hook that costs tokens to write | the `kinetic` scene: kinetic type from a one-line hint in script.json, no code | §E6 |
-| A small widget in an empty frame | every library scene is scaled up (to 1.8x) to fill the scene area, y 345 to 1105, the centre of the frame, with small captions under it (y 1130 to 1235, the one bottom line for any text) and bare shapes running on to y 1650; no ease overshoots, nothing breathes without a reason, every cut is velocity-matched; the hook is kinetic type from data, and custom scenes are kept for what the library can't draw ([MOTION.md](skill/explainer/MOTION.md)) | §E6 |
-| Slides instead of a video | build-up scenes that grow on the words, with empty slots that fill as they are said (never ghost text); objects instead of boxes: a chat, a document, a hero number, a prompt bar, an editor's timeline, a reel feed and more (40 library scenes); automatic transitions, real logos and real page screenshots | §E4, §E6 |
+| A small widget in an empty frame | every library scene is scaled up (to 1.8x) to fill the scene area, y 345 to 1105, the centre of the frame, with small captions under it (44 px with a soft halo, y 1130 to 1235, the one bottom line for any text) and bare shapes running on to y 1650; no ease overshoots, nothing breathes without a reason, every cut is velocity-matched; the hook is kinetic type from data, and custom scenes are kept for what the library can't draw ([MOTION.md](skill/explainer/MOTION.md)) | §E6 |
+| Slides instead of a video | build-up scenes that grow on the words, with empty slots that fill as they are said (never ghost text); objects instead of boxes: a chat, a document, a hero number, a prompt bar, an editor's timeline, a reel feed and more (47 library scenes); automatic transitions, real logos and real page screenshots | §E4, §E6 |
+| A reel that looks like slides, not a magazine | the `paper` look (`"look": "paper"`): warm paper, near-black ink, one red accent and three typefaces, a wide heavy grotesque for headlines (Archivo 125% 800), a serif italic for asides, mono for labels; a headline layer puts a big top-left headline over any scene, sized to the fewest lines that stay big | §E4.6, §E4.11, MOTION §1.6 |
+| Nothing ties the scenes together | the thread: one line through the whole reel that drops in, loops, turns into a wave, a ruler or an underline on the voice's words and lifts off at the end; it never crosses the captions (E3) | §E4.12 |
+| A product or a place you can only show as a picture | `product-hero` (a cut-out with the title behind it, notes drawn on with a leader and a label), `photo-grid` (one to four photos, each credited), plus waveforms, a mode switch, a step chart, line art drawn on, a price sticker and a crossed-out list | §E4.13 |
 | Every scene on the same ground | four grounds with a rhythm: the hook on ink, the payoff and every third scene on blue, the rest light; every colour checked at 3:1 or better on its ground by E5 | §E6 |
 | Two scenes on screen at once | the old scene leaves on the cut and the next enters on it; E5 looks at every handover, 1/30 s apart | §E4 |
 | A length guessed from a word count | `script-check.py --voice` times the script at the voice's own measured rate, pauses included; the length is decided at Checkpoint A | §E1 |
@@ -202,21 +208,26 @@ flowchart TD
 | `sound.py` | the generated pad and sound effects (the same bytes every time), the events (a whoosh per moving transition, a chime on the payoff, pops 0.35 s apart), the bed: looped, faded, ducked under the voice | 6: never silent, at least 6 dB of ducking, the creator's track looped and faded |
 | `snap-page.py` | a page's screenshot at an exact size with local Chrome in a fresh profile | 2 (1 needs Chrome) |
 | `explainer-compose.py` | gate E3: places every scene by its measured height and scales it up to fill the scene area, glows that travel with each cut, transitions, word captions with the highlight box, the voice and the sound bed, the kit's markup; WARNs on a title that repeats the voice and on the same layout twice in a row | 33 (6 for the craft rules: fill, title size, the taller area, same layout), plus the kit's beat-check run on its page; bad storyboard values fail with the scene named |
-| `scenes/*.py` | 40 library scenes (build-up scenes, UI objects, the hero stat, giant captions and the logo card among them) and the sandboxed custom scene | 39 across the scene and asset suites (a screenshot punching in on its focus line among them), 10 for the custom contract (unique build names, and MOTION.md's banned eases, loops and randomness) |
+| `scenes/*.py` | 47 library scenes (build-up scenes, UI objects, the hero stat, giant captions and the logo card among them) and the sandboxed custom scene | 39 across the scene and asset suites (a screenshot punching in on its focus line among them), 10 for the custom contract (unique build names, and MOTION.md's banned eases, loops and randomness) |
 | heights | each scene's predicted height against Chromium, 3 cases × 2 column widths × every scene type, and the kinetic hook at the width it was composed at | over 236 measured rows (one fixture per scene group): every one 0 to 4 px over, never under |
 | `layout-check.py` | gate E5: every scene in Chromium at the moment it is fully built, and every handover (overlap, cover, crossing, spill, safe area, size, contrast on the composited ground; `hyperframes check` adds clipping) | 4, including every scene type at three lengths of text, clean |
 | `motion-check.py` | gate E6 on the rendered file: FFmpeg at 10 frames a second; fails a still stretch over 1 s or more than 15% still | in `test_motion.py` |
 | `stills.py` | Checkpoint B: every scene settled, the hook at 0.3, 0.7 and 1.0 s, a sheet that is always fresh | in `test_sops.py` |
 | `preflight.py`, `skill-version.py`, `new-version.py` | the machine prepared once; the skill pinned at the brief; a clean folder per version | in `test_sops.py` and `test_portable.py` (every text file opened as UTF-8, so Windows passes) |
-| theme | the Catppuccin Latte palette, every role pair at its WCAG ratio, every colour on every scene case in the palette | 5 |
+| theme | both looks (Latte and paper), every role pair at its WCAG ratio, every colour on every scene case in the look's palette | 5 |
+| `headline.py`, the looks, the hero face | the headline's size (120 to 64 px, fewest lines), the room it leaves the scene, the paper palette and fonts, the hero face on every hero selector, the planner's look and word anchors | in `test_editorial.py` |
+| `thread.py` | every shape at 96 points, keys in time order, drawn on and morphed on its words, seek-safe, behind the scenes and captions, never through the captions | 8 |
+| `imagesize.py`, `scenes/_annotate.py` | image sizes from their headers, notes on an image that fit or are refused by name | in `test_images.py` |
 | `scenes/kinetic.py` | the kinetic hook: pieces on their words, the accent, bad data refused, any hook fits its width | 5, and the planner's kinetic shorthand |
 | `explainer_lib.py` | anchors, tokens, glyph-width text measuring | 5 |
 | docs | frontmatter parses, cited scripts exist, § references resolve, links, mermaid fences, the STATUS Voice row, the reused QA and Packager briefs, MOTION.md read first | 10 |
 | end to end | script-check → fake voice → alignment → compose → beat-check → `hyperframes check` → a 60 fps render → the kit's `verify-render.py --res 1080x1920` | 1 (needs FFmpeg, the kit, HyperFrames and a local GSAP), plus 1 with real Kokoro and Parakeet |
 
-**How it was verified** (2026-10-14 to 2026-10-17, on Linux with HyperFrames 0.8.157 to 0.8.168, and Chromium):
-- the whole suite: 308 tests, all passing; 2 skipped where Kokoro is not installed (2026-10-17, after the
-  reference-gap pass: grounds, camera, slots, the 21 new scenes and the SOP tools);
+**How it was verified** (2026-10-14 to 2026-10-18, on Linux with HyperFrames 0.8.157 to 0.8.171, and Chromium):
+- the whole suite: 436 tests, all passing; 2 skipped where Kokoro is not installed (2026-10-18, after the
+  editorial pass: the paper look, the headline layer, the thread and nine new scenes);
+- a 33 s paper-look demo (USB-C, with stand-in images) passed E1 to E5 before rendering, then E6 and
+  `verify-render.py` on the render;
 - a 48 s demo of the RAG reel rebuilt with the new scenes passed E1 to E5 before rendering, then E6 and
   `verify-render.py` on the render;
 - the end-to-end run (pace-check included): a 4-line, 30-word script voiced by the fake engine (11.09 s, -15.95 LUFS), aligned 100% with
@@ -235,5 +246,6 @@ Parakeet → align, 98% at least) and the real speaking rate (RESEARCH §3) are 
   assume English.
 - **Formula widths** are estimated from the TeX source (KaTeX's real width is only known in the browser); a long
   formula is shrunk to its row in the browser, and gate E5 checks the result.
-- **Fonts:** this profile bundles its own copy of DM Sans and JetBrains Mono, so its glyph-width measurements do not
-  depend on the kit's files.
+- **Fonts:** this profile bundles its own copy of DM Sans, JetBrains Mono, Archivo and Instrument Serif, so its
+  glyph-width measurements do not depend on the kit's files.
+- **Images** are the creator's: the team never generates or fetches photos; a photo without a credit fails E3.
