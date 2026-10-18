@@ -149,6 +149,17 @@ class Ctx:
         shutil.copy(src, os.path.join(self.out_dir, "assets", name))
         return "assets/" + name, src
 
+    def image(self, rel):
+        """A creator's image (a path relative to storyboard.json; Windows backslashes are fine) copied next to the page:
+        (the page's relative path, width, height), its size read from its own header (imagesize.py, no PIL)."""
+        import imagesize
+        page, src = self.asset(str(rel).replace("\\", "/"))
+        try:
+            w, h = imagesize.size(src)
+        except ValueError as e:
+            self.fail(str(e))
+        return page, w, h
+
     def add_head(self, tag):
         if tag not in self.head:
             self.head.append(tag)
