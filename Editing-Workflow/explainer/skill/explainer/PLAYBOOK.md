@@ -135,6 +135,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | words or tools piling up | `gravity-drop` | `items[{text, at}]` (2 to 8), `style` (chips or words) |
    | open a chapter | `title-card` | `kicker`, `title` (6 words at most), `subtitle` (or `{text, at}`) |
    | cross one thing out (and bring its replacement) | `icon-strike` | `icon`, `label`, `at`, `strike{at}`, `replacement{icon, label, at}` |
+   | say what is not there ("no case, no battery") | `crossed-list` | `prefix` (mono, over each row, 12 characters at most), `items[{text, at, strike}]` (2 to 5, hero face; `strike` draws a line through and greys the row) |
+   | say what it costs | `price-sticker` | `price` (8 characters at most), `label` (mono, 28 at most), `src` (a product image, any aspect), `at` (needs a source) |
+   | draw one thing, with an aside | `line-art` | `icon` (Lucide) or `svg` (the creator's stroke-only SVG; a filled shape fails), `caption` (serif aside, 14 words at most), `at`, `strike` (crosses the caption out) |
    | the call to action: comment a word | `comment-cta` | `keyword{text, at}`, `gets{text, at}` |
    | what people say | `comment-drop` | `comments[{name, text, likes, time, at}]` (2 to 4) |
    | typing into an AI | `prompt-bar` | `prompt{text, at}`, `send{at}`, `reply{text, at}` |
