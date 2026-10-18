@@ -34,7 +34,7 @@ CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 725: every 
 GAP_MAX = 0.3
 GSAP_CDN = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
 FONTS = os.path.join(HERE, "..", "assets", "fonts")
-FONT_FILES = ("DMSans-500.woff2", "DMSans-700.woff2", "JetBrainsMono-500.woff2")
+FONT_FILES = ("DMSans-500.woff2", "DMSans-700.woff2", "JetBrainsMono-500.woff2", "Archivo-wdth.woff2", "InstrumentSerif-Italic.woff2")
 CAP_SIZE = E.CAPTION_SIZE
 BRAND_TOP, BRAND_H = 281, 40           # the handle and the series part: inside the safe area, above the scene area
 
@@ -219,6 +219,7 @@ def main():
         tok = E.load_tokens(look=S.get("look"))       # latte by default; paper, the editorial look
     except ValueError as e:
         fail(str(e))
+    E.use_look(tok)                                   # hero() and aside(): the faces the big words are set in
     mo, amb = tok["motion"], tok["ambient"]
 
     tpath, vpath = rel(S.get("transcript", "transcript.json")), rel(S.get("voice", "voice.wav"))
@@ -471,6 +472,8 @@ def main():
     CSS = """
   @font-face { font-family: "DM Sans"; src: url("fonts/DMSans-500.woff2") format("woff2"); font-weight: 500; font-display: block; }
   @font-face { font-family: "DM Sans"; src: url("fonts/DMSans-700.woff2") format("woff2"); font-weight: 700; font-display: block; }
+  @font-face { font-family: "Archivo"; src: url("fonts/Archivo-wdth.woff2") format("woff2"); font-weight: 100 900; font-stretch: 62%% 125%%; font-display: block; }
+  @font-face { font-family: "Instrument Serif"; src: url("fonts/InstrumentSerif-Italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: block; }
   @font-face { font-family: "JetBrains Mono"; src: url("%s") format("woff2"); font-weight: 500; font-display: block; }
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; width:100%%; height:100%%; overflow:hidden; background:%s; }

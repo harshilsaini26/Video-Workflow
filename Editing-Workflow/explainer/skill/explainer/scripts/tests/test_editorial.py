@@ -99,5 +99,46 @@ class Looks(unittest.TestCase):
         self.assertEqual({s["bg"] for s in sb["scenes"]}, {"base"})
 
 
+FONTS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "assets", "fonts")
+
+
+class Fonts(unittest.TestCase):
+    def test_the_fonts_ship_with_their_licences(self):
+        for font, lic, name in (("Archivo-wdth.woff2", "OFL-Archivo.txt", "Archivo"),
+                                ("InstrumentSerif-Italic.woff2", "OFL-InstrumentSerif.txt", "Instrument Serif")):
+            self.assertTrue(os.path.isfile(os.path.join(FONTS, font)), font)
+            text = read(os.path.join(FONTS, lic))
+            self.assertIn(name, text)
+            self.assertIn("SIL Open Font License", text)
+
+    def test_glyph_tables_cover_ascii(self):
+        g = E.glyphs()
+        for table in ("wide800", "serif400i"):
+            for c in range(32, 127):
+                self.assertIn(chr(c), g[table], (table, chr(c)))
+
+    def test_wide_is_wider_than_dm_sans(self):
+        self.assertGreater(E.text_width("WIRED", 100, "wide800"), E.text_width("WIRED", 100, "display700") * 1.15)
+
+    def test_the_hero_face_follows_the_look(self):
+        E.use_look(E.load_tokens(look="paper"))
+        h = E.hero()
+        self.assertEqual((h["family"], h["stretch"], h["weight"], h["glyphs"]), ("Archivo", "125%", 800, "wide800"))
+        self.assertIn("font-stretch:125%", h["css"])
+        E.use_look(E.load_tokens())
+        self.assertEqual(E.hero()["glyphs"], "display700")
+        self.assertEqual(E.aside()["glyphs"], "serif400i")
+
+    def test_paper_pages_load_the_fonts(self):
+        r, d = compose(self, dict(BOARD, look="paper"))
+        self.assertEqual(r.returncode, 0, r.stdout)
+        page = read(os.path.join(d, "public", "index.html"))
+        self.assertRegex(page, r'@font-face \{ font-family: "Archivo"; src: url\("fonts/Archivo-wdth.woff2"\)[^}]*font-stretch: 62% 125%')
+        self.assertRegex(page, r'@font-face \{ font-family: "Instrument Serif"; src: url\("fonts/InstrumentSerif-Italic.woff2"\)[^}]*font-style: italic')
+        for f in ("Archivo-wdth.woff2", "InstrumentSerif-Italic.woff2"):
+            self.assertIn('href="fonts/%s"' % f, page)
+            self.assertTrue(os.path.isfile(os.path.join(d, "public", "fonts", f)))
+
+
 if __name__ == "__main__":
     unittest.main()

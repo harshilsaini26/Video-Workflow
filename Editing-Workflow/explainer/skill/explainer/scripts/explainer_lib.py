@@ -160,5 +160,38 @@ def load_tokens(path=None, look=None):
     return tok
 
 
+_FACE = {}
+
+
+def use_look(tok):
+    """The look the page is composed in: hero() and aside() answer for it (the composer calls this once, before it
+    places any scene, since a scene's height depends on the face its big text is set in)."""
+    _FACE.clear()
+    _FACE.update(hero=tok["fonts"]["hero"], aside=tok["fonts"]["aside"])
+
+
+def _face(f):
+    css = 'font-family:"%s";font-stretch:%s;font-weight:%d;letter-spacing:%sem' % (f["family"], f["stretch"], f["weight"], f["spacing"])
+    if f.get("style"):
+        css += ";font-style:%s" % f["style"]
+    return dict(f, css=css)
+
+
+def hero():
+    """The face of the big words (headlines, kinetic, giant captions, title cards, stat figures, price stickers): DM Sans
+    700 in latte, Archivo 800 at width 125% in paper. {family, stretch, weight, glyphs (the glyphs() table), spacing,
+    css}. Body text inside UI mock-ups stays DM Sans in every look."""
+    if not _FACE:
+        use_look(load_tokens())
+    return _face(_FACE["hero"])
+
+
+def aside():
+    """The face of a short aside ("seriously?"): Instrument Serif italic, in every look."""
+    if not _FACE:
+        use_look(load_tokens())
+    return _face(_FACE["aside"])
+
+
 # Text is measured with the fonts' real glyph widths, kept in reels_lib (glyphs.json there) so both skills share them.
 glyphs, text_width, text_lines = L.glyphs, L.text_width, L.text_lines
