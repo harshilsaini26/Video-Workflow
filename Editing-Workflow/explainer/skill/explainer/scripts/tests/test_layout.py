@@ -116,9 +116,8 @@ class Gate(unittest.TestCase):
                 write(os.path.join(d, "transcript.json"), {"words": [{"text": "word%d" % i, "start": 0.5 + i * 0.4, "end": 0.8 + i * 0.4}
                                                                       for i in range(40)]})
                 silent_wav(os.path.join(d, "voice.wav"), 15.5)
-                for key in ("screenshot", "src"):
-                    if data.get(key):
-                        png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
+                for rel, w, h in mc.images(data):           # every src anywhere in the data (photos[].src too)
+                    png(os.path.join(d, rel), w, h)
                 bg = ("mantle", "blue", "base", "ink")[(len(pages) + 1) % 4]     # every scene type meets the dark grounds too
                 sc = dict({"type": typ, "id": "sc", "bg": bg, "in": "word:1", "out": 16.0}, **data)
                 sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "look": look, "scenes": [mc.LEAD_IN, sc],

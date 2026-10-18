@@ -123,9 +123,8 @@ class Theme(unittest.TestCase):
         for k, (typ, variants) in enumerate(sorted(mc.CASES.items())):
             for j, (name, data) in enumerate(variants):
                 d = os.path.join(root, "%s-%s" % (typ, name))
-                for key in ("screenshot", "src"):
-                    if data.get(key):
-                        png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
+                for rel, w, h in mc.images(data):           # every src anywhere in the data (photos[].src too)
+                    png(os.path.join(d, rel), w, h)
                 html = self.compose(d, dict({"type": typ, "id": "sc", "bg": bgs[(k + j) % 4], "in": "word:1", "out": 16.0}, **data), vendor, look)
                 page = re.sub(r'<div class="lc-mark">.*?</div>', "", html, flags=re.S)   # a brand's own mark, in its own colour
                 for h in re.findall(r"#[0-9A-Fa-f]{6}\b", page):

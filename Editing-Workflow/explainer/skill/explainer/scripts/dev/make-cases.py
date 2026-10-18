@@ -8,9 +8,10 @@
 Three text lengths per scene type (custom excluded: it brings its own box). A developer tool, not part of a video run.
 More cases live beside this file in cases_<group>.py (each sets CASES = {type: [(name, data), ...]}); with
 --only TYPE,TYPE the run covers just those types, and --fixture NAME writes tests/fixtures/heights-NAME.json, so a new
-group of scenes is measured without touching anyone else's rows.
+group of scenes is measured without touching anyone else's rows. Every "src" or "screenshot" anywhere in a case's data
+gets a placeholder PNG (images(): a name ending in -<W>x<H> sets its size, for an odd aspect).
 """
-import argparse, glob, importlib.util, json, os, struct, subprocess, sys, wave, zlib
+import argparse, glob, importlib.util, json, os, re, struct, subprocess, sys, wave, zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.dirname(HERE)
@@ -157,6 +158,30 @@ def png(path, w, h):
                 chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 
 
+SIZED = re.compile(r"-(\d+)x(\d+)\.\w+$")
+
+
+def images(data):
+    """[(path, width, height)]: a placeholder picture for every "src" and "screenshot" anywhere in a case's data (a
+    photo's src inside photos[] too). A name ending in -<W>x<H> before its extension is drawn at that size
+    ("banner-3000x1000.png", a 3:1 banner); otherwise a screenshot is 1280x2400 and any other picture 1280x256."""
+    out = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k in ("src", "screenshot") and isinstance(v, str) and v:
+                    m = SIZED.search(v)
+                    out.append((v,) + ((int(m.group(1)), int(m.group(2))) if m else (1280, 2400) if k == "screenshot" else (1280, 256)))
+                else:
+                    walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+    walk(data)
+    return list(dict.fromkeys(out))
+
+
 def compose(root, vendor, only=None, look=None):
     cases = []
     for typ, variants in CASES.items():
@@ -171,9 +196,9 @@ def compose(root, vendor, only=None, look=None):
             with wave.open(os.path.join(d, "voice.wav"), "wb") as w:
                 w.setnchannels(1); w.setsampwidth(2); w.setframerate(8000)
                 w.writeframes(b"\x00\x00" * int((D - 0.5) * 8000))
-            for key in ("screenshot", "src"):
-                if data.get(key):
-                    png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
+            for rel, w, h in images(data):
+                os.makedirs(os.path.dirname(os.path.join(d, rel)), exist_ok=True)
+                png(os.path.join(d, rel), w, h)
             scene = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:1", "out": D}, **data)
             with open(os.path.join(d, "storyboard.json"), "w", encoding="utf-8") as f:
                 json.dump(dict({"id": case, "scenes": [LEAD_IN, scene]}, **({"look": look} if look else {})), f)

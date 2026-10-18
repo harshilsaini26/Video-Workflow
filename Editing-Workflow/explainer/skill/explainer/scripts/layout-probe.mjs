@@ -2,7 +2,8 @@
 // timeline to t, and look at what is really drawn. Prints one JSON array of {scene, t, kind, text, detail}. Run by
 // layout-check.py (gate E5), which finds puppeteer and Chrome on this machine and passes them in the job.
 //   kind: "overlap"  two pieces of text overlap
-//         "covered"  something painted sits on top of the text
+//         "covered"  something painted sits on top of the text (text marked data-depth="behind" may be covered by
+//                    its own scene's picture: a product-hero's title)
 //         "crosses"  the text is drawn over a line or a shape that is not its own card
 //         "spill"    the text runs out of the card or chip it sits on
 //         "outside"  text or a card leaves the safe area (x 65 to 1015, y 345 to 1105; x 150 to 930 below y 960); a
@@ -165,6 +166,10 @@ for (const s of pg.samples) {
       }
       // what is drawn above and below it, sampled across each line of text
       const seen = new Set();
+      // declared depth (Ruling 6): text marked data-depth="behind" (a product-hero's title) may be covered by its own
+      // scene's picture; only that pair is let through, and every other check still applies to it
+      const depth = t.el.closest('[data-depth="behind"]'), host = depth && depth.closest(".card-host");
+      const ownDepth = (e) => !!host && host.contains(e);
       for (const r of (t.formula ? [] : t.rects.map(core))) {
         // a grid every ~6 px down and ~24 px across the line: a thin rule or a spoke through the words is found
         const ny = Math.max(4, Math.ceil(r.height / 6)), nx = Math.max(3, Math.ceil(r.width / 24));
@@ -175,7 +180,7 @@ for (const s of pg.samples) {
           if (j < 0) continue;
           for (const e of stack.slice(0, j)) {
             if (e.closest && e.closest("[data-thread]")) continue;     // the thread is decoration, like the ground
-            if (related(e, t.el) || !opaque(e) || alpha(e) < 0.5 || seen.has(e)) continue;
+            if (related(e, t.el) || !opaque(e) || alpha(e) < 0.5 || seen.has(e) || ownDepth(e)) continue;
             seen.add(e);
             out.push({ kind: "covered", text: t.text, detail: "covered by " + name(e) });
           }

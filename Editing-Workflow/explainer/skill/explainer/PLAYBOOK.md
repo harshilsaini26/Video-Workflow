@@ -153,6 +153,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | the reels feed | `reel-feed` | `src`, `reels[{user, caption, likes, comments, shares, at}]` (2 to 3) |
    | a sound, and how it changes | `waveform` | `states[{kind, label, at}]` (1 to 4; noise, calm, music, pulse or flat), `color` (ink or accent) |
    | switching modes (noise cancelling, a setting) | `mode-switch` | `options[{label, wave, note, at}]` (2 to 4, left to right; a label of 10 characters at most, a waveform kind) |
+   | show the product itself, big, with its name behind it | `product-hero` | `src` (a cut-out PNG is best), `alt`, `aspect` (width / height; the composer notes the right value), `title` (behind it, 124 to 200 px), `title_at`, `at`, `notes[{x, y, label, at, mark, side}]`, `float` |
+   | show real photos, credited | `photo-grid` | `photos[{src, credit, tag, at}]` (1 to 4; every photo needs a `credit`), `layout` (stack 1 to 3, grid 1 to 4, collage 2 to 4), `notes[]` (on the first photo) |
    | need something the library can't show (only when the creator asks) | `custom` | `box{x, y, w, h}`, `html`, `build` (§E6.5) |
 
 2. **Ids** are letters, digits and `_` (the page builds `<id>-...` ids from them), never `stage`, `captions`, `voice`,
