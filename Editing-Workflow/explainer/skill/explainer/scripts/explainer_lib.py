@@ -35,10 +35,11 @@ TEXT_BOTTOM = 1235
 PICTURE_BOTTOM = 1650
 
 
-def centre_top(h, wide):
-    """The top of a box h tall, centred on the scene area's middle: the centre is the animation's. A full-width box
-    rises only as far as it must to end IDLE_ROOM above RIGHT_COL_TOP (the app's action column)."""
-    top = int(round((SCENE["top"] + SCENE["bottom"]) / 2.0 - h / 2.0))
+def centre_top(h, wide, area_top=None):
+    """The top of a box h tall, centred on the scene area's middle (from area_top, under a headline, when given): the
+    centre is the animation's. A full-width box rises only as far as it must to end IDLE_ROOM above RIGHT_COL_TOP (the
+    app's action column)."""
+    top = int(round(((SCENE["top"] if area_top is None else area_top) + SCENE["bottom"]) / 2.0 - h / 2.0))
     if wide:
         top = min(top, L.RIGHT_COL_TOP - IDLE_ROOM - h)
     return top
@@ -171,7 +172,7 @@ def use_look(tok):
 
 
 def _face(f):
-    css = 'font-family:"%s";font-stretch:%s;font-weight:%d;letter-spacing:%sem' % (f["family"], f["stretch"], f["weight"], f["spacing"])
+    css = "font-family:'%s';font-stretch:%s;font-weight:%d;letter-spacing:%sem" % (f["family"], f["stretch"], f["weight"], f["spacing"])
     if f.get("style"):
         css += ";font-style:%s" % f["style"]
     return dict(f, css=css)

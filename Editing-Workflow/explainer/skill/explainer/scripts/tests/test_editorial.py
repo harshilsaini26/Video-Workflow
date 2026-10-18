@@ -140,5 +140,84 @@ class Fonts(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(d, "public", "fonts", f)))
 
 
+def with_headline(h, scene=1, board=None):
+    import copy
+    b = copy.deepcopy(board or BOARD)
+    b["scenes"][scene]["headline"] = h
+    return b
+
+
+class Headline(unittest.TestCase):
+    H = {"text": "No battery inside", "kicker": "THE CATCH", "aside": "seriously?", "at": "word:9", "aside_at": "word:11",
+         "accent": ["battery"]}
+
+    def test_a_headline_sits_top_left_and_the_scene_below_it(self):
+        import headline
+        r, d = compose(self, with_headline(self.H))
+        self.assertEqual(r.returncode, 0, r.stdout)
+        sc = [s for s in load(os.path.join(d, "public", "moments.json"))["scenes"] if s["id"] == "n1"][0]
+        hl = headline.layout(self.H, 950)
+        self.assertEqual(sc["headline"], [65, 345, 950, hl["height"]])
+        self.assertGreaterEqual(sc["box"][1], 345 + hl["height"] + headline.GAP)
+        self.assertLessEqual(sc["box"][1] + sc["box"][3], 1105)
+
+    def test_a_headline_rises_on_its_word_line_by_line(self):
+        from .test_compose import t_word
+        r, d = compose(self, with_headline(dict(self.H, text="No battery inside the earbuds at all")))
+        self.assertEqual(r.returncode, 0, r.stdout)
+        page = read(os.path.join(d, "public", "index.html"))
+        t0 = t_word(9) - E.LEAD
+        self.assertIn("tl.fromTo('#n1-hl0', { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: 'expo.out', immediateRender: false }, %.3f);" % t0, page)
+        self.assertIn("tl.fromTo('#n1-hl1', { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: 'expo.out', immediateRender: false }, %.3f);" % (t0 + 0.08), page)
+        self.assertRegex(page, r'id="n1-hl0" data-at="%.3f" data-anchor="word9"' % t0)
+        self.assertRegex(page, r"tl\.fromTo\('#n1-ha', \{ opacity: 0, y: 12 \}, \{ opacity: 1, y: 0, duration: 0\.4")
+
+    def test_accent_words_take_the_accent_in_the_hero_face(self):
+        r, d = compose(self, with_headline(self.H))
+        self.assertEqual(r.returncode, 0, r.stdout)
+        page = read(os.path.join(d, "public", "index.html"))
+        c = E.theme(TOK, "mantle")
+        self.assertRegex(page, r'<span class="hl-w" style="color:%s">BATTERY</span>' % c["accent"])     # upper case by default
+        self.assertIn(E.hero()["css"], page)
+        self.assertRegex(page, r'class="hl-aside"[^>]*>seriously\?<')
+
+    def test_a_headline_that_leaves_no_room_fails(self):
+        import copy
+        b = with_headline(dict(self.H, text="A very long headline that wraps onto three whole lines here", aside=None, aside_at=None, accent=[]))
+        b["scenes"][1] = dict(b["scenes"][1], type="stack", items=[{"label": "Layer " + "ABCDE"[i], "at": "word:%d" % (9 + i)} for i in range(5)])
+        for k in ("n", "name"):
+            b["scenes"][1].pop(k, None)
+        r, _ = compose(self, b)
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("E3 FAIL: n1: the headline leaves", r.stdout)
+        self.assertIn("shorten the headline or drop an item", r.stdout)
+
+    def test_a_headline_too_long_for_three_lines_fails_naming_it(self):
+        import headline
+        errs = headline.validate({"text": " ".join(["Extraordinarily"] * 9)})
+        self.assertTrue(any("three lines" in e for e in errs), errs)
+        self.assertEqual(headline.validate(self.H), [])
+        self.assertTrue(headline.validate({"text": "x", "accent": ["y"]}))       # an accent word must be in the text
+
+    def test_a_short_headline_takes_one_line_while_it_stays_big(self):
+        # fewer lines first: "NO BATTERY" on one line at about 100 px reads better than two lines at 120
+        import headline
+        E.use_look(E.load_tokens(look="paper"))
+        try:
+            lay = headline.layout({"text": "No battery"})
+            self.assertEqual(len(lay["lines"]), 1)
+            self.assertGreaterEqual(lay["size"], 88)
+            lay = headline.layout({"text": "Your phone powers everything"})
+            self.assertLessEqual(len(lay["lines"]), 3)
+        finally:
+            E.use_look(E.load_tokens())
+
+    def test_headline_text_is_never_under_28_px(self):
+        import headline
+        lay = headline.layout({"text": " ".join(["Considerable"] * 3), "kicker": "K"}, 950)
+        self.assertGreaterEqual(lay["size"], 64)
+        self.assertGreaterEqual(headline.KICKER, 28)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -25,6 +25,7 @@ sys.path.insert(0, HERE)
 import explainer_lib as E
 import sound
 import transitions as X
+import headline as HL
 from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 
 L = E.L
@@ -47,7 +48,7 @@ def fail(msg):
 RESERVED = re.compile(r"^(stage|captions|voice|bg\d+|cap\d+)$")
 NOT_SHOWN = {"type", "id", "bg", "in", "out", "at", "source", "icon", "html", "build", "tex", "style", "unit",
              "n", "size", "decimals", "point", "row", "cell", "box", "hi", "value", "points",
-             "card", "side", "transition", "badge", "logo", "src", "screenshot", "focus"}   # settings, indexes, step numbers, files
+             "card", "side", "transition", "badge", "logo", "src", "screenshot", "focus", "aside_at", "title_at", "case"}   # settings, indexes, step numbers, files
 BAD_DATA = (TypeError, ValueError, KeyError, AttributeError, IndexError)
 
 
@@ -86,7 +87,7 @@ SCALE_MAX, SCALE_STEP = 1.8, 0.05   # how far a template scene is blown up to fi
 SCALE_MIN = 0.8                      # and how far one that is too tall may shrink (the probe's 28 px floor still holds)
 
 
-def place(sid, mod, scene):
+def place(sid, mod, scene, area_top=None):
     """(left, top, width, height, inner width, inner height, scale): the scene laid out at inner width and scaled by
     `scale` to fill the scene area, the largest scale (up to SCALE_MAX, or the module's MAX_SCALE) that keeps it inside
     the area, every word inside its column, and its box in the narrow column wherever it reaches below y 960.
@@ -98,7 +99,8 @@ def place(sid, mod, scene):
             fail("%s: the box %d,%d %dx%d is outside the scene area (x %d to %d, y %d to %d; x %d to %d below y %d)"
                  % (sid, left, top, width, h, sa["left"], sa["right"], sa["top"], sa["bottom"], L.NARROW["left"], L.NARROW["right"], L.RIGHT_COL_TOP))
         return left, top, width, h, width, h, 1.0
-    area_h = sa["bottom"] - sa["top"] - 2 * IDLE_ROOM
+    top0 = sa["top"] if area_top is None else area_top          # under a headline, the area starts below it
+    area_h = sa["bottom"] - top0 - 2 * IDLE_ROOM
     need = mod.min_width(scene)
     fonts = [int(x) for x in re.findall(r"font-size:\s*(\d+)px", getattr(mod, "CSS", "") or "")]
     floor = E.MIN_TEXT / float(min(fonts)) if fonts else SCALE_MIN      # never scale its smallest text under 28 px
@@ -115,19 +117,22 @@ def place(sid, mod, scene):
                 continue                     # shrinking is for height: a word wider than the column never fits
             ih = mod.height(scene, iw)
             w, h = int(math.floor(iw * s)), int(math.ceil(ih * s))
-            if col_w == WIDE[1] and h > L.RIGHT_COL_TOP - sa["top"] - 2 * IDLE_ROOM:
+            if col_w == WIDE[1] and h > L.RIGHT_COL_TOP - top0 - 2 * IDLE_ROOM:
                 continue            # the full width only above the action column
-            top = E.centre_top(h, col_w == WIDE[1])
+            top = E.centre_top(h, col_w == WIDE[1], top0)
             if h > area_h:
                 continue
             left = col_left + (col_w - w) // 2
-            if E.inside_scene(left, top - IDLE_ROOM, w, h + 2 * IDLE_ROOM):
+            if E.inside_scene(left, top - IDLE_ROOM, w, h + 2 * IDLE_ROOM) and top - IDLE_ROOM >= top0:
                 return left, top, w, h, iw, ih, round(s, 2)
     # nothing fits even unscaled: say why, as before
     left, width = NARROW
     if need > width:
         fail("%s: a word or a number in it (at its widest as it counts) is about %d px wide, wider than the %d px column; "
              "shorten it or use a smaller size" % (sid, need, width))
+    if area_top is not None:
+        fail("%s: the headline leaves %d px for the scene, and it needs %d px at a size its smallest text can take; shorten "
+             "the headline or drop an item" % (sid, area_h, mod.height(scene, width)))
     fail("%s: the scene is %d px tall, taller than the scene area (%d px) at a size its smallest text can take; drop a "
          "row or an item (captions carry the words), never split it for height (SOP S9)" % (sid, mod.height(scene, width), area_h))
 
@@ -366,8 +371,21 @@ def main():
         sid = sc["id"]
         ctx = Ctx(sc, t_in, t_out, words, tok, a.vendor, out, sbg, head, spec_dir)
         try:
-            left, top, width, h, iw, ih, scale = place(sid, mod, sc)
+            hl = sc.get("headline")
+            if hl is not None:
+                errs = HL.validate(hl) or (["a %s scene places itself: give it no headline" % mod.TYPE] if hasattr(mod, "place") else [])
+                if errs:
+                    fail("%s: %s" % (sid, "; ".join(errs)))
+                hl_h = HL.layout(hl)["height"]
+                left, top, width, h, iw, ih, scale = place(sid, mod, sc, E.SCENE["top"] + hl_h + HL.GAP)
+            else:
+                left, top, width, h, iw, ih, scale = place(sid, mod, sc)
             inner, lines = mod.render(sc, ctx, (left, top, iw))
+            hl_html = ""
+            if hl is not None:      # top-left in the frame, inside the box (it leaves with the scene), outside the camera
+                hl_html, hl_js = HL.render(hl, ctx, WIDE[0] - left, E.SCENE["top"] - top)
+                lines = lines + hl_js
+                css["headline"] = HL.CSS
         except SceneError as e:
             fail("%s: %s" % (sid, e))
         except BAD_DATA as e:
@@ -375,6 +393,8 @@ def main():
         moments["scenes"].append({"id": sid, "type": mod.TYPE, "in": round(t_in, 3), "out": round(t_out, 3),
                                   "box": [left, top, width, h], "scale": scale,
                                   "travels": bool(getattr(mod, "travels", lambda s: False)(sc))})
+        if hl is not None:
+            moments["scenes"][-1]["headline"] = [WIDE[0], E.SCENE["top"], HL.WIDTH, hl_h]
         if mod.TYPE == "custom":   # it animates itself between in and out
             moments["spans"].append([round(t_in, 3), round(t_out, 3)])
         css[mod.TYPE] = mod.CSS
@@ -382,7 +402,7 @@ def main():
         if mod.TYPE != "custom" and starts and min(starts) - t_in > 0.8:   # the scene's own first change, not its transition
             print("WARN %s: nothing shows for %.1f s after the scene starts; put something on its first word (PLAYBOOK §E4.9)"
                   % (sid, min(starts) - t_in))
-        mine = [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner)]
+        mine = [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner + hl_html)]
         if k == 0 and mine and max(mine) > E.HOOK_BY + 1e-6:
             late = words[0]["start"] - E.LEAD > E.HOOK_BY if words else False
             fail("%s: the hook is not whole on screen by 1.0 s: an item lands at %.2f s (every hook item by %.1f s); %s (SOP S8)"
@@ -398,8 +418,8 @@ def main():
         anchor = ' data-unanchored="1"' if word == "-" else ' data-anchor="%s"' % html.escape(word, quote=True)
         hosts.append('    <div class="card-host clip" id="host-%s" data-start="%.3f" data-duration="%.3f" data-track-index="%d"%s\n'
                      '      style="left:0;top:0;width:1080px;height:1920px;visibility:hidden;">'
-                     '<div class="box" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx"><div class="cam" id="%s-cam"><div class="live" id="%s-live"%s style="width:%dpx;height:%dpx;transform:scale(%s)">%s</div></div></div></div>\n'
-                     % (sid, t_in, end - t_in, 3 + k, anchor, sid, left, top, width, h, sid, sid, ' data-baked="1"' if getattr(mod, "BAKED", False) else "", iw, ih, ("%.2f" % scale).rstrip("0").rstrip(".") if scale != 1 else "1", inner))
+                     '<div class="box" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx">%s<div class="cam" id="%s-cam"><div class="live" id="%s-live"%s style="width:%dpx;height:%dpx;transform:scale(%s)">%s</div></div></div></div>\n'
+                     % (sid, t_in, end - t_in, 3 + k, anchor, sid, left, top, width, h, hl_html, sid, sid, ' data-baked="1"' if getattr(mod, "BAKED", False) else "", iw, ih, ("%.2f" % scale).rstrip("0").rstrip(".") if scale != 1 else "1", inner))
         js.append("// %s (%s) %.2f to %.2f s" % (sid, mod.TYPE, t_in, t_out))
         js.extend(lines)
         js.extend(ctx.ambient_lines)
