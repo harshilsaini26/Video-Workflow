@@ -20,19 +20,21 @@ def compose(test, board, voice=VOICE, words=None):
 
 
 class Area(unittest.TestCase):
-    def test_text_and_cards_end_by_1235_and_pictures_by_1650(self):
-        # S7: one bottom limit, the same in the composer, the probe and QA
-        self.assertEqual(E.SCENE["bottom"], 1235)
+    def test_scenes_end_by_1105_text_by_1235_and_pictures_by_1650(self):
+        # S7: one bottom line for any text (1235, the captions' foot), the same in the composer, the probe and QA; the
+        # scenes end above the captions (1105), and bare shapes may run on to 1650
+        self.assertEqual(E.SCENE["bottom"], 1105)
+        self.assertEqual(E.TEXT_BOTTOM, 1235)
         self.assertEqual(E.PICTURE_BOTTOM, 1650)
-        self.assertFalse(E.inside_scene(150, 900, 780, 336))
-        self.assertTrue(E.inside_scene(150, 900, 780, 335))
+        self.assertFalse(E.inside_scene(150, 900, 780, 206))
+        self.assertTrue(E.inside_scene(150, 900, 780, 205))
 
-    def test_every_scene_box_ends_by_1235(self):
+    def test_every_scene_box_ends_by_1105(self):
         r, d = compose(self, BOARD)
         self.assertEqual(r.returncode, 0, r.stdout)
         for sc in load(os.path.join(d, "public", "moments.json"))["scenes"]:
             left, top, w, h = sc["box"]
-            self.assertLessEqual(top + h, 1235, sc["id"])
+            self.assertLessEqual(top + h, 1105, sc["id"])
 
 
 class Handover(unittest.TestCase):

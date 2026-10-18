@@ -44,7 +44,7 @@ def pill_w(label):
 
 SHRINK_WIDTH = True    # its width is the ring's geometry, not a word: the composer may shrink it (labels stay over 28 px)
 COL = E.L.NARROW["right"] - E.L.NARROW["left"]       # 780: a hub reaches below y 960, so it lives in the narrow column
-AREA = E.SCENE["bottom"] - E.SCENE["top"]            # 715
+AREA = E.SCENE["bottom"] - E.SCENE["top"]            # 760
 
 
 def _fits(cs):

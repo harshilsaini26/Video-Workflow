@@ -23,12 +23,25 @@ def find_reels_lib():
 
 L = find_reels_lib()
 
-# Text and cards end by y 1235 (SOP S7, from the RAG reel: QA and the Reels guides judge the bottom 35% as covered by
-# the app's caption and buttons, so one limit holds everywhere: here, in the E5 probe and in QA). Painted shapes with
-# no text in them (particles, floors, illustration) may run on to PICTURE_BOTTOM: the lower frame is not left empty.
-# Below RIGHT_COL_TOP everything keeps the narrow column.
-SCENE = {"left": 65, "top": 520, "right": 1015, "bottom": 1235}
+# The frame, top to bottom (the editorial pass, 2026-10-18: the centre is always the animation's):
+#   the handle band (y 281 to 321), the scene area (y 345 to 1105), the captions, small, at the bottom of the safe area
+#   (CAPTION_BAND, y 1130 to 1235). No text of any kind goes below TEXT_BOTTOM (SOP S7, from the RAG reel: QA and the
+#   Reels guides judge the bottom 35% as covered by the app's caption and buttons, so one line holds everywhere: here,
+#   in the E5 probe and in QA). Painted shapes with no text in them (particles, floors, illustration, the thread) may run
+#   on to PICTURE_BOTTOM, behind the captions, which keep a halo of their ground. Below RIGHT_COL_TOP everything keeps the
+#   narrow column.
+SCENE = {"left": 65, "top": 345, "right": 1015, "bottom": 1105}
+TEXT_BOTTOM = 1235
 PICTURE_BOTTOM = 1650
+
+
+def centre_top(h, wide):
+    """The top of a box h tall, centred on the scene area's middle: the centre is the animation's. A full-width box
+    rises only as far as it must to end IDLE_ROOM above RIGHT_COL_TOP (the app's action column)."""
+    top = int(round((SCENE["top"] + SCENE["bottom"]) / 2.0 - h / 2.0))
+    if wide:
+        top = min(top, L.RIGHT_COL_TOP - IDLE_ROOM - h)
+    return top
 
 
 def inside_scene(left, top, width, height):
@@ -36,7 +49,8 @@ def inside_scene(left, top, width, height):
     if left < SCENE["left"] or top < SCENE["top"] or left + width > SCENE["right"] or top + height > SCENE["bottom"]:
         return False
     return top + height <= L.RIGHT_COL_TOP or (left >= L.NARROW["left"] and left + width <= L.NARROW["right"])
-CAPTION_BAND = (330, 470)
+CAPTION_BAND = (1130, 1235)
+CAPTION_SIZE = 44  # two lines of 44 px fill the band; the scenes keep the centre
 LEAD = 0.2          # an entrance starts this long before its word (beat-check's 0.15 to 0.25 s window)
 MAX_OVERLAP = 0.02  # scenes hand over on one cut: no overlap beyond rounding (SOP S9)
 MIN_TEXT = 28       # the smallest text a phone viewer reads on the 1080 px frame (gate E5 checks it drawn)

@@ -257,3 +257,26 @@ class GroupA(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GravityPile(unittest.TestCase):
+    def test_a_tilted_piece_never_leaves_its_box(self):
+        # pieces land tilted (up to 2.6 degrees) and the camera turns the scene: the pile leaves room for both, on any width
+        import math
+        mod = REGISTRY["gravity-drop"]
+        for width in range(600, 951, 10):          # the composer lays a scene out at its column over its scale
+            for style in ("chips", "words"):
+                sc = {"type": "gravity-drop", "style": style,
+                      "items": [{"text": t, "at": "word:%d" % i} for i, t in enumerate(["Excel", "Accounting basics", "Valuation",
+                                                                                         "Python", "Three statements", "SQL",
+                                                                                         "Storytelling", "Modelling"])]}
+                if mod.min_width(sc) > width:
+                    continue                 # the composer never gives a scene less than its min_width
+                places, _ = mod.layout(sc, width)
+                h = mod.STYLES[style]["h"]
+                for i, (left, top, w) in enumerate(places):
+                    th = math.radians(abs(mod.TILT[i % len(mod.TILT)]))
+                    half = (w * math.cos(th) + h * math.sin(th)) / 2.0
+                    cx = left + w / 2.0
+                    self.assertGreaterEqual(cx - half, 4, (width, style, i))             # 4 px kept for the camera's turn
+                    self.assertLessEqual(cx + half, width - 4, (width, style, i))

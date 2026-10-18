@@ -67,7 +67,7 @@ re-plan the notes to act on.
 4. **Custom scenes** (opt-in: only when the creator asks for a moment the library cannot make; the hook is a
    `kinetic` scene, MOTION.md §4; each custom scene costs the Animator a file and tokens):
    `{"type": "custom", "id": "<id>", "box": {"x", "y", "w", "h"}, "html": "custom/<id>.html", "build": "build<Id>", ...}`
-   with the box inside the scene area (x 65 to 1015, y 520 to 1235; x 150 to 930 below y 960), plus a written spec in
+   with the box inside the scene area (x 65 to 1015, y 345 to 1105; x 150 to 930 below y 960), plus a written spec in
    `$W/custom/<id>.md` for the Animator in MOTION.md §4's five parts (the bar, the hero and its one change, the look,
    which word moves what, the never list) and the colours from `$ES/tokens.json`.
 5. **Dry run:** `python3 "$ES/scripts/explainer-compose.py" --spec "$W/storyboard.json" --out "$W/plan/dry"`. It

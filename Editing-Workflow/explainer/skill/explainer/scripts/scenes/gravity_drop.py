@@ -25,6 +25,7 @@ TILT = [-2.4, 1.8, -1.2, 2.6, -1.9, 1.3, -2.2, 0.9]     # degrees: a heap never 
 GRAVITY = 6200.0                     # px/s^2 in the scene's own pixels: a 600 px drop takes 0.44 s
 LIFT = 40                            # every piece starts this far above the top of the box
 MAX_ITEMS = 8
+ROOM = 10                            # kept clear at each side: a piece lands tilted, and the camera turns the scene
 
 CSS = """
   .gd { position:relative; width:100%%; }
@@ -71,6 +72,7 @@ def layout(scene, width):
     ws = [piece_w(it["text"], st) for it in scene["items"]]
     n = len(ws)
     span = lambda a, b: sum(ws[a:b]) + st["gx"] * (b - a - 1)
+    width = width - 2 * ROOM
     best = None
     for mask in range(1 << (n - 1)):          # bit k set: a new row starts after item k (at most 8 items: 128 ways)
         cuts = [0] + [k + 1 for k in range(n - 1) if mask >> k & 1] + [n]
@@ -87,7 +89,7 @@ def layout(scene, width):
     out = [None] * len(scene["items"])
     for r, row in enumerate(rows):
         total = sum(w for _, w in row) + st["gx"] * (len(row) - 1)
-        left = (width - total) / 2.0
+        left = ROOM + (width - total) / 2.0
         top = h - st["h"] - r * (st["h"] + st["gy"])
         for i, w in row:
             out[i] = (int(round(left)), top, w)
@@ -101,7 +103,7 @@ def height(scene, width):
 
 def min_width(scene):
     st = style(scene)
-    return max(piece_w(it["text"], st) for it in scene["items"])
+    return max(piece_w(it["text"], st) for it in scene["items"]) + 2 * ROOM
 
 
 def fall(t, drop):

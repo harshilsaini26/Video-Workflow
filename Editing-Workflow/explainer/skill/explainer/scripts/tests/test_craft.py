@@ -83,16 +83,17 @@ class Craft(unittest.TestCase):
         self.assertTrue(E.inside_scene(left, top, w, h))
 
     def test_the_scene_area_ends_at_the_one_bottom_limit(self):
-        # SOP S7: text and cards end by y 1235, the same line QA and the Reels guides use
-        self.assertEqual(E.SCENE["bottom"], 1235)
-        self.assertTrue(E.inside_scene(150, 900, 780, 335))
-        self.assertFalse(E.inside_scene(65, 900, 950, 335))        # below y 960 it keeps clear of the action column
-        self.assertFalse(E.inside_scene(150, 900, 780, 336))
+        # the scene area ends at y 1105, above the small captions (1130 to 1235); 1235 stays the one line for any text
+        self.assertEqual(E.SCENE["bottom"], 1105)
+        self.assertEqual(E.TEXT_BOTTOM, 1235)
+        self.assertTrue(E.inside_scene(150, 900, 780, 205))
+        self.assertFalse(E.inside_scene(65, 900, 950, 205))        # below y 960 it keeps clear of the action column
+        self.assertFalse(E.inside_scene(150, 900, 780, 206))
         tm = {"type": "timeline", "id": "tm", "bg": "mantle", "in": "word:4", "out": D,
               "steps": [{"label": "Step " + "ABCDE"[i], "at": "word:%d" % (5 + 2 * i)} for i in range(5)]}
         left, top, w, h, iw, ih, s = boxes(self.build(dict(BOARD, scenes=[LEAD_IN, tm]))[0])["tm"]
         self.assertGreaterEqual(s, 1.0)                            # five steps still fill the narrow column
-        self.assertLessEqual(top + h, 1235)
+        self.assertLessEqual(top + h, 1105)
 
     def test_a_scene_too_wide_even_unscaled_still_fails(self):
         d = scratch(self)

@@ -168,8 +168,7 @@ def place(scene):
             continue
         lead = z["big"] if scene.get("big") else z["word"] if scene.get("words") else z["line"]
         if best is None or lead > best[0]:
-            centre = (E.SCENE["top"] + (E.L.RIGHT_COL_TOP if width > NARROW_W else E.SCENE["bottom"])) // 2
-            best = (lead, (left, int(round(centre - h / 2.0)), width, h))
+            best = (lead, (left, E.centre_top(h, width > NARROW_W), width, h))
     if best is None:
         if min_width(scene) > NARROW_W:
             raise ValueError("a row of it is about %d px wide at half size, wider than the %d px column; shorten it"

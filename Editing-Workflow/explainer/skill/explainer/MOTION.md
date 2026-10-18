@@ -23,10 +23,11 @@ Distilled from three free, open sources, read as references (none of their code 
 ## 1. The picture
 
 1. **Fill the frame.** The hero is big: 60 to 70% of the frame, never a small widget in empty space. The composer
-   lays every library scene out narrower and scales it up (to 1.8x) to fill the scene area, x 65 to 1015 and y 520
-   to 1235 (780 px wide below y 960, clear of Instagram's buttons and caption). **Text and card edges end by y 1235**,
-   one line for the composer, gate E5 and QA (SOP S7); shapes with no text may run on to y 1650 so the lower frame is
-   not left empty. A title grows to 150 px; numbers to 1.3x; a `stat` is 200 to 320 px.
+   lays every library scene out narrower and scales it up (to 1.8x) to fill the scene area, x 65 to 1015 and y 345
+   to 1105 (780 px wide below y 960, clear of Instagram's buttons and caption): **the centre is always the
+   animation's**; the captions are small, under it (y 1130 to 1235). **No text goes below y 1235**, one line for the
+   composer, gate E5 and QA (SOP S7); shapes with no text may run on to y 1650, behind the captions, so the lower
+   frame is not left empty. A title grows to 150 px; numbers to 1.3x; a `stat` is 200 to 320 px.
 2. **Type is the picture.** A hero word is 120 px or more; a label is 34 px or more after the scale; at most about 5
    words of on-screen text at once, and never the narration's sentence (the captions already say it).
 3. **One accent, one meaning; four grounds.** Catppuccin Latte (tokens.json) on four grounds: the light `mantle` and

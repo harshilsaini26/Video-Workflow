@@ -115,13 +115,15 @@ chooses (S12).
     a waveform comparison is not enough;
   - **caption text** (its captions row): the burned-in captions show the shown words of `$W/transcript.json` at their
     times, so compare frames with that file, not with the spoken transcript;
-  - **caption slot:** explainer captions sit in the band at y 330 to 470; the guide's cyan caption slot (y 1050 to
-    1248) is the Reels place, so ignore it and check the band instead;
+  - **caption slot:** explainer captions are small (44 px, at most two lines) at the foot of the safe area, y 1130
+    to 1235, in the narrow column (x 150 to 930), under the scene: the centre is the animation's. They sit inside the
+    guide's cyan caption slot (y 1050 to 1248), lower than a Reels caption;
   - **first frame:** frame 0 shows the background and the first scene coming in (§E1.1); the check is that the hook
     is fully on screen by 1.0 s (E3 already holds its items to 0.8 s), not 0.35 s;
-  - **safe zone:** one bottom limit everywhere (S7): text and card edges end by y 1235, the same line the guides and
-    E5 use; a shape with no text on it may run to y 1650; anything else lower, or in the right column below y 960, is
-    a FAIL;
+  - **safe zone:** one bottom line for any text everywhere (S7): y 1235, the captions' foot, the same line the
+    guides and E5 use; a scene's text and cards end by y 1105, above the captions; a shape with no text on it may run
+    to y 1650, behind the captions (they keep a halo of their ground); anything else lower, or in the right column
+    below y 960, is a FAIL;
   - **motion (E6):** `"$ES/scripts/motion-check.py" --video output.mp4`: no still stretch over 1 s, under 15% still;
   - **bitrate:** flat motion graphics average under the floor even at a 20 Mb/s target; `verify-render.py` passes them
     when x264 was asked for the floor or more (it says "a simple picture");

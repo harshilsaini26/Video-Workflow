@@ -19,9 +19,10 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
   `assets/fonts/`), and a music pad and sound effects the composer generates. No paid voice, stock, AI video or avatar.
 - **The layers:** a Catppuccin Latte ground (`mantle` #e6e9ef and `base` #eff1f5, strong `blue` #1e66f5, dark `ink`
   #4c4f69: the planner sets a rhythm, MOTION.md §1.3) with faint glows that travel with each cut and particles rising
-  for the whole reel, one scene at a time scaled up to fill the scene area (x 65 to 1015, y 520 to 1235: text and card
-  edges end there, the one bottom line for the composer, gate E5 and QA; 780 px wide below y 960) inside a camera that
-  slowly pushes in, a transition layer, and captions in the band at y 330 to 470. Under the voice, a sound bed
+  for the whole reel, one scene at a time scaled up to fill the scene area (x 65 to 1015, y 345 to 1105, the centre of
+  the frame; 780 px wide below y 960) inside a camera that slowly pushes in, a transition layer, and small captions
+  under it in the band at y 1130 to 1235 (y 1235 is the one bottom line for any text, in the composer, gate E5 and
+  QA). Under the voice, a sound bed
   (§E3.7). Nothing else goes on screen.
 - **The look** lives in `$ES/tokens.json`: change it once and every scene follows.
 - **Reused from Reels unchanged:** the renderer, QA, packager, librarian and analyst, and their checks (Reels PLAYBOOK
@@ -178,7 +179,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 
 ## §E5 Captions
 
-1. **Phrases of up to 4 words and 24 characters**, in the band at y 330 to 470, cleared at a pause of 0.35 s or more.
+1. **Phrases of up to 4 words and 24 characters**, 44 px, at most two lines, in the band at y 1130 to 1235 (the
+   narrow column, under the scene: the centre is the animation's), with a halo of their ground, cleared at a pause
+   of 0.35 s or more.
 2. **The word being spoken turns from muted (`overlay2`, 3.3:1 or more) to ink (`text`, 6.6:1 or more).**
 3. **Emphasis words get the highlight box** (an accent fill with corner handles), matched without punctuation or case,
    every time they are said.

@@ -5,7 +5,7 @@
 //         "covered"  something painted sits on top of the text
 //         "crosses"  the text is drawn over a line or a shape that is not its own card
 //         "spill"    the text runs out of the card or chip it sits on
-//         "outside"  text or a card leaves the safe area (x 65 to 1015, y 520 to 1235; x 150 to 930 below y 960); a
+//         "outside"  text or a card leaves the safe area (x 65 to 1015, y 345 to 1105; x 150 to 930 below y 960); a
 //                    painted shape with no text in it may run on to area.picture_bottom (1650)
 //         "handover" at a cut, the outgoing and the incoming scene both show content at 30% or more (job handovers)
 //         "small"    text drawn smaller than min_px on the 1080 px frame

@@ -17,7 +17,7 @@ S_SIZE, S_LH, S_GAP = 36, 1.3, 16         # subtitle, DM Sans 500
 B_SIZE, B_H, B_GAP, B_PADX, B_SP = 28, 52, 24, 22, 12   # badges: mono pills, wrapping
 BTN_H, BTN_GAP, BTN_SIZE = 84, 32, 36     # the button
 U_SIZE = 28                               # the address text: at the 28 px floor, so the window may sit at 1.0
-VIEW, CAP_GAP = 360, 30                   # a screenshot's view (fits the 1235 area with a two-line title), and the gap to the title
+VIEW, CAP_GAP = 360, 30                   # a screenshot's view (fits the scene area with a two-line title), and the gap to the title
 FOCUS_ZOOM = 1.25                         # the punch-in on a screenshot's focus line
 
 CSS = """

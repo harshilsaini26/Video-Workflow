@@ -4,8 +4,8 @@
   explainer-compose.py --spec videos/<p>/storyboard.json --out videos/<p>/public [--vendor DIR] [--kit DIR]
 
 The page has three layers (SPEC §6.1): a background that cross-fades when a scene's `bg` changes, one scene at a time
-scaled up to fill the scene area (x 65 to 1015, y 520 to 1420; 780 px wide when it reaches below y 960), and word captions in
-the band at y 330 to 470. Scene times are word anchors ("word:N" in transcript.json); an entrance lands 0.2 s before
+scaled up to fill the scene area (x 65 to 1015, y 345 to 1105; 780 px wide when it reaches below y 960), and word captions,
+small, in the band at y 1130 to 1235. Scene times are word anchors ("word:N" in transcript.json); an entrance lands 0.2 s before
 its word. Each scene's exit runs over the 0.2 s before its `out` and the next one enters on it: one scene on screen at a
 time (SOP S9).
 
@@ -30,14 +30,13 @@ from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 L = E.L
 WIDE = (L.SAFE["left"], L.SAFE["right"] - L.SAFE["left"])          # 65, 950
 NARROW = (L.NARROW["left"], L.NARROW["right"] - L.NARROW["left"])  # 150, 780
-CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 877: a narrow-column scene centres here
-WIDE_CENTRE = (E.SCENE["top"] + L.RIGHT_COL_TOP) // 2               # 740: a full-width scene stays above y 960
+CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 725: every scene centres here (E.centre_top)
 GAP_MAX = 0.3
 GSAP_CDN = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
 FONTS = os.path.join(HERE, "..", "assets", "fonts")
 FONT_FILES = ("DMSans-500.woff2", "DMSans-700.woff2", "JetBrainsMono-500.woff2")
-CAP_SIZE = 64
-BRAND_TOP, BRAND_H = 281, 40           # the handle and the series part: inside the safe area, above the caption band
+CAP_SIZE = E.CAPTION_SIZE
+BRAND_TOP, BRAND_H = 281, 40           # the handle and the series part: inside the safe area, above the scene area
 
 
 def fail(msg):
@@ -116,12 +115,9 @@ def place(sid, mod, scene):
                 continue                     # shrinking is for height: a word wider than the column never fits
             ih = mod.height(scene, iw)
             w, h = int(math.floor(iw * s)), int(math.ceil(ih * s))
-            if col_w == WIDE[1]:    # the full width only above the action column: centred in y 520 to 960
-                top = int(round(WIDE_CENTRE - h / 2.0))
-                if h > L.RIGHT_COL_TOP - sa["top"] - 2 * IDLE_ROOM:
-                    continue
-            else:
-                top = int(round(CENTRE - h / 2.0))
+            if col_w == WIDE[1] and h > L.RIGHT_COL_TOP - sa["top"] - 2 * IDLE_ROOM:
+                continue            # the full width only above the action column
+            top = E.centre_top(h, col_w == WIDE[1])
             if h > area_h:
                 continue
             left = col_left + (col_w - w) // 2
@@ -460,7 +456,8 @@ def main():
             else:
                 spans.append('<span class="cw" id="%s">%s</span>' % (cid, html.escape(w["text"])))
                 cap_js.append("tl.set('#%s', { color: '%s' }, %.3f);" % (cid, on, w["start"]))
-        caps.append('      <div class="cap" id="cap%d" style="color:%s">%s</div>\n' % (i, dim, " ".join(spans)))
+        halo = "text-shadow:0 0 18px %s, 0 0 6px %s" % (th["bg"], th["bg"])   # legible over a shape passing behind
+        caps.append('      <div class="cap" id="cap%d" style="color:%s;%s">%s</div>\n' % (i, dim, halo, " ".join(spans)))
         cap_js.append("tl.set('#cap%d', { visibility: 'visible' }, %.3f);" % (i, ch["start"]))
         cap_js.append("tl.fromTo('#cap%d', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.12, ease: '%s', immediateRender: false }, %.3f);"
                       % (i, mo["enter_ease"], ch["start"]))
@@ -488,13 +485,13 @@ def main():
     font-family: var(--label); font-weight:500; font-size:30px; letter-spacing:.06em; pointer-events:none; }
   .cap-layer { position:absolute; left:0; top:0; width:1080px; height:1920px; z-index:30; pointer-events:none; }
   .cap { position:absolute; left:%dpx; width:%dpx; top:%dpx; height:%dpx; display:flex; align-items:center; justify-content:center;
-    flex-wrap:wrap; gap:0 .26em; visibility:hidden; font-weight:700; font-size:%dpx; line-height:1.1; letter-spacing:-.01em;
+    flex-wrap:wrap; gap:0 .26em; visibility:hidden; font-weight:700; font-size:%dpx; line-height:52px; letter-spacing:-.01em;
     text-align:center; }
   .cap .cw { position:relative; display:inline-block; padding:0 .14em; border-radius:6px; }
   .cap .cw.em { transform: scale(1.12); margin:0 .1em; }
   .cap .hd { position:absolute; width:14px; height:14px; border:3px solid; opacity:0; }
   .cap .hd.a { left:-7px; top:-7px; } .cap .hd.b { right:-7px; bottom:-7px; }
-%s""" % (tok["fonts"]["label_file"], stage_bg, stage_bg, tok["fonts"]["display"], tok["fonts"]["label"], WIDE[0], WIDE[1], WIDE[0], WIDE[1], band_top,
+%s""" % (tok["fonts"]["label_file"], stage_bg, stage_bg, tok["fonts"]["display"], tok["fonts"]["label"], WIDE[0], WIDE[1], NARROW[0], NARROW[1], band_top,
          band_bottom - band_top, CAP_SIZE, "".join(css.values()))
 
     HELPERS = """

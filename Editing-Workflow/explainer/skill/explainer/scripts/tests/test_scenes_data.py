@@ -145,7 +145,7 @@ class CountsFitWhileCounting(SceneCase):
         self.ok({"type": "count-up", "value": 99999, "prefix": "$", "source": "s1"})
 
     def test_line_chart_readout(self):
-        self.fails({"type": "line-chart", "points": [100, 11111111111], "x": ["Y0", "Y20"], "prefix": "$", "source": "s1"},
+        self.fails({"type": "line-chart", "points": [100, 111111111111111], "x": ["Y0", "Y20"], "prefix": "$", "source": "s1"},
                    "wider than the")
         self.ok({"type": "line-chart", "points": [100, 2650], "x": ["Y0", "Y20"], "prefix": "$", "source": "s1"})
 

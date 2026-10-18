@@ -47,7 +47,7 @@ class Custom(unittest.TestCase):
         self.assertIn(text, r.stdout + r.stderr)
 
     def test_box_outside_scene_area_fails(self):
-        self.fails("outside the scene area", box={"x": 65, "y": 400, "w": 950, "h": 300})       # into the caption band
+        self.fails("outside the scene area", box={"x": 150, "y": 900, "w": 780, "h": 300})      # into the caption band
         self.fails("outside the scene area", box={"x": 65, "y": 900, "w": 950, "h": 300})       # full width below y 960
 
     def test_selector_outside_id_fails(self):

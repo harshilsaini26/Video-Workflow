@@ -38,7 +38,7 @@ a render takes minutes.
    the whole scene area unless the spec says otherwise.
 3. **Compose (gate E3):**
    `python3 "$ES/scripts/explainer-compose.py" --spec "$W/storyboard.json" --out "$W/public"`
-   It fails on a scene outside the scene area (text and cards end by y 1235, S7), a word wider than its column, a hole
+   It fails on a scene outside the scene area (text and cards end by y 1105, above the captions; no text below y 1235, S7), a word wider than its column, a hole
    over 0.3 s, two scenes overlapping (one hands over to the next on its cut, S9), an anchor out of order, an item
    outside its scene, a hook item after 0.8 s (S8), a voice over 90 s, a number without a source, or a custom file that
    breaks the contract. Storyboard problems go back to the Director with the message; custom-file problems are yours.
@@ -64,9 +64,9 @@ a render takes minutes.
    ```
    `stills.py` empties the folder, then takes one full-size still of every scene once it has settled (all of it
    arrived, never mid-entrance), the hook at 0.3, 0.7 and 1.0 s, and a sheet. Custom scenes: also snap their middle.
-   **Open the sheet and every guided still:** nothing in a red band (text and cards end by y 1235, the guides' line);
-   the scene inside its area; captions in the band at y 330 to 470 (the guide's
-   cyan slot is the Reels caption place, lower down: ignore it); text readable on its background; counts at their
+   **Open the sheet and every guided still:** nothing in a red band (no text below y 1235, the guides' line);
+   the scene inside its area (y 345 to 1105); captions small at the foot, y 1130 to 1235 (inside the guide's cyan
+   slot); text readable on its background; counts at their
    final values by the next scene; no half-faded scene where a full one should be. Then **judge them as a design
    director** (MOTION.md §5), full size and at 200 px wide: the hero big and clear, nothing small in empty space, no
    on-screen sentence repeating the voice. A still that fails goes back to its owner before any render.
