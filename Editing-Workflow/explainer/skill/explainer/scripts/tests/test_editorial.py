@@ -294,6 +294,17 @@ class Planner(unittest.TestCase):
         self.assertEqual(words[int(h["at"].split(":")[1])]["text"], "retrieves,")
         self.assertEqual(words[int(h["aside_at"].split(":")[1])]["text"], "generates.")
 
+    def test_a_strike_written_as_a_word_lands_on_it(self):
+        # crossed-list and line-art strike on a word: the Writer names it, the planner anchors it
+        import copy
+        from .test_plan import SCRIPT
+        script = copy.deepcopy(SCRIPT)
+        script["lines"][1]["viz"] = {"type": "crossed-list", "prefix": "NO", "items": [{"text": "RETRIEVE", "at": "retrieves,", "strike": "augments,"},
+                                                                                       {"text": "GENERATE", "at": "then", "strike": "generates."}]}
+        _, sb, words = self.plan(script)
+        cl = next(s for s in sb["scenes"] if s["type"] == "crossed-list")
+        self.assertEqual([words[int(it["strike"].split(":")[1])]["text"] for it in cl["items"]], ["augments,", "generates."])
+
     def test_a_thread_in_the_script_reaches_the_storyboard(self):
         # the Writer names the words; the planner anchors each key, in order, across the whole voice
         import copy

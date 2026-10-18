@@ -163,9 +163,9 @@ def from_viz(viz, idx, words):
             anchor_list(sc[side]["items"], "text", idx, words)
     if isinstance(sc.get("reveal"), list):
         anchor_list(sc["reveal"], "at", idx, words)
-    def words_to_anchors(o):           # any "at" (or "<name>_at") written as a word, anywhere in the hint, lands on that word
+    def words_to_anchors(o):           # any "at", "<name>_at" or "strike" written as a word, anywhere in the hint, lands on it
         if isinstance(o, dict):
-            for k in [k for k in o if k == "at" or k.endswith("_at")]:
+            for k in [k for k in o if k in ("at", "strike") or k.endswith("_at")]:
                 if isinstance(o[k], str) and not o[k].startswith("word:"):
                     o[k] = "word:%d" % find_word(o[k], idx, words)
             for v in o.values():

@@ -249,19 +249,28 @@ class ModeSwitch(Case):
         del bad["options"][1]["at"]
         self.fails(bad, "option 1 has no at")
 
-    def test_the_pill_slides_under_the_option_on_its_word(self):
+    def test_the_active_option_fills_and_the_bar_slides_on_its_word(self):
+        # each label is its own chip (E5: text on its own shape, never a copy of it laid over another): on its word the
+        # chip fills with the accent and its text turns light, the last one empties, and a bar slides under the track
         js = scene_js(self.ok(GOOD["mode-switch"]))
-        n = 3
-        first = re.search(r"tl\.fromTo\('#sc-pill', \{ opacity: 0[^;]*\}, ([\d.]+)\);", js)
-        self.assertAlmostEqual(float(first.group(1)), at_minus_lead(5), places=3)
-        for k, w in ((1, 10), (2, 15)):
-            slide = re.search(r"tl\.fromTo\('#sc-pill', \{ xPercent: ([\d.]+) \}, \{ xPercent: ([\d.]+), duration: 0\.6, "
-                              r"ease: 'power3\.inOut', immediateRender: false \}, %.3f\);" % at_minus_lead(w), js)
-            self.assertIsNotNone(slide, k)
-            self.assertEqual((float(slide.group(1)), float(slide.group(2))), (100.0 * (k - 1), 100.0 * k))
-            inner = re.search(r"tl\.fromTo\('#sc-in', \{ xPercent: (-?[\d.]+) \}, \{ xPercent: (-?[\d.]+), duration: 0\.6, "
-                              r"ease: 'power3\.inOut', immediateRender: false \}, %.3f\);" % at_minus_lead(w), js)
-            self.assertAlmostEqual(float(inner.group(2)), round(-100.0 * k / n, 3), places=3)   # its labels stay put
+        pc = E.theme(TOK, "base")
+        for k, w in ((0, 5), (1, 10), (2, 15)):
+            t = at_minus_lead(w)
+            fill = re.search(r"tl\.fromTo\('#sc-o%d', \{ backgroundColor: '[^']+', color: '%s' \}, \{ backgroundColor: '%s', color: '%s', "
+                             r"duration: 0\.3[^}]*\}, %.3f\);" % (k, pc["dim"], pc["accent"], pc["on_accent"], t), js)
+            self.assertIsNotNone(fill, k)
+            if k:
+                self.assertRegex(js, r"tl\.fromTo\('#sc-o%d', \{ backgroundColor: '%s', color: '%s' \}, \{ backgroundColor: '[^']+', color: '%s', "
+                                     r"duration: 0\.3[^}]*\}, %.3f\);" % (k - 1, pc["accent"], pc["on_accent"], pc["dim"], t))
+                slide = re.search(r"tl\.fromTo\('#sc-bar', \{ xPercent: ([\d.]+) \}, \{ xPercent: ([\d.]+), duration: 0\.6, "
+                                  r"ease: 'power3\.inOut', immediateRender: false \}, %.3f\);" % t, js)
+                self.assertEqual((float(slide.group(1)), float(slide.group(2))), (100.0 * (k - 1), 100.0 * k))
+
+    def test_each_label_is_on_the_page_once(self):
+        html = self.ok(GOOD["mode-switch"])
+        for o in GOOD["mode-switch"]["options"]:
+            self.assertEqual(len(re.findall(r'class="ms-o"[^>]*>%s<' % re.escape(o["label"]), html)), 1, o["label"])
+        self.assertNotIn("ms-on", html)
 
     def test_the_note_changes_with_the_option(self):
         js = scene_js(self.ok(GOOD["mode-switch"]))
@@ -278,8 +287,8 @@ class ModeSwitch(Case):
         for bg in ("mantle", "blue", "ink"):
             html = self.ok(GOOD["mode-switch"], bg)
             self.assertRegex(html, r'class="ms-track"[^>]*style="[^"]*background:%s' % pc["chrome"], bg)
-            self.assertRegex(html, r'id="sc-pill"[^>]*style="[^"]*background:%s' % pc["accent"], bg)
-            self.assertRegex(html, r'class="ms-o ms-on"[^>]*style="[^"]*color:%s' % pc["on_accent"], bg)
+            self.assertRegex(html, r'id="sc-bar"[^>]*style="[^"]*background:%s' % pc["accent"], bg)
+            self.assertRegex(html, r'class="ms-o"[^>]*style="[^"]*color:%s' % pc["dim"], bg)
 
     def test_the_longest_row_takes_the_full_width(self):
         # four options of ten characters: wider than the narrow column, so the control is laid out on the full width
