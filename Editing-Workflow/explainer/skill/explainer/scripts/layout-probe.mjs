@@ -174,12 +174,14 @@ for (const s of pg.samples) {
           const j = stack.findIndex((e) => e === t.el || t.el.contains(e));
           if (j < 0) continue;
           for (const e of stack.slice(0, j)) {
+            if (e.closest && e.closest("[data-thread]")) continue;     // the thread is decoration, like the ground
             if (related(e, t.el) || !opaque(e) || alpha(e) < 0.5 || seen.has(e)) continue;
             seen.add(e);
             out.push({ kind: "covered", text: t.text, detail: "covered by " + name(e) });
           }
           if (painted(t.el)) continue;              // the text sits on its own chip
           for (const e of stack.slice(j + 1)) {
+            if (e.closest && e.closest("[data-thread]")) continue;
             if (e === root || !root.contains(e)) break;
             if (e.contains(t.el)) { if (painted(e)) break; continue; }
             if (!painted(e) || alpha(e) < 0.5 || seen.has(e)) continue;

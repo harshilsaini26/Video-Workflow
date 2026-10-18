@@ -26,6 +26,7 @@ import explainer_lib as E
 import sound
 import transitions as X
 import headline as HL
+import thread as TH
 from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 
 L = E.L
@@ -462,6 +463,17 @@ def main():
             if t_in <= t + 1e-6:
                 cur = sbg
         return cur
+
+    # ---- the thread: one line through the reel, above the ground, under the scenes ------------------------------------
+    if S.get("thread") is not None:
+        errs = TH.validate(S["thread"], words)
+        if errs:
+            fail("thread: " + "; ".join(errs))
+        th_html, th_js, th_spans = TH.render(S["thread"], words, tok, D, bg_at)
+        bg_html += th_html
+        bg_js += th_js
+        moments["spans"] += th_spans
+        css["~thread"] = TH.CSS
 
     # ---- captions -------------------------------------------------------------------------------------------------
     C = S.get("captions", {}) or {}
