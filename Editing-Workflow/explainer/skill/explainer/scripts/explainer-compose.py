@@ -215,7 +215,10 @@ def main():
     rel = lambda p: p if os.path.isabs(p) else os.path.join(spec_dir, p)
     out = a.out
     os.makedirs(out, exist_ok=True)
-    tok = E.load_tokens()
+    try:
+        tok = E.load_tokens(look=S.get("look"))       # latte by default; paper, the editorial look
+    except ValueError as e:
+        fail(str(e))
     mo, amb = tok["motion"], tok["ambient"]
 
     tpath, vpath = rel(S.get("transcript", "transcript.json")), rel(S.get("voice", "voice.wav"))
@@ -353,7 +356,7 @@ def main():
     head = ['<link rel="preload" href="fonts/%s" as="font" type="font/woff2" crossorigin />' % f
             for f in sorted(os.listdir(os.path.join(out, "fonts")))] if os.path.isdir(os.path.join(out, "fonts")) else []
     css, hosts, js, tx_html, item_times = {}, [], [], [], []
-    moments = {"duration": D, "scenes": [], "spans": []}   # every change on screen, for pace-check.py (gate E4)
+    moments = {"duration": D, "look": tok["look"], "scenes": [], "spans": []}   # every change on screen, for pace-check.py (gate E4)
     kinds, prev = [], None    # how each scene comes in (transitions.py): the storyboard's choice or the composer's
     for k, (sc, _, sbg, _, _, _) in enumerate(timed):
         kinds.append(X.pick(k, prev, sbg, sc.get("transition")))

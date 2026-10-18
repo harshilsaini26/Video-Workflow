@@ -62,6 +62,10 @@ class Theme(unittest.TestCase):
             self.assertGreaterEqual(ratio(c["paper_dim"], c["paper"]), 3.0)
 
     def test_every_role_meets_its_contrast(self):
+        for look in E.LOOKS:
+            self.contrast(E.load_tokens(look=look))
+
+    def contrast(self, TOK):
         for name in TOK["backgrounds"]:
             c = E.theme(TOK, name)
             body = 4.5 if name in ("mantle", "base") else 3.0     # every text is 28 px or more: WCAG's large-text 3:1
@@ -79,6 +83,10 @@ class Theme(unittest.TestCase):
     def test_text_reads_over_the_glows_at_their_brightest(self):
         # the glows sit behind the scenes, the captions and the handle band; the probe sees only the flat ground, so the
         # tokens hold every text role at 3:1 over each glow's centre on its ground (the worst place text can sit)
+        for look in E.LOOKS:
+            self.glows(E.load_tokens(look=look))
+
+    def glows(self, TOK):
         for name in TOK["backgrounds"]:
             c = E.theme(TOK, name)
             for g in TOK["ambient"]["glows"][name]:
@@ -96,6 +104,14 @@ class Theme(unittest.TestCase):
         self.assertNotIn(c["accent"].lower(), signals)
 
     def test_every_colour_on_every_scene_is_latte(self):
+        self.every_colour("latte", LATTE)
+
+    def test_every_colour_on_every_paper_scene_is_paper(self):
+        # the editorial look keeps the same rule: nothing on a page outside its own palette (a brand's mark aside)
+        self.every_colour("paper", {k: v.lower() for k, v in E.load_tokens(look="paper")["palette"].items()})
+
+    def every_colour(self, look, pal):
+        rgbs = {tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h in pal.values()}
         mc = make_cases()
         root = scratch(self)
         vendor = stub_vendor(root, icons=("book", "clock", "calculator", "send", "file-text"))
@@ -110,20 +126,21 @@ class Theme(unittest.TestCase):
                 for key in ("screenshot", "src"):
                     if data.get(key):
                         png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
-                html = self.compose(d, dict({"type": typ, "id": "sc", "bg": bgs[(k + j) % 4], "in": "word:1", "out": 16.0}, **data), vendor)
+                html = self.compose(d, dict({"type": typ, "id": "sc", "bg": bgs[(k + j) % 4], "in": "word:1", "out": 16.0}, **data), vendor, look)
                 page = re.sub(r'<div class="lc-mark">.*?</div>', "", html, flags=re.S)   # a brand's own mark, in its own colour
                 for h in re.findall(r"#[0-9A-Fa-f]{6}\b", page):
-                    self.assertIn(h.lower(), LATTE.values(), "%s-%s: %s" % (typ, name, h))
+                    self.assertIn(h.lower(), pal.values(), "%s %s-%s: %s" % (look, typ, name, h))
                 for rgb in re.findall(r"rgba?\((\d+),\s*(\d+),\s*(\d+)", page):
-                    self.assertIn(tuple(map(int, rgb)), RGB, "%s-%s: rgb%s" % (typ, name, rgb))
+                    self.assertIn(tuple(map(int, rgb)), rgbs, "%s %s-%s: rgb%s" % (look, typ, name, rgb))
 
-    def compose(self, d, scene, vendor):
+    def compose(self, d, scene, vendor, look="latte"):
         from .helpers import run
         from .test_compose import silent_wav
         write(os.path.join(d, "transcript.json"), {"words": [{"text": "word%d" % i, "start": 0.5 + i * 0.4, "end": 0.8 + i * 0.4}
                                                               for i in range(40)]})
         silent_wav(os.path.join(d, "voice.wav"), 15.5)
-        sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [make_cases().LEAD_IN, scene], "sound": {"music": "none", "sfx": False}})
+        sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "look": look, "scenes": [make_cases().LEAD_IN, scene],
+                                                        "sound": {"music": "none", "sfx": False}})
         r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", vendor)
         self.assertEqual(r.returncode, 0, "%s: %s" % (scene["type"], r.stdout + r.stderr))
         return read(os.path.join(d, "public", "index.html"))

@@ -93,6 +93,13 @@ class Gate(unittest.TestCase):
     @unittest.skipUnless(have_browser(), "needs node, puppeteer and Chrome (npx hyperframes browser ensure)")
     def test_every_scene_case_is_clean(self):
         # every library scene, three lengths of text each (dev/make-cases.py), composed and looked at in Chromium
+        self.every_case("latte")
+
+    def test_every_scene_case_is_clean_on_paper(self):
+        # and in the editorial look: its colours on its grounds
+        self.every_case("paper")
+
+    def every_case(self, look):
         from .test_theme import make_cases
         from .test_assets import COURSERA, png
         from .test_scenes_ui import stub_vendor
@@ -114,13 +121,14 @@ class Gate(unittest.TestCase):
                         png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
                 bg = ("mantle", "blue", "base", "ink")[(len(pages) + 1) % 4]     # every scene type meets the dark grounds too
                 sc = dict({"type": typ, "id": "sc", "bg": bg, "in": "word:1", "out": 16.0}, **data)
-                sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [mc.LEAD_IN, sc], "sound": {"music": "none", "sfx": False}})
+                sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "look": look, "scenes": [mc.LEAD_IN, sc],
+                                                                "sound": {"music": "none", "sfx": False}})
                 r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", vendor)
                 self.assertEqual(r.returncode, 0, "%s-%s: %s" % (typ, name, r.stdout))
                 with open(os.path.join(d, "public", "moments.json"), encoding="utf-8") as f:
                     pages.append({"index": os.path.join(d, "public", "index.html"), "samples": LC.samples(json.load(f))})
         issues = LC.probe_pages(pages)
-        self.assertEqual([], ["%s: %s %s" % (os.path.basename(os.path.dirname(os.path.dirname(i["page"]))), i["text"], i["detail"])
+        self.assertEqual([], ["%s %s: %s %s" % (look, os.path.basename(os.path.dirname(os.path.dirname(i["page"]))), i["text"], i["detail"])
                               for i in issues])
 
     def test_a_page_not_composed_yet_is_named(self):

@@ -133,11 +133,31 @@ def theme(tokens, bg):
     return c
 
 
-def load_tokens(path=None):
-    """The look: fonts, the Catppuccin Latte palette and its roles, backgrounds, motion timing (tokens.json next to
-    scripts/). Scenes read colours through theme(), never from the palette directly."""
+LOOKS = ("latte", "paper")   # latte, the default (Catppuccin Latte); paper, the editorial look (tokens.looks.paper)
+
+
+def _merge(base, over):
+    """`over` laid on `base`: dicts merge key by key, anything else (a list, a value) replaces."""
+    out = dict(base)
+    for k, v in over.items():
+        out[k] = _merge(base[k], v) if isinstance(v, dict) and isinstance(base.get(k), dict) else v
+    return out
+
+
+def load_tokens(path=None, look=None):
+    """The look: fonts, the palette and its roles, backgrounds, motion timing (tokens.json next to scripts/). `look`
+    lays tokens.looks.<look> over the base (Catppuccin Latte); paper renames no palette colour, so a scene that names one
+    resolves in either look. Scenes read colours through theme(), never from the palette directly. tok["look"] names it."""
     with open(path or os.path.join(HERE, "..", "tokens.json"), encoding="utf-8") as f:
-        return json.load(f)
+        tok = json.load(f)
+    look = look or "latte"
+    if look not in LOOKS:
+        raise ValueError("no look %r: the looks are %s" % (look, ", ".join(LOOKS)))
+    looks = tok.pop("looks", {})
+    if look != "latte":
+        tok = _merge(tok, looks[look])
+    tok["look"] = look
+    return tok
 
 
 # Text is measured with the fonts' real glyph widths, kept in reels_lib (glyphs.json there) so both skills share them.

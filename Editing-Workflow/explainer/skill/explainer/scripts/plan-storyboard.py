@@ -29,6 +29,7 @@ BEAT = 2.5
 HOOK_BY, LEAD = 0.8, 0.2          # explainer_lib's: the hook's items land by 0.8 s, an entrance 0.2 s before its word
 BGS = ["mantle", "base"]          # the two light Latte surfaces (tokens.json), alternating at each section break
 HOOK_BG, PAYOFF_BG, BEAT_BG = "ink", "blue", "blue"
+ONE_GROUND = "base"                     # the paper look: every scene on the paper
 STOP = set("a an and are as at be but by for from has have i in is it its me my of on or our so than that the their them then "
            "there these they this to was we were what when which who will with you your".split())
 ORDINALS = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5}
@@ -247,6 +248,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--script", required=True)
     ap.add_argument("--transcript", required=True)
+    ap.add_argument("--look", help="latte or paper (default: the script's look, else latte)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--report")
     ap.add_argument("--vendor", default=os.path.join(HERE, "..", "assets", "vendor"))
@@ -259,6 +261,7 @@ def main():
     if not all("line" in w for w in words):
         sys.exit("transcript.json has no line ids: align it with align-script.py")
     brands = logos(a.vendor)
+    look = a.look or S.get("look") or "latte"
     scenes, rows, bg, used, in_section = [], [], 0, set(), 0
     for li, ln in enumerate(S.get("lines", [])):
         idx = [i for i, w in enumerate(words) if w["line"] == ln["id"]]
@@ -280,6 +283,8 @@ def main():
                 in_section += 1
                 if in_section % 3 == 0:
                     ground = BEAT_BG
+            if look == "paper":
+                ground = ONE_GROUND           # the editorial look keeps one ground: colour comes from the pictures
             full = dict({"type": sc["type"], "id": sid, "bg": ground, "in": "word:%d" % start}, **{x: y for x, y in sc.items() if x != "type"})
             if ln.get("source"):
                 full["source"] = ln["source"]
@@ -302,6 +307,8 @@ def main():
         emphasis += [e for e in ln.get("emphasis", []) if e not in emphasis]
     board = {"id": re.sub(r"[^a-z0-9]+", "-", str(S.get("title", "reel")).lower()).strip("-") or "reel", "fps": 60,
              "voice": "voice.wav", "transcript": "transcript.json", "captions": {"emphasis": emphasis}, "scenes": scenes}
+    if look != "latte":
+        board["look"] = look
     if S.get("brand"):
         board["brand"] = S["brand"]          # the handle and the series part, on every frame
     with open(a.out, "w", encoding="utf-8") as f:

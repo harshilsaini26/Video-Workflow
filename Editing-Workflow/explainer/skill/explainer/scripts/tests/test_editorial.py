@@ -60,5 +60,44 @@ class Layout(unittest.TestCase):
             self.assertIn("text-shadow:0 0 18px %s, 0 0 6px %s" % ((E.theme(TOK, bg)["bg"],) * 2), m.group(1))
 
 
+class Looks(unittest.TestCase):
+    def test_paper_overrides_the_palette_by_name(self):
+        paper = E.load_tokens(look="paper")
+        self.assertEqual(paper["look"], "paper")
+        self.assertEqual(paper["palette"]["base"], "#EFEAE3")
+        self.assertEqual(paper["palette"]["text"], "#141414")
+        self.assertEqual(E.theme(paper, "base")["accent"], "#D9472E")
+        self.assertEqual(set(paper["palette"]), set(TOK["palette"]))          # the same 26 names: scenes resolve either look
+        self.assertEqual(paper["motion"], TOK["motion"])                      # what a look does not name stays
+
+    def test_latte_is_the_default(self):
+        self.assertEqual(E.LOOKS, ("latte", "paper"))
+        self.assertEqual(E.load_tokens()["look"], "latte")
+        self.assertEqual(E.load_tokens(look="latte")["palette"], TOK["palette"])
+
+    def test_a_paper_reel_composes_on_paper(self):
+        board = dict(BOARD, look="paper")
+        r, d = compose(self, board)
+        self.assertEqual(r.returncode, 0, r.stdout)
+        page = read(os.path.join(d, "public", "index.html"))
+        self.assertIn("background:#EFEAE3".lower(), page.lower().replace(" ", ""))
+        self.assertEqual(load(os.path.join(d, "public", "moments.json"))["look"], "paper")
+
+    def test_an_unknown_look_fails_naming_the_known_ones(self):
+        r, _ = compose(self, dict(BOARD, look="neon"))
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertIn("E3 FAIL", r.stdout)
+        self.assertIn("latte, paper", r.stdout)
+
+    def test_the_planner_puts_a_paper_reel_on_one_ground(self):
+        # the editorial look keeps one ground: colour comes from the pictures and the accent, not from the ground
+        from .test_plan import SCRIPT, Plan
+        import copy
+        script = dict(copy.deepcopy(SCRIPT), payoff="l4", look="paper")
+        _, sb, _ = Plan.plan(self, script)
+        self.assertEqual(sb["look"], "paper")
+        self.assertEqual({s["bg"] for s in sb["scenes"]}, {"base"})
+
+
 if __name__ == "__main__":
     unittest.main()
