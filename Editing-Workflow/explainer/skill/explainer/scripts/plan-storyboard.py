@@ -163,10 +163,11 @@ def from_viz(viz, idx, words):
             anchor_list(sc[side]["items"], "text", idx, words)
     if isinstance(sc.get("reveal"), list):
         anchor_list(sc["reveal"], "at", idx, words)
-    def words_to_anchors(o):           # any "at" written as a word, anywhere in the hint, lands on that word
+    def words_to_anchors(o):           # any "at" (or "<name>_at") written as a word, anywhere in the hint, lands on that word
         if isinstance(o, dict):
-            if isinstance(o.get("at"), str) and not o["at"].startswith("word:"):
-                o["at"] = "word:%d" % find_word(o["at"], idx, words)
+            for k in [k for k in o if k == "at" or k.endswith("_at")]:
+                if isinstance(o[k], str) and not o[k].startswith("word:"):
+                    o[k] = "word:%d" % find_word(o[k], idx, words)
             for v in o.values():
                 words_to_anchors(v)
         elif isinstance(o, list):
@@ -174,6 +175,25 @@ def from_viz(viz, idx, words):
                 words_to_anchors(v)
     words_to_anchors(sc)
     return sc
+
+
+def thread_anchors(thread, words):
+    """The script's thread with each key's "at" (a word of the voice) on that word: the keys in order, each found after
+    the one before, across the whole transcript."""
+    th = json.loads(json.dumps(thread))
+    cursor = 0
+    for k in th.get("keys", []):
+        at = k.get("at")
+        if isinstance(at, str) and at.startswith("word:"):
+            cursor = int(at.split(":")[1]) + 1
+            continue
+        key = key_word(str(at))
+        hit = next((i for i in range(cursor, len(words)) if matches(words[i]["text"], key)), None)
+        if hit is None:
+            sys.exit("thread key %r: no word %r after word %d of the voice" % (k.get("shape"), at, cursor))
+        k["at"] = "word:%d" % hit
+        cursor = hit + 1
+    return th
 
 
 def logos(vendor):
@@ -309,6 +329,8 @@ def main():
              "voice": "voice.wav", "transcript": "transcript.json", "captions": {"emphasis": emphasis}, "scenes": scenes}
     if look != "latte":
         board["look"] = look
+    if S.get("thread"):
+        board["thread"] = thread_anchors(S["thread"], words)    # one line through the reel, keyed on the voice's words
     if S.get("brand"):
         board["brand"] = S["brand"]          # the handle and the series part, on every frame
     with open(a.out, "w", encoding="utf-8") as f:

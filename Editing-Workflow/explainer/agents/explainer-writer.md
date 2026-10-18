@@ -51,6 +51,10 @@ they are said, and for a rewrite the notes to act on (ids and verbatim words).
      screen shows (full digits, the real spelling); keep them word for word the same otherwise;
    - a line whose `show` has a digit, `%` or `$`, or states a fact (`"fact": true`), names its `source`;
    - `break` by §E2.4; one emphasis word at most a line;
+   - **the look** from the brief in `script.json` (`"look": "paper"` or `"latte"`); in `paper`, give the key lines a
+     `headline` in their hint (`{"text": "No battery", "at": "battery", "aside": "seriously?"}`, §E4.11: a few words,
+     the point of the line, not its sentence) and the reel a `thread` (§E4.12: keys on words of the voice, in order:
+     the line drops in on the hook, loops round the number, becomes the wave under a sound, goes `off` at the CTA);
    - **a picture for every line** (§E2.7): add a `viz` hint wherever the words name something to show, e.g.
      `"viz": {"type": "flow", "nodes": ["Retrieve", "Augment", "Generate"]}`, `{"type": "cards", "cards": ["Corporate
      Finance", "Valuation"]}`, `{"type": "logo-card", "logo": "coursera"}`, `{"type": "compare", "left": {"title": "Memory",

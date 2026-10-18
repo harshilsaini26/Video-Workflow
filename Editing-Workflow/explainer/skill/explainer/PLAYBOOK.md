@@ -69,7 +69,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    from §E4.1 and its items as plain words: `{"type": "flow", "nodes": ["Retrieve", "Augment", "Generate"]}`).
    A line over about 3 s gets a list of hints, each after the first starting on a word of the line (`"from": "large"`).
    `plan-storyboard.py` turns the hints into the draft storyboard (§E4.8); a line without one becomes a draft title
-   the Director must replace.
+   the Director must replace. A hint may carry a **`headline`** (§E4.11: `{"text": "No battery", "at": "battery",
+   "aside": "seriously?", "aside_at": "seriously"}`, words for its anchors), and the script may carry a **`look`**
+   (`paper` or `latte`) and a **`thread`** (§E4.12: its keys' `at` are words of the voice, in order).
 8. **Talk to one viewer:** "you" and contractions, never "users" or "one"; one question to the viewer (in the hook
    or the call to action) so the comments have something to answer; one real example (`role: example`: a case, a
    number, a short story) because a concrete case is what people remember; humour only where it serves the point
@@ -157,8 +159,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    gate E5 checks every cut (SOP S9). The last scene runs to `"end"`. A scene holds at most 8 s (E4; a travelling flow
    may hold longer), and the hook's items land by 0.8 s (E3, SOP S8).
 5. **One hero element per scene**; never the same scene type three times in a row.
-6. **Grounds keep a rhythm:** the hook on `ink`, the payoff on `blue`, `mantle`/`base` by section, a `blue` beat every
-   third scene in a section (the planner sets it; MOTION.md §1.3).
+6. **Grounds keep a rhythm** in the `latte` look: the hook on `ink`, the payoff on `blue`, `mantle`/`base` by section,
+   a `blue` beat every third scene in a section (the planner sets it; MOTION.md §1.3). The `paper` look keeps **one
+   ground** (`base`, the warm paper): colour comes from the images and the one accent (MOTION.md §1.6).
 7. **Fit by construction:** each scene knows its height; the composer scales it to fill the scene area, narrows it
    below y 960, and fails a word wider than its column. A scene too tall may shrink to 0.8, never under 28 px text;
    past that, drop a row or an item (the captions carry the words) and **never split a scene to fix its height**. The hub works out its own geometry (every node clears the middle and every other node), a formula shrinks
@@ -176,6 +179,23 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    that is not its card, text spilling out of its card, anything outside the safe area, and text under 28 px;
    `hyperframes check` at the same moments adds clipped text and WCAG contrast. No tokens; every failure names the
    scene and the text. Run after every compose, before any still goes to the creator.
+
+11. **Headlines** (`"headline"` on any placed scene; `headline.py`): the scene's title top-left in the look's hero
+   face, the scene's picture centred under it. Upper case unless `"case": "as-is"`; at most three lines and 260 px
+   (the fewest lines that stay big); `accent` words in the accent; a mono `kicker` above and `sub` below; an
+   Instrument Serif italic `aside` ("seriously?", "Yes." in the accent). The lines rise on `at`, the aside on
+   `aside_at`. E3 names a headline that leaves the scene too little room: shorten it or drop an item.
+12. **The thread** (`"thread"` in the storyboard; `thread.py`): one line through the whole reel, as the reference's cable
+   runs from scene to scene. Keys `{"at", "shape", ...}` in time order, shapes `drop`, `loop`, `wave`, `rule`,
+   `underline`, `off`; it draws on at the first key and morphs on each later key's word. It runs above the ground and
+   under the scenes and the captions, may pass behind a scene's words (E5 treats it as the ground), and each morph is
+   a change for E4. Use it for continuity: the line that drops in becomes the loop round a year, the wave under a
+   sound, the ruler of a timeline; take it `off` when the story moves on.
+13. **Images** are the creator's (`src`, relative to storyboard.json; PNG, JPEG, WebP or GIF; sized from their own
+   headers): a product cut-out in `product-hero`, photos in `photo-grid`, each photo with a `credit` shown on it (E3
+   fails a photo without one). Notes over an image (`notes`: a circle drawn on, a leader, a pill label) point at what
+   the voice names. Only a product-hero's title may sit behind its image (`data-depth="behind"`, at least 120 px):
+   every other text is never covered.
 
 ## §E5 Captions
 

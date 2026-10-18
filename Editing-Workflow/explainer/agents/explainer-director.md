@@ -37,9 +37,12 @@ re-plan the notes to act on.
    picture at least every 8 s** (E4 fails a scene held longer; only a `flow` that travels may hold its steps longer).
    Prefer objects to labelled boxes: `stat`, `chat`, `doc`, `browser`, `logo-card`, the editor and social mock-ups
    (`prompt-bar`, `nle-timeline`, `reel-feed`, `video-card`...), and the build-up scenes (flow, stack, compare,
-   timeline, cards, hub) that grow on the words, over a static title. Keep the grounds' rhythm the planner sets (the
-   hook on `ink`, the payoff on `blue`, light `mantle`/`base` between, a `blue` beat now and then): a reel that never
-   leaves one pale ground reads as one long slide. The hook's items land on words 0 and 1 (E3 holds them to 0.8 s).
+   timeline, cards, hub) that grow on the words, over a static title. In `latte`, keep the grounds' rhythm the planner
+   sets (the hook on `ink`, the payoff on `blue`, light `mantle`/`base` between, a `blue` beat now and then): a reel that
+   never leaves one pale ground reads as one long slide. In `paper`, keep one ground and lay each beat out like an
+   editorial page (MOTION.md §1.6): a `headline` top-left, one big object under it (`product-hero` with the title
+   behind the cut-out, `photo-grid` with credits, `waveform`, `stat`), `notes` pointing at what the voice names, and the
+   `thread` carrying the eye from scene to scene (§E4.11 to §E4.13). The hook's items land on words 0 and 1 (E3 holds them to 0.8 s).
    Name real things with a `logo-card` (its slug from simpleicons.org, or `src` for the creator's own image) or a `browser` with
    a `screenshot` you take with `python3 "$ES/scripts/snap-page.py" --url <page> --out "$W/shots/<name>.png"` (look at
    it: no cookie banner, no sign-in wall); never a title that repeats what the voice is saying (§E5.5); a background

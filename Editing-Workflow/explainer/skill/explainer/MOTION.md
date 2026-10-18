@@ -44,6 +44,14 @@ Distilled from three free, open sources, read as references (none of their code 
    timeline, a phone's reel feed. A box with a word in it is the last resort, not the default.
 5. **No two beats look the same.** The composer WARNs when two scenes in a row share a layout: change the picture,
    or merge the two into one build that keeps growing (one object changing beats a new widget every line).
+6. **Two looks** (tokens.json `looks`, the storyboard's `look`). `latte` is the default above. `paper` is the
+   editorial look of the Bose reference: one warm paper ground (#EFEAE3), near-black ink (#141414), one orange-red
+   accent (#D9472E), colour only from the images; **three faces by role**: the hero face (Archivo 800 at width 125%,
+   upper case) for headlines, kinetic, giant captions, title cards, stats and stickers; an Instrument Serif italic
+   aside for the voice's asides ("seriously?"); JetBrains Mono for small labels, kickers and credits. Body text inside
+   UI mock-ups stays DM Sans. Lay it out like an editorial page: a top-left headline, one big object under it (a
+   product cut-out the headline sits behind, a photo, a waveform), notes pointing at the part the voice names, and
+   the thread carrying the eye from one scene into the next. The motion stays: everything still moves while it holds.
 
 ## 2. Motion with a reason
 

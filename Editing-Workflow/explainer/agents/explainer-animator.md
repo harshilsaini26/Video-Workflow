@@ -69,7 +69,8 @@ a render takes minutes.
    slot); text readable on its background; counts at their
    final values by the next scene; no half-faded scene where a full one should be. Then **judge them as a design
    director** (MOTION.md §5), full size and at 200 px wide: the hero big and clear, nothing small in empty space, no
-   on-screen sentence repeating the voice. A still that fails goes back to its owner before any render.
+   on-screen sentence repeating the voice; in `paper`, the headline top-left and big, the object under it, the thread
+   continuous from one still to the next. A still that fails goes back to its owner before any render.
 9. **`$W/snaps/SCENES.md`:** one row a scene: id, type, from and to (s), the words it covers, what is on screen, its
    source. The Producer shows it at Checkpoint B and the Packager attaches it.
 

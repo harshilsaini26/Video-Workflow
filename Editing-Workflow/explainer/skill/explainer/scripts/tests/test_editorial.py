@@ -278,5 +278,35 @@ class HeroFace(unittest.TestCase):
         self.assertGreaterEqual(paper_h, tc.height(long, 780))
 
 
+class Planner(unittest.TestCase):
+    def plan(self, script):
+        from .test_plan import Plan
+        return Plan.plan(self, script)
+
+    def test_a_headline_hint_lands_on_its_words(self):
+        import copy
+        from .test_plan import SCRIPT
+        script = copy.deepcopy(SCRIPT)
+        script["lines"][1]["viz"]["headline"] = {"text": "Three moves", "at": "retrieves,", "aside_at": "generates."}
+        _, sb, words = self.plan(script)
+        flow = next(s for s in sb["scenes"] if s["type"] == "flow")
+        h = flow["headline"]
+        self.assertEqual(words[int(h["at"].split(":")[1])]["text"], "retrieves,")
+        self.assertEqual(words[int(h["aside_at"].split(":")[1])]["text"], "generates.")
+
+    def test_a_thread_in_the_script_reaches_the_storyboard(self):
+        # the Writer names the words; the planner anchors each key, in order, across the whole voice
+        import copy
+        from .test_plan import SCRIPT
+        script = copy.deepcopy(SCRIPT)
+        script["thread"] = {"color": "accent", "keys": [{"at": "The", "shape": "drop"}, {"at": "augments,", "shape": "loop", "y": 900},
+                                                        {"at": "prompt.", "shape": "off"}]}
+        _, sb, words = self.plan(script)
+        keys = sb["thread"]["keys"]
+        self.assertEqual([words[int(k["at"].split(":")[1])]["text"] for k in keys], ["The", "augments,", "prompt."])
+        self.assertEqual(sb["thread"]["color"], "accent")
+        self.assertEqual(keys[1]["y"], 900)
+
+
 if __name__ == "__main__":
     unittest.main()

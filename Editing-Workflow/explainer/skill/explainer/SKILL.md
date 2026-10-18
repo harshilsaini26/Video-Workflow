@@ -79,6 +79,10 @@ they never saw, SOP S1). Skip what the creator already said:
 6. **The voice:** on the first project, "you'll pick from three samples"; later, the channel's voice from the Brief.
 7. **Music:** the generated pad under the voice (the default: never silent, nothing to license), a free licensed track
    of the creator's in the file, or none in the file (add it in the app).
+8. **The look:** `paper` (the editorial look: warm paper, near-black ink, one orange-red accent, a wide headline face,
+   product images and photos; the default for a product or tech topic) or `latte` (soft Catppuccin grounds that change
+   with the story). And **any images** the reel should show (product cut-outs, photos), each photo with its credit:
+   the reel shows only what the creator supplies or what is free to use.
 
 Create `$W`, copy `$ES/templates/{STATUS,NOTES}.md`, fill the header and **Brief** (profile `explainer`,
 version v1, the **Voice** row), pin the skill (`"$ES/scripts/skill-version.py" --pin "$W/STATUS.md"`), log "project
