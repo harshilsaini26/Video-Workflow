@@ -114,7 +114,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | land one number | `count-up` | `value`, `prefix`, `suffix`, `decimals`, `sub` |
    | list 2 to 4 things | `list-cards` | `items[{label, at}]` |
    | list 2 to 4 things with a picture each | `icon-row` | `items[{icon, label, at}]` (a Lucide icon name) |
-   | show change over time | `line-chart` | `points`, `x`, `label`, `prefix`, `suffix`, `reveal[{point, at}]` |
+   | show change over time | `line-chart` | `points`, `x`, `label`, `prefix`, `suffix`, `reveal[{point, at}]`, `shape` (line, or step: a level, then the jump) |
    | compare amounts | `bars` | `rows[{label, value, text, hi, at}]` (2 to 5) |
    | say how long something takes | `duration` | `value`, `unit` (hours, days, weeks), `style` (clock, dial) |
    | ask the viewer's questions | `qa-stack` | `items[{text, em[], at}]` (at most 5) |
@@ -148,6 +148,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | many videos at once | `playing-grid` | `src`, `cols`, `tiles[{label, src, at}]` (4 to 9), `pick{tile, at}` |
    | one video | `video-card` | `src`, `title`, `channel`, `meta`, `duration`, `start`, `play{at}` |
    | the reels feed | `reel-feed` | `src`, `reels[{user, caption, likes, comments, shares, at}]` (2 to 3) |
+   | a sound, and how it changes | `waveform` | `states[{kind, label, at}]` (1 to 4; noise, calm, music, pulse or flat), `color` (ink or accent) |
+   | switching modes (noise cancelling, a setting) | `mode-switch` | `options[{label, wave, note, at}]` (2 to 4, left to right; a label of 10 characters at most, a waveform kind) |
    | need something the library can't show (only when the creator asks) | `custom` | `box{x, y, w, h}`, `html`, `build` (§E6.5) |
 
 2. **Ids** are letters, digits and `_` (the page builds `<id>-...` ids from them), never `stage`, `captions`, `voice`,
