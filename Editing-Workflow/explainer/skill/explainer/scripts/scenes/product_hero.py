@@ -8,7 +8,7 @@ life) and pushes in slowly; notes (scenes/_annotate.py) draw on over it on their
    "notes": [{"x": 0.72, "y": 0.2, "label": "WAIT... A WIRE?", "at": "word:7", "mark": "circle", "side": "left"}]}
 
 - src: the creator's image, relative to storyboard.json (a PNG with alpha is best: a cut-out; a JPEG shows as a
-  rectangle); alt says what it shows.
+  rectangle, and E3 refuses one under a title, which it would hide: use a "headline" instead); alt says what it shows.
 - aspect: the image's width / height. The scene's height is known before any file is read (the composer places it
   first, and height() sees only the data), so the box is laid out from `aspect` (1 when it is not given). The image is
   then fitted inside that box from its real size (read from its header), never stretched, so any picture fits; when
@@ -27,7 +27,7 @@ life) and pushes in slowly; notes (scenes/_annotate.py) draw on over it on their
 The scene is laid out in pixels for the width it is given (BAKED) and never scaled (MAX_SCALE 1): its sizes are
 the sizes drawn.
 """
-import math
+import math, os
 import explainer_lib as E
 import headline as HL
 from scenes import SceneError, js_obj, need
@@ -61,7 +61,7 @@ CSS = """
   .ph-tl { display:block; white-space:nowrap; text-align:center; }
   .ph-img { position:absolute; z-index:2; opacity:0; }
   .ph-fl { position:relative; width:100%%; height:100%%; }
-  .ph-fl > img { position:absolute; left:0; top:0; width:100%%; height:100%%; display:block; }
+  .ph-fl > img { position:absolute; left:0; top:0; width:100%%; height:100%%; display:block; object-fit:contain; }
 """ % () + _annotate.CSS
 
 
@@ -205,6 +205,12 @@ def render(scene, ctx, box):
     lay = layout(scene, W)
     H = lay["height"]
     page, rw, rh = ctx.image(scene["src"])
+    if scene.get("title"):
+        import imagesize
+        if not imagesize.alpha(os.path.join(ctx.out_dir, page)):
+            ctx.fail("%s has no transparency (a JPEG, or a PNG or WebP without alpha), so the title behind it would be "
+                     "hidden: give a cut-out (a PNG or WebP with alpha), or drop the title and put the words in a "
+                     "\"headline\" (it sits above the scene)" % scene["src"])
     real = rw / float(rh)
     a = aspect(scene)
     if abs(real - a) > 0.02 * real:

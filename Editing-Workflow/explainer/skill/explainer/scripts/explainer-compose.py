@@ -469,7 +469,7 @@ def main():
         errs = TH.validate(S["thread"], words)
         if errs:
             fail("thread: " + "; ".join(errs))
-        th_html, th_js, th_spans = TH.render(S["thread"], words, tok, D, bg_at)
+        th_html, th_js, th_spans = TH.render(S["thread"], words, tok, D, bg_at, [t_in for _, _, _, t_in, _, _ in timed])
         bg_html += th_html
         bg_js += th_js
         moments["spans"] += th_spans

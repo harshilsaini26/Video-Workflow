@@ -28,7 +28,7 @@ MAX_PRICE, MAX_LABEL = 8, 28
 CSS = """
   .ps { width:100%%; display:flex; flex-direction:column; align-items:center; }
   .ps-pic { width:100%%; height:%dpx; display:flex; align-items:flex-end; justify-content:center; flex:none; }
-  .ps-img { display:block; flex:none; opacity:0; }
+  .ps-img { display:block; flex:none; opacity:0; object-fit:contain; }
   .ps-wrap { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; flex:none; }
   .ps-st { display:flex; align-items:center; justify-content:center; flex:none; border-radius:28px; opacity:0; }
   .ps-price { font-weight:700; font-size:%dpx; line-height:%dpx; letter-spacing:%sem; white-space:nowrap; }

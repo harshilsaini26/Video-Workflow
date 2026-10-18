@@ -14,8 +14,9 @@ Shapes (frame pixels, N points each, so any shape morphs into any other):
 - rule: a vertical line at `x` from `from` to `to` (540, 345 to 1105), a ruler for a timeline;
 - underline: a horizontal line at `y` (330) from `x0` to `x1` (65 to 1015);
 - off: the line lifts straight up out of the frame where it last was.
-No shape may pass through the captions (the band y 1130 to 1235 inside the column x 150 to 930): a stem goes down the
-outer edge, a loop or a wave sits above or below the band (gate E3 names the key).
+No key's shape may rest in the captions (the band y 1130 to 1235 inside the column x 150 to 930): a stem goes down the
+outer edge, a loop or a wave sits above or below the band (gate E3 names the key). A morph from one side of the band
+to the other passes behind the captions for a moment, under their halo.
 The first key draws the line on (0.8 s); each later key morphs into its shape on its word (0.6 s, power3.inOut). One
 tween runs for the whole reel and its onUpdate draws the shape for the timeline's own time, so any frame a seek lands
 on is the same picture. The layer sits above the ground and under the scenes and the captions (z-index 5); gate E5
@@ -28,6 +29,8 @@ SHAPES = ("drop", "loop", "wave", "rule", "underline", "off")
 N = 96
 DRAW, MORPH = 0.8, 0.6
 SCROLL = 40.0                      # px a second a wave travels while it holds
+SCROLL_MAX = 900.0                 # and no further: the wave's left end (x -1000) never comes into the frame
+NUMBERS = ("x", "y", "to", "from", "rx", "ry", "amp", "period", "x0", "x1")
 COLORS = ("ink", "accent")
 TOP = -40                          # above the frame
 
@@ -64,6 +67,10 @@ def points(shape, p, prev=None):
     raise ValueError("no thread shape %r (the shapes are %s)" % (shape, ", ".join(SHAPES)))
 
 
+def _number(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
 def crosses_captions(pts):
     """True when a shape passes through the caption band inside the caption column (it would strike the words through)."""
     (y0, y1), (x0, x1) = E.CAPTION_BAND, (E.L.NARROW["left"], E.L.NARROW["right"])
@@ -76,11 +83,20 @@ def validate(spec, words):
     errs = []
     if spec.get("color", "ink") not in COLORS:
         errs.append("color is ink or accent (got %r)" % spec.get("color"))
-    if not 4 <= float(spec.get("width", 8)) <= 16:
-        errs.append("width is 4 to 16 px")
+    width = spec.get("width", 8)
+    if not _number(width) or not 4 <= width <= 16:
+        errs.append("width is 4 to 16 px (got %r)" % (width,))
     last, prev = -1.0, None
     for i, k in enumerate(spec["keys"]):
-        if k.get("shape") not in SHAPES:
+        if not isinstance(k, dict):
+            errs.append("key %d is {\"at\": \"word:N\", \"shape\": ...} (got %r)" % (i, k))
+            continue
+        nan = [n for n in NUMBERS if n in k and not _number(k[n])]
+        if nan:
+            errs.append("key %d: %s must be a number (got %s)" % (i, ", ".join(nan), ", ".join(repr(k[n]) for n in nan)))
+        elif k.get("shape") == "wave" and k.get("period", 360) <= 0:
+            errs.append("key %d: a wave's period is more than 0 px (got %r)" % (i, k["period"]))
+        elif k.get("shape") not in SHAPES:
             errs.append("key %d: no shape %r (the shapes are %s)" % (i, k.get("shape"), ", ".join(SHAPES)))
         else:
             prev = points(k["shape"], k, prev)
@@ -100,14 +116,18 @@ def validate(spec, words):
     return errs
 
 
-def render(spec, words, tok, D, ground_at):
-    """(html, js, spans): the layer, its timeline lines, and the moments of change for pace-check."""
+def render(spec, words, tok, D, ground_at, grounds=()):
+    """(html, js, spans): the layer, its timeline lines, and the moments of change for pace-check. `grounds` are the
+    times the ground may change (each scene's start): the line takes that ground's colour then, key or no key."""
     keys, prev, pts, times = spec["keys"], None, [], []
     for k in keys:
         prev = points(k["shape"], k, prev)
         pts.append([[round(x, 1), round(y, 1)] for x, y in prev])
         times.append(round(max(0.0, E.resolve(k["at"], words, lead=True)), 3))
     waves = [1 if k["shape"] == "wave" else 0 for k in keys]
+    held = lambda i: min(SCROLL_MAX, max(0.0, times[i + 1] - times[i] - MORPH) * SCROLL)
+    offs = [0] + [round(held(i - 1), 1) if waves[i - 1] else 0 for i in range(1, len(keys))]   # where a wave had got to
+    pts = [[[round(x + offs[i], 1), y] for x, y in p] if keys[i]["shape"] == "off" else p for i, p in enumerate(pts)]
     role = spec.get("color", "ink")
     color = E.theme(tok, ground_at(times[0]))[role]
     html = ('    <svg class="thread" data-thread="1" width="1080" height="1920" viewBox="0 0 1080 1920"><g id="th-g"><path id="th-p" pathLength="1" '
@@ -116,6 +136,7 @@ def render(spec, words, tok, D, ground_at):
     js = ["const TH_K = %s;" % json.dumps(pts, separators=(",", ":")),
           "const TH_T = %s;" % json.dumps(times),
           "const TH_W = %s;" % json.dumps(waves),
+          "const TH_O = %s;" % json.dumps(offs),
           "const TH_E = gsap.parseEase('power3.inOut');",
           "const TH_P = { v: 0 };",
           ("function thAt(t) {\n"
@@ -126,17 +147,21 @@ def render(spec, words, tok, D, ground_at):
            "          const m = i > 0 ? TH_E(Math.min(1, (t - TH_T[i]) / %s)) : 1, a = TH_K[Math.max(0, i - 1)], b = TH_K[i];\n"
            "          let d = '';\n"
            "          for (let n = 0; n < b.length; n++) {\n"
-           "            const x = a[n][0] + (b[n][0] - a[n][0]) * m, y = a[n][1] + (b[n][1] - a[n][1]) * m;\n"
+           "            const ax = a[n][0] + TH_O[i], x = ax + (b[n][0] - ax) * m, y = a[n][1] + (b[n][1] - a[n][1]) * m;\n"
            "            d += (n ? ' L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);\n"
            "          }\n"
            "          p.setAttribute('d', d);\n"
            "          const hold = TH_W[i] ? Math.max(0, t - TH_T[i] - %s) : 0;\n"
-           "          g.setAttribute('transform', 'translate(' + (hold * %s).toFixed(1) + ' 0)');\n"
-           "        }") % (DRAW, MORPH, MORPH, SCROLL),
+           "          g.setAttribute('transform', 'translate(' + Math.min(%s, hold * %s).toFixed(1) + ' 0)');\n"
+           "        }") % (DRAW, MORPH, MORPH, SCROLL_MAX, SCROLL),
           "tl.fromTo(TH_P, { v: 0 }, { v: 1, duration: %.3f, ease: 'none', immediateRender: false, onUpdate: function () { thAt(tl.time()); } }, 0);" % D,
           "thAt(0);"]
-    for (b, t0) in [(ground_at(t), t) for t in times[1:]]:
-        js.append("tl.set('#th-p', { attr: { stroke: '%s' } }, %.3f);" % (E.theme(tok, b)[role], t0))
+    cur = color
+    for t0 in sorted(set(t for t in list(times[1:]) + [float(g) for g in grounds] if t > times[0])):
+        c = E.theme(tok, ground_at(t0))[role]
+        if c != cur:
+            js.append("tl.set('#th-p', { attr: { stroke: '%s' } }, %.3f);" % (c, t0))
+            cur = c
     spans = [[times[0], round(times[0] + DRAW, 3)]] + [[t, round(t + MORPH, 3)] for t in times[1:]]
     return html, js, spans
 

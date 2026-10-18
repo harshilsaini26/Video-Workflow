@@ -49,6 +49,21 @@ class Shapes(unittest.TestCase):
         self.assertTrue(thread.validate({"keys": []}, words))
         self.assertTrue(thread.validate(dict(THREAD, color="neon"), words))
 
+    def test_bad_key_data_is_named_never_a_traceback(self):
+        import thread
+        words = words30()
+        for bad, named in (({"x": "540"}, "key 0"), ({"to": None}, "key 0"), ({"x": True}, "key 0")):
+            spec = copy.deepcopy(THREAD)
+            spec["keys"][0].update(bad)
+            errs = thread.validate(spec, words)
+            self.assertTrue(any(e.startswith(named) and "number" in e for e in errs), (bad, errs))
+        spec = copy.deepcopy(THREAD)
+        spec["keys"][2]["period"] = 0
+        self.assertTrue(any(e.startswith("key 2") and "period" in e for e in thread.validate(spec, words)))
+        for width in ("thick", None, True):
+            self.assertTrue(any("width" in e for e in thread.validate(dict(THREAD, width=width), words)), width)
+        self.assertTrue(any(e.startswith("key 0") for e in thread.validate({"keys": ["drop"]}, words)))
+
     def test_no_key_runs_through_the_captions(self):
         # the captions are the one place the line must never cross (it would strike through the words being said):
         # a stem down the middle into a loop below them, or a wave at their height, is refused with the key named
@@ -63,6 +78,34 @@ class Shapes(unittest.TestCase):
         edge = copy.deepcopy(THREAD)
         edge["keys"][0].update({"x": 1040, "to": 1600})               # down the outer edge, clear of the caption column
         self.assertEqual(thread.validate(edge, words), [])
+
+
+class Continuity(unittest.TestCase):
+    def test_a_held_wave_hands_its_scroll_to_the_next_morph(self):
+        # the wave scrolls while it holds; the next key morphs from where it has got to, never from a jump back
+        import thread
+        words = words30()
+        tok = E.load_tokens()
+        html, js, _ = thread.render(THREAD, words, tok, 20.0, lambda t: "base")
+        page = "\n".join(js)
+        offs = json.loads(re.search(r"const TH_O = (\[[^\]]*\]);", page).group(1))
+        t2, t3 = t_word(19) - E.LEAD, t_word(26) - E.LEAD
+        self.assertEqual(offs[:3], [0, 0, 0])
+        self.assertAlmostEqual(offs[3], min(thread.SCROLL_MAX, (t3 - t2 - thread.MORPH) * thread.SCROLL), places=0)
+        self.assertIn("TH_O[i]", page)                                   # the outgoing points start where they were
+        keys = json.loads(re.search(r"const TH_K = (\[.*?\]\]\]);", page).group(1))
+        self.assertEqual([round(p[0] - q[0], 1) for p, q in zip(keys[3], keys[2])], [offs[3]] * len(keys[2]))   # off lifts straight up
+        self.assertIn("Math.min(%s" % thread.SCROLL_MAX, page.replace(" ", ""))   # and a long hold never shows the wave's end
+
+    def test_the_line_changes_colour_with_the_ground_not_only_on_its_keys(self):
+        import thread
+        words = words30()
+        tok = E.load_tokens(look="paper")
+        ground = lambda t: "ink" if 2.0 <= t < 3.0 else "base"           # an ink scene with no key in it
+        _, js, _ = thread.render(THREAD, words, tok, 20.0, ground, grounds=[2.0, 3.0])
+        page = "\n".join(js)
+        self.assertIn("tl.set('#th-p', { attr: { stroke: '%s' } }, 2.000);" % E.theme(tok, "ink")["ink"], page)
+        self.assertIn("tl.set('#th-p', { attr: { stroke: '%s' } }, 3.000);" % E.theme(tok, "base")["ink"], page)
 
 
 class OnThePage(unittest.TestCase):

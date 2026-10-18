@@ -4,7 +4,8 @@ loads this file). The scene runs from word 1; its items land on word 2 and later
 The pictures are placeholders that make-cases.py (and the theme and layout tests) write next to the case's storyboard:
 any "src" anywhere in the data gets one. A name ending in -<W>x<H> (before its extension) gives that size, so a case
 can ask for an odd aspect ("banner-3000x1000.png" is a 3:1 banner, "tall-500x1000.png" a 1:2 cut-out); a name without
-one gets the default size (see make-cases.py images()). The placeholders are opaque PNGs (no alpha): the JPEG case.
+one gets the default size (see make-cases.py images()). The placeholders are PNGs with alpha (cut-outs); the
+opaque case (a JPEG) is in test_scenes_e1.
 """
 
 

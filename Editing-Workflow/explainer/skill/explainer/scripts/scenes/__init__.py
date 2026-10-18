@@ -140,11 +140,21 @@ class Ctx:
 
     def asset(self, rel):
         """Copy a project file (a path relative to storyboard.json) next to the page as assets/<id>-<name>; returns
-        (the page's relative path, the source's full path), or fails naming the missing file."""
+        (the page's relative path, the source's full path), or fails naming the missing file. Windows backslashes are
+        fine; two files with the same name from different folders get their own copies."""
+        rel = str(rel).replace("\\", "/")
         src = rel if os.path.isabs(rel) else os.path.join(self.spec_dir, rel)
         if not os.path.isfile(src):
             self.fail("no file at %s (paths are relative to storyboard.json: %s)" % (rel, src))
         name = "%s-%s" % (self.id, os.path.basename(src))
+        taken = self.__dict__.setdefault("_assets", {})
+        if taken.get(name, src) != src:              # the same name from another folder: number it
+            base, ext = os.path.splitext(name)
+            k = 2
+            while taken.get("%s-%d%s" % (base, k, ext), src) != src:
+                k += 1
+            name = "%s-%d%s" % (base, k, ext)
+        taken[name] = src
         os.makedirs(os.path.join(self.out_dir, "assets"), exist_ok=True)
         shutil.copy(src, os.path.join(self.out_dir, "assets", name))
         return "assets/" + name, src
@@ -153,7 +163,7 @@ class Ctx:
         """A creator's image (a path relative to storyboard.json; Windows backslashes are fine) copied next to the page:
         (the page's relative path, width, height), its size read from its own header (imagesize.py, no PIL)."""
         import imagesize
-        page, src = self.asset(str(rel).replace("\\", "/"))
+        page, src = self.asset(rel)
         try:
             w, h = imagesize.size(src)
         except ValueError as e:

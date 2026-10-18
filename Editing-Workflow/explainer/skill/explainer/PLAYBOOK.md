@@ -196,8 +196,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    runs from scene to scene. Keys `{"at", "shape", ...}` in time order, shapes `drop`, `loop`, `wave`, `rule`,
    `underline`, `off`; it draws on at the first key and morphs on each later key's word. It runs above the ground and
    under the scenes and the captions, may pass behind a scene's words (E5 treats it as the ground), and each morph is
-   a change for E4. It never runs through the captions (y 1130 to 1235, x 150 to 930; E3 names the key): a stem goes
-   down the outer edge (x under 150 or over 930), a loop or a wave sits above or below the band. Use it for continuity: the line that drops in becomes the loop round a year, the wave under a
+   a change for E4. No key's shape rests in the captions (y 1130 to 1235, x 150 to 930; E3 names the key): a stem goes
+   down the outer edge (x under 150 or over 930), a loop or a wave sits above or below the band (a morph across the
+   band passes behind the captions, under their halo). Use it for continuity: the line that drops in becomes the loop round a year, the wave under a
    sound, the ruler of a timeline; take it `off` when the story moves on.
 13. **Images** are the creator's (`src`, relative to storyboard.json; PNG, JPEG, WebP or GIF; sized from their own
    headers): a product cut-out in `product-hero`, photos in `photo-grid`, each photo with a `credit` shown on it (E3

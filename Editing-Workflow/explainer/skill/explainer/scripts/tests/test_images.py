@@ -21,6 +21,21 @@ def jpeg_bytes(w, h):
     return b"\xff\xd8" + app0 + sof0 + b"\xff\xd9"
 
 
+def exif_jpeg_bytes(w, h, orientation, order=b"MM"):
+    # a phone photo: stored w x h, with an EXIF orientation tag (6 and 8: turned a quarter, so shown h x w)
+    pk = (lambda f, *v: struct.pack(">" + f, *v)) if order == b"MM" else (lambda f, *v: struct.pack("<" + f, *v))
+    tiff = order + pk("H", 42) + pk("I", 8) + pk("H", 1) + pk("HHI", 0x0112, 3, 1) + pk("H", orientation) + b"\x00\x00" + pk("I", 0)
+    app1 = b"\xff\xe1" + struct.pack(">H", 2 + 6 + len(tiff)) + b"Exif\x00\x00" + tiff
+    sof0 = b"\xff\xc0" + struct.pack(">HBHHB", 11, 8, h, w, 1) + b"\x01\x11\x00"
+    return b"\xff\xd8" + app1 + sof0 + b"\xff\xd9"
+
+
+def rgb_png_bytes(w, h):
+    raw = b"".join(b"\x00" + b"\x80\x80\x80" * w for _ in range(h))
+    chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
+
+
 def webp_bytes(w, h):
     vp8x = b"VP8X" + struct.pack("<I", 10) + b"\x00\x00\x00\x00" + (w - 1).to_bytes(3, "little") + (h - 1).to_bytes(3, "little")
     return b"RIFF" + struct.pack("<I", 4 + len(vp8x)) + b"WEBP" + vp8x
@@ -52,6 +67,48 @@ class Sizes(unittest.TestCase):
         p = write(os.path.join(d, "x.png"), "not an image")
         with self.assertRaisesRegex(ValueError, "not a PNG, JPEG, WebP or GIF"):
             imagesize.size(p)
+
+    def test_a_phone_photo_turned_by_exif_is_sized_as_shown(self):
+        # a portrait phone photo is stored 4032x3024 with orientation 6; the browser draws it 3024x4032
+        import imagesize
+        d = scratch(self)
+        for k, (o, order) in enumerate(((6, b"MM"), (8, b"II"), (1, b"MM"), (3, b"II"))):
+            p = os.path.join(d, "p%d.jpg" % k)
+            with open(p, "wb") as f:
+                f.write(exif_jpeg_bytes(4032, 3024, o, order))
+            self.assertEqual(imagesize.size(p), (3024, 4032) if o in (5, 6, 7, 8) else (4032, 3024), (o, order))
+
+    def test_alpha_says_whether_an_image_can_be_a_cut_out(self):
+        import imagesize
+        d = scratch(self)
+        for name, data, want in (("a.png", png_bytes(8, 8), True), ("b.png", rgb_png_bytes(8, 8), False),
+                                 ("c.jpg", jpeg_bytes(8, 8), False), ("d.webp", webp_bytes(8, 8), False)):
+            p = os.path.join(d, name)
+            with open(p, "wb") as f:
+                f.write(data)
+            self.assertEqual(imagesize.alpha(p), want, name)
+
+    def test_two_files_with_the_same_name_stay_apart(self):
+        # IMG_0001.jpg from two folders: each keeps its own copy next to the page
+        d = scratch(self)
+        for sub, (w, h) in (("a", (40, 30)), ("b", (30, 40))):
+            os.makedirs(os.path.join(d, sub), exist_ok=True)
+            with open(os.path.join(d, sub, "photo.png"), "wb") as f:
+                f.write(png_bytes(w, h))
+        ctx = ctx_for(d)
+        (pa, wa, ha), (pb, wb, hb) = ctx.image("a/photo.png"), ctx.image("b/photo.png")
+        self.assertNotEqual(pa, pb)
+        self.assertEqual(((wa, ha), (wb, hb)), ((40, 30), (30, 40)))
+        import imagesize
+        self.assertEqual(imagesize.size(os.path.join(d, "public", pb)), (30, 40))
+
+    def test_backslash_paths_resolve_for_every_asset(self):
+        d = scratch(self)
+        os.makedirs(os.path.join(d, "assets"), exist_ok=True)
+        with open(os.path.join(d, "assets", "logo.png"), "wb") as f:
+            f.write(png_bytes(10, 10))
+        rel, src = ctx_for(d).asset("assets\\logo.png")
+        self.assertTrue(os.path.isfile(src) and os.path.isfile(os.path.join(d, "public", rel)))
 
     def test_backslash_src_resolves(self):
         # a storyboard written on Windows: assets\earbuds.png, relative to storyboard.json

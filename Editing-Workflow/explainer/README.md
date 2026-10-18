@@ -44,7 +44,7 @@ explainer/
 │       ├── explainer_lib.py        shared: word anchors, the scene area, the looks, text measured with real glyph widths
 │       ├── scenes/                 one module per scene type (48, custom included), found without a list
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
-│       └── tests/                  436 tests (python3 -m unittest discover -s tests -t .)
+│       └── tests/                  446 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
     explainer-writer.md · explainer-voice.md · explainer-director.md · explainer-animator.md
 ```
@@ -65,7 +65,7 @@ explainer/
 | A small widget in an empty frame | every library scene is scaled up (to 1.8x) to fill the scene area, y 345 to 1105, the centre of the frame, with small captions under it (44 px with a soft halo, y 1130 to 1235, the one bottom line for any text) and bare shapes running on to y 1650; no ease overshoots, nothing breathes without a reason, every cut is velocity-matched; the hook is kinetic type from data, and custom scenes are kept for what the library can't draw ([MOTION.md](skill/explainer/MOTION.md)) | §E6 |
 | Slides instead of a video | build-up scenes that grow on the words, with empty slots that fill as they are said (never ghost text); objects instead of boxes: a chat, a document, a hero number, a prompt bar, an editor's timeline, a reel feed and more (47 library scenes); automatic transitions, real logos and real page screenshots | §E4, §E6 |
 | A reel that looks like slides, not a magazine | the `paper` look (`"look": "paper"`): warm paper, near-black ink, one red accent and three typefaces, a wide heavy grotesque for headlines (Archivo 125% 800), a serif italic for asides, mono for labels; a headline layer puts a big top-left headline over any scene, sized to the fewest lines that stay big | §E4.6, §E4.11, MOTION §1.6 |
-| Nothing ties the scenes together | the thread: one line through the whole reel that drops in, loops, turns into a wave, a ruler or an underline on the voice's words and lifts off at the end; it never crosses the captions (E3) | §E4.12 |
+| Nothing ties the scenes together | the thread: one line through the whole reel that drops in, loops, turns into a wave, a ruler or an underline on the voice's words and lifts off at the end; no shape of it rests in the captions (E3) | §E4.12 |
 | A product or a place you can only show as a picture | `product-hero` (a cut-out with the title behind it, notes drawn on with a leader and a label), `photo-grid` (one to four photos, each credited), plus waveforms, a mode switch, a step chart, line art drawn on, a price sticker and a crossed-out list | §E4.13 |
 | Every scene on the same ground | four grounds with a rhythm: the hook on ink, the payoff and every third scene on blue, the rest light; every colour checked at 3:1 or better on its ground by E5 | §E6 |
 | Two scenes on screen at once | the old scene leaves on the cut and the next enters on it; E5 looks at every handover, 1/30 s apart | §E4 |
@@ -216,7 +216,7 @@ flowchart TD
 | `preflight.py`, `skill-version.py`, `new-version.py` | the machine prepared once; the skill pinned at the brief; a clean folder per version | in `test_sops.py` and `test_portable.py` (every text file opened as UTF-8, so Windows passes) |
 | theme | both looks (Latte and paper), every role pair at its WCAG ratio, every colour on every scene case in the look's palette | 5 |
 | `headline.py`, the looks, the hero face | the headline's size (120 to 64 px, fewest lines), the room it leaves the scene, the paper palette and fonts, the hero face on every hero selector, the planner's look and word anchors | in `test_editorial.py` |
-| `thread.py` | every shape at 96 points, keys in time order, drawn on and morphed on its words, seek-safe, behind the scenes and captions, never through the captions | 8 |
+| `thread.py` | every shape at 96 points, keys in time order, drawn on and morphed on its words, seek-safe, behind the scenes and captions, no shape resting in the captions, bad key data named, a held wave handing on its scroll, its colour on every ground | 12 |
 | `imagesize.py`, `scenes/_annotate.py` | image sizes from their headers, notes on an image that fit or are refused by name | in `test_images.py` |
 | `scenes/kinetic.py` | the kinetic hook: pieces on their words, the accent, bad data refused, any hook fits its width | 5, and the planner's kinetic shorthand |
 | `explainer_lib.py` | anchors, tokens, glyph-width text measuring | 5 |
@@ -224,7 +224,7 @@ flowchart TD
 | end to end | script-check → fake voice → alignment → compose → beat-check → `hyperframes check` → a 60 fps render → the kit's `verify-render.py --res 1080x1920` | 1 (needs FFmpeg, the kit, HyperFrames and a local GSAP), plus 1 with real Kokoro and Parakeet |
 
 **How it was verified** (2026-10-14 to 2026-10-18, on Linux with HyperFrames 0.8.157 to 0.8.171, and Chromium):
-- the whole suite: 436 tests, all passing; 2 skipped where Kokoro is not installed (2026-10-18, after the
+- the whole suite: 446 tests, all passing; 2 skipped where Kokoro is not installed (2026-10-18, after the
   editorial pass: the paper look, the headline layer, the thread and nine new scenes);
 - a 33 s paper-look demo (USB-C, with stand-in images) passed E1 to E5 before rendering, then E6 and
   `verify-render.py` on the render;

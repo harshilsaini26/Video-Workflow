@@ -53,8 +53,11 @@ def in_paper(fn):
 
 
 class Case(unittest.TestCase):
-    def build(self, scene, bg="mantle", look=None, images=None, vendor=None, headline=None):
+    def build(self, scene, bg="mantle", look=None, images=None, vendor=None, headline=None, files=None):
         d = scratch(self)
+        for name, data in (files or {}).items():
+            with open(os.path.join(d, name), "wb") as f:
+                f.write(data)
         write(os.path.join(d, "transcript.json"), {"words": words30()})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
         for name, (w, h) in dict(IMAGES, **(images or {})).items():
@@ -169,6 +172,23 @@ class ProductHero(Case):
         self.fails(dict(sc, title="An extraordinarily overlong title that never fits three lines"), "title")
         self.fails(dict(sc, src="missing.png"), "no file at missing.png")
         self.fails(dict(sc, float="yes"), "float")
+
+    def test_an_opaque_image_under_a_title_fails_naming_the_fix(self):
+        # a JPEG (or a PNG with no alpha) is a rectangle: the title behind it would be hidden, so E3 says what to do;
+        # without a title an opaque photo is fine (the JPEG case)
+        from .test_images import jpeg_bytes, rgb_png_bytes
+        for name, data in (("photo.jpg", jpeg_bytes(1200, 1200)), ("flat.png", rgb_png_bytes(1200, 1200))):
+            r, _ = self.build(dict(GOOD["product-hero"], src=name), files={name: data})
+            self.assertNotEqual(r.returncode, 0, r.stdout)
+            self.assertIn("no transparency", r.stdout)
+            self.assertIn("headline", r.stdout)
+            sc = {k: v for k, v in GOOD["product-hero"].items() if k not in ("title", "title_at")}
+            self.ok(dict(sc, src=name), files={name: data})
+
+    def test_an_image_is_never_stretched_by_the_browser(self):
+        # the box comes from the header; if the browser draws it otherwise (an EXIF turn it can't see), it is contained
+        self.assertRegex(REGISTRY["product-hero"].CSS, r"\.ph-fl > img \{[^}]*object-fit:contain")
+        self.assertRegex(REGISTRY["price-sticker"].CSS, r"\.ps-img \{[^}]*object-fit:contain")
 
     def test_the_title_sits_behind_the_image_in_the_hero_face(self):
         for look in ("latte", "paper"):

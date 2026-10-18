@@ -68,10 +68,11 @@ def line_width(scene, size):
 
 
 def size(scene):
-    """The number's size: the largest that fits the narrow column, else the largest that fits the full width."""
-    for col in (NARROW, WIDE):
+    """The number's size: the largest that fits the narrow column at 200 or more, else the largest that fits the full
+    width (down to 150, which the wide hero face needs)."""
+    for col, floor in ((NARROW, 200), (WIDE, SIZES[-1])):
         for s in SIZES:
-            if line_width(scene, s) <= col:
+            if s >= floor and line_width(scene, s) <= col:
                 return s
     return SIZES[-1]
 

@@ -12,12 +12,12 @@ COURSERA = '<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/sv
 
 
 def png(path, w, h):
-    """A one-colour PNG of w x h (enough for the header the scenes read)."""
-    raw = b"".join(b"\x00" + b"\x30\x60\xc0" * w for _ in range(h))
+    """A one-colour PNG of w x h with an alpha channel (a cut-out; enough for the header the scenes read)."""
+    raw = b"".join(b"\x00" + b"\x30\x60\xc0\xff" * w for _ in range(h))
     chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as f:
-        f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) +
+        f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0)) +
                 chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
     return path
 

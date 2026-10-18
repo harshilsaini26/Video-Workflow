@@ -220,6 +220,22 @@ class Headline(unittest.TestCase):
 
 
 class HeroFace(unittest.TestCase):
+    def test_a_latte_stat_keeps_its_size(self):
+        # the sizes down to 150 are for the wide hero face; a latte figure too wide for the narrow column at 200 still
+        # takes the full width at its own size, as before the paper look
+        from scenes import REGISTRY
+        stat = REGISTRY["stat"]
+        long = {"type": "stat", "value": 25000, "prefix": "$", "label": "the median cost of one data breach"}
+        E.use_look(E.load_tokens())
+        self.assertEqual(stat.size(long), 210)
+        self.assertEqual(stat.size({"type": "stat", "value": 8, "unit": "HOURS"}), 260)
+        try:
+            E.use_look(E.load_tokens(look="paper"))
+            self.assertGreaterEqual(stat.size(long), 150)
+            self.assertLessEqual(stat.line_width(long, stat.size(long)), stat.WIDE)
+        finally:
+            E.use_look(E.load_tokens())
+
     HOOK = {"type": "kinetic", "id": "hk", "bg": "base", "in": "word:0", "out": "word:8", "big": {"text": "5", "at": "word:0"},
             "words": [{"text": "STEPS", "at": "word:1"}], "line": {"text": "AI GUESSES", "at": "word:1"}, "source": "s1"}
 
