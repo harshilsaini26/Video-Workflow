@@ -4,7 +4,8 @@ beside it and a label line under it.
 Every digit sits in a cell as wide as the widest digit, and the figure is right-aligned in a box as wide as the final
 number: the count never jumps, nothing beside it moves, and its widest moment is its final width. Leading cells stay
 out of the row until the count reaches them, so the prefix hugs the first digit. The number is 260 px when it fits the
-narrow column, smaller (down to 200 px) when it is long; the composer then scales it to 200 to 320 px on the frame.
+narrow column, smaller (down to 150 px: the paper look's wide face) when it is long; the composer then scales it up
+(at most 1.4x, to 320 px) on the frame.
 
   {"type": "stat", "value": 363, "prefix": "+$", "unit": "a month", "label": "what the average user saves",
    "at": "word:5", "source": "s1"}
@@ -14,8 +15,9 @@ import explainer_lib as E
 from scenes import js_obj, line_px, need, widest
 
 TYPE = "stat"
+HERO_CSS = ".stat-fig, .stat-unit"   # the figure, in the look's hero face (E.hero()), measured with its glyphs
 NEEDS_SOURCE = True
-SIZES = (260, 250, 240, 230, 220, 210, 200)   # the number, DM Sans 700, line height 1: the largest that fits
+SIZES = (260, 250, 240, 230, 220, 210, 200, 190, 180, 170, 160, 150)   # the number, the hero face, line height 1: the largest that fits
 NARROW, WIDE = 780, 950
 DRAWN_MAX = 320                  # the most the number is drawn at, after the composer's scale
 UNIT = 84 / 260.0                # the unit, inline on the number's baseline, at this share of its size
@@ -41,7 +43,7 @@ def _final(scene):
 
 def _cell(ch):
     """The width of a cell, in em: a digit's is the widest digit's, so the count never moves."""
-    g = E.glyphs()["display700"]
+    g = E.glyphs()[E.hero()["glyphs"]]
     return max(g[d] for d in "0123456789") if ch.isdigit() else g.get(ch, 0.6)
 
 
@@ -52,7 +54,8 @@ def _unit(size):
 def fig_width(scene, size):
     """The figure's box: the prefix, one cell per character of the final number, the suffix (px)."""
     cells = sum(_cell(c) for c in _final(scene)) * size
-    return int(cells + E.text_width(scene.get("prefix", ""), size) + E.text_width(scene.get("suffix", ""), size)) + SLACK
+    f = E.hero()["glyphs"]
+    return int(cells + E.text_width(scene.get("prefix", ""), size, f) + E.text_width(scene.get("suffix", ""), size, f)) + SLACK
 
 
 def line_width(scene, size):
@@ -60,7 +63,7 @@ def line_width(scene, size):
     w = fig_width(scene, size)
     if scene.get("unit"):
         u, gap = _unit(size)
-        w += gap + int(E.text_width(scene["unit"], u)) + 1
+        w += gap + int(E.text_width(scene["unit"], u, E.hero()["glyphs"])) + 1
     return w
 
 
@@ -149,7 +152,7 @@ def render(scene, ctx, box):
               % (sid, json.dumps(float(scene["value"])), dur, ctx.tokens["motion"]["enter_ease"], sid,
                  "%s_n.v" % sid if dec else "Math.round(%s_n.v)" % sid, start))
     # counted: each cell closes to its own digit's width (DM Sans has no tabular figures; "24" must not read "2 4")
-    g = E.glyphs()["display700"]
+    g = E.glyphs()[E.hero()["glyphs"]]
     for k, ch in enumerate(final):
         natural = round(g.get(ch, _cell(ch)) * s, 2)
         if natural < _cell(ch) * s - 0.01:

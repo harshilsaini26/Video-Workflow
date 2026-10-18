@@ -12,6 +12,7 @@ import explainer_lib as E
 from scenes import js_obj
 
 TYPE = "giant-captions"
+HERO_CSS = ".gc-c"                   # set in the look's hero face (E.hero()), measured with its glyphs
 MAX_SCALE = 1.0                  # it sizes itself to its width
 BAKED = True                     # its sizes depend on the width it is given: measured there
 BIG, SMALL = 200, 120            # a phrase's size: as big as its width allows, between these
@@ -41,7 +42,7 @@ def validate(scene):
 def phrases(words, width):
     """[(size, [(index, word)])]: the words split into phrases that each stay at SMALL or larger at this width."""
     out, cur = [], []
-    fits = lambda ws: E.text_width(" ".join(w["text"] for _, w in ws), SMALL, spacing=-0.03) <= width - 8
+    fits = lambda ws: E.text_width(" ".join(w["text"] for _, w in ws), SMALL, E.hero()["glyphs"], spacing=-0.03) <= width - 8
     for i, w in words:
         if cur and (len(cur) >= MAX_WORDS or not fits(cur + [(i, w)]) or re.search(r"[.,!?;:]$", cur[-1][1]["text"])):
             out.append(cur)
@@ -51,7 +52,7 @@ def phrases(words, width):
         out.append(cur)
     sized = []
     for ws in out:
-        w1 = E.text_width(" ".join(w["text"] for _, w in ws), 100, spacing=-0.03) / 100.0
+        w1 = E.text_width(" ".join(w["text"] for _, w in ws), 100, E.hero()["glyphs"], spacing=-0.03) / 100.0
         sized.append((max(SMALL, min(BIG, int((width - 8) / max(w1, 1e-6)))), ws))
     return sized
 

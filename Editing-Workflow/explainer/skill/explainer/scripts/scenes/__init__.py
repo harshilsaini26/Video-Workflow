@@ -213,12 +213,13 @@ def line_px(size, lh):
     return int(round(size * lh))
 
 
-def widest(pairs, pad=0):
-    """The width of the widest single word among [(text, font size)], plus padding."""
+def widest(pairs, pad=0, font="display700", spacing=0.0):
+    """The width of the widest single word among [(text, font size)], plus padding (font: a glyphs() table, such as
+    E.hero()["glyphs"] for words set in the look's hero face)."""
     best = 0
     for text, size in pairs:
         for w in str(text or "").split():
-            best = max(best, E.text_width(w, size))
+            best = max(best, E.text_width(w, size, font, spacing=spacing))
     return int(math.ceil(best)) + pad
 
 

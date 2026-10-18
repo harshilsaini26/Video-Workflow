@@ -157,7 +157,7 @@ def png(path, w, h):
                 chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 
 
-def compose(root, vendor, only=None):
+def compose(root, vendor, only=None, look=None):
     cases = []
     for typ, variants in CASES.items():
         if only and typ not in only:
@@ -176,12 +176,12 @@ def compose(root, vendor, only=None):
                     png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
             scene = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:1", "out": D}, **data)
             with open(os.path.join(d, "storyboard.json"), "w", encoding="utf-8") as f:
-                json.dump({"id": case, "scenes": [LEAD_IN, scene]}, f)
+                json.dump(dict({"id": case, "scenes": [LEAD_IN, scene]}, **({"look": look} if look else {})), f)
             r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "explainer-compose.py"), "--spec", os.path.join(d, "storyboard.json"),
                                 "--out", os.path.join(d, "public"), "--vendor", vendor], capture_output=True, text=True, encoding="utf-8", errors="replace")
             if r.returncode:
                 sys.exit("%s: %s" % (case, r.stdout + r.stderr))
-            cases.append({"case": case, "type": typ, "scene": scene})
+            cases.append(dict({"case": case, "type": typ, "scene": scene}, **({"look": look} if look else {})))
     with open(os.path.join(root, "cases.json"), "w", encoding="utf-8") as f:
         json.dump(cases, f, indent=1)
     print("composed %d cases in %s" % (len(cases), root))
@@ -193,7 +193,8 @@ def merge(root, measured, fixture=FIXTURE):
     for line in open(measured, encoding="utf-8"):
         m = json.loads(line)
         c = cases[m["case"]]
-        rows.append({"case": m["case"], "type": c["type"], "scene": c["scene"], "width": m["width"], "height": m["height"]})
+        rows.append(dict({"case": m["case"], "type": c["type"], "scene": c["scene"], "width": m["width"], "height": m["height"]},
+                         **({"look": c["look"]} if c.get("look") else {})))
     os.makedirs(os.path.dirname(fixture), exist_ok=True)
     with open(fixture, "w", encoding="utf-8") as f:
         f.write("[\n" + ",\n".join(json.dumps(r) for r in rows) + "\n]\n")
@@ -207,6 +208,7 @@ if __name__ == "__main__":
     ap.add_argument("--merge")
     ap.add_argument("--only", help="comma-separated scene types")
     ap.add_argument("--fixture", help="write tests/fixtures/heights-<NAME>.json instead of heights.json")
+    ap.add_argument("--look", help="compose the cases in this look (paper); the rows record it")
     a = ap.parse_args()
     fx = os.path.join(SCRIPTS, "tests", "fixtures", "heights-%s.json" % a.fixture) if a.fixture else FIXTURE
-    merge(a.dir, a.merge, fx) if a.merge else compose(a.dir, a.vendor, set(a.only.split(",")) if a.only else None)
+    merge(a.dir, a.merge, fx) if a.merge else compose(a.dir, a.vendor, set(a.only.split(",")) if a.only else None, a.look)

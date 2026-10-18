@@ -431,6 +431,12 @@ def main():
             js.extend(gone)
         moments["spans"] += [[round(a_, 3), round(b_, 3)] for a_, b_ in filter(None, map(line_span, lines))]
 
+    hero = E.hero()
+    if hero["family"] != "DM Sans":       # the look's hero face on every scene's big words (latte keeps DM Sans 700)
+        sel = sorted({m_.HERO_CSS for _, m_, _, _, _, _ in timed if getattr(m_, "HERO_CSS", None)})
+        if sel:
+            css["~hero"] = "  %s { font-family:'%s'; font-stretch:%s; font-weight:%d; }\n" % (", ".join(sel), hero["family"], hero["stretch"], hero["weight"])
+
     # ---- backgrounds ----------------------------------------------------------------------------------------------
     bgs, bg_js = [], []
     for k, (sc, _, sbg, t_in, _, _) in enumerate(timed):

@@ -17,6 +17,7 @@ import explainer_lib as E
 from scenes import js_obj, need
 
 TYPE = "kinetic"
+HERO_CSS = ".kn-m > span"            # set in the look's hero face (E.hero()), measured with its glyphs
 GROW = 1.8                        # the hook is the reel's biggest moment: it may grow as far as any scene
 BAKED = True                      # its sizes are worked out for the width it is given: measured at that width
 WIDE_W, NARROW_W = E.L.SAFE["right"] - E.L.SAFE["left"], E.L.NARROW["right"] - E.L.NARROW["left"]   # 950, 780
@@ -38,7 +39,7 @@ def tuck(size):
 
 def _rows(scene):
     """The natural width of each row: the top row (big and words), the line, the punch."""
-    w = lambda text, size: E.text_width(text, size, spacing=TRACK)
+    w = lambda text, size: E.text_width(text, size, E.hero()["glyphs"], spacing=TRACK)
     top = max([w(x["text"], WORD) for x in scene.get("words") or []] or [0])
     if scene.get("big"):
         top += w(scene["big"]["text"], BIG) + (GAP_X if scene.get("words") else 0)

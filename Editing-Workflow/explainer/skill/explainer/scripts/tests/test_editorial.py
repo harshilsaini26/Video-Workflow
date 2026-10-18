@@ -219,5 +219,64 @@ class Headline(unittest.TestCase):
         self.assertGreaterEqual(headline.KICKER, 28)
 
 
+class HeroFace(unittest.TestCase):
+    HOOK = {"type": "kinetic", "id": "hk", "bg": "base", "in": "word:0", "out": "word:8", "big": {"text": "5", "at": "word:0"},
+            "words": [{"text": "STEPS", "at": "word:1"}], "line": {"text": "AI GUESSES", "at": "word:1"}, "source": "s1"}
+
+    def board(self, look):
+        import copy
+        b = copy.deepcopy(BOARD)
+        b["scenes"] = [dict(self.HOOK), dict(b["scenes"][1], **{"in": "word:8"}), b["scenes"][2]]
+        b["look"] = look
+        return b
+
+    def test_the_big_words_take_the_paper_hero_face(self):
+        from scenes import REGISTRY
+        r, d = compose(self, self.board("paper"))
+        self.assertEqual(r.returncode, 0, r.stdout)
+        page = read(os.path.join(d, "public", "index.html"))
+        rule = re.search(r"\n  ([^{}\n]+) \{ font-family:'Archivo'; font-stretch:125%; font-weight:800; \}", page)
+        self.assertIsNotNone(rule, page[:3000])
+        for t in ("kinetic", "giant-captions", "title-card", "stat"):
+            self.assertTrue(REGISTRY[t].HERO_CSS)
+        self.assertEqual(rule.group(1), REGISTRY["kinetic"].HERO_CSS)       # the selectors of the scenes on this page only
+
+    def test_a_title_cards_widest_word_is_measured_in_the_hero_face(self):
+        # the composer never gives a scene less than its min_width: in paper the title's widest word is wider
+        from scenes import REGISTRY
+        tc = REGISTRY["title-card"]
+        sc = {"type": "title-card", "kicker": "STEP 3", "title": "Build the three statements"}
+        latte = tc.min_width(sc)
+        E.use_look(E.load_tokens(look="paper"))
+        try:
+            paper = tc.min_width(sc)
+            word = E.text_width("STATEMENTS".lower(), tc.T_SIZE, "wide800", spacing=tc.T_TRACK)
+        finally:
+            E.use_look(E.load_tokens())
+        self.assertGreater(paper, latte)
+        self.assertGreaterEqual(paper, word)
+
+    def test_latte_pages_carry_no_hero_rule(self):
+        r, d = compose(self, self.board("latte"))
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertNotIn("font-stretch:125%", read(os.path.join(d, "public", "index.html")))
+
+    def test_the_scenes_measure_with_the_hero_glyphs(self):
+        # a kinetic hook in the wide face takes more room than in DM Sans: its rows are measured in the face it is set in
+        from scenes import REGISTRY
+        kn = REGISTRY["kinetic"]
+        sc = dict(self.HOOK)
+        latte = kn.min_width(sc)
+        E.use_look(E.load_tokens(look="paper"))
+        try:
+            self.assertGreater(kn.min_width(sc), latte)
+            tc = REGISTRY["title-card"]
+            long = {"type": "title-card", "title": "Retrieval augmented generation explained", "kicker": "THE FIX"}
+            paper_h = tc.height(long, 780)
+        finally:
+            E.use_look(E.load_tokens())
+        self.assertGreaterEqual(paper_h, tc.height(long, 780))
+
+
 if __name__ == "__main__":
     unittest.main()

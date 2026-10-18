@@ -12,6 +12,7 @@ import explainer_lib as E
 from scenes import js_obj, line_px, need, widest
 
 TYPE = "title-card"
+HERO_CSS = ".tc-t"                   # the title, in the look's hero face (E.hero()), measured with its glyphs
 DECOR_KEYS = {"kicker"}               # a chapter number is furniture, not a claim
 HERO = 150                            # the title grows to this size at most
 K_SIZE, K_LH, K_TRACK = 30, 40, 0.24  # kicker: JetBrains Mono 500, letter-spaced
@@ -66,7 +67,7 @@ def _kicker_w(scene):
 
 
 def height(scene, width):
-    h = K_LH + K_GAP + line_px(T_SIZE, T_LH) * E.text_lines(scene["title"], T_SIZE, width, spacing=T_TRACK)
+    h = K_LH + K_GAP + line_px(T_SIZE, T_LH) * E.text_lines(scene["title"], T_SIZE, width, E.hero()["glyphs"], spacing=T_TRACK)
     text, _ = _sub(scene)
     if text:
         h += S_GAP + line_px(S_SIZE, S_LH) * E.text_lines(text, S_SIZE, width, "display500")
@@ -75,7 +76,7 @@ def height(scene, width):
 
 def min_width(scene):
     text, _ = _sub(scene)
-    words = max(widest([(scene["title"], T_SIZE)]) + 2, widest([(text, S_SIZE)]) + 2 if text else 0)
+    words = max(widest([(scene["title"], T_SIZE)], font=E.hero()["glyphs"], spacing=T_TRACK) + 2, widest([(text, S_SIZE)]) + 2 if text else 0)
     return max(words, _kicker_w(scene) + 2 * (RULE_GAP + RULE_MIN) + 4)
 
 
