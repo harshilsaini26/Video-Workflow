@@ -151,6 +151,8 @@ class ScriptCheck(unittest.TestCase):
     # ---- the brief behind a reel that spreads (PLAYBOOK §E1, §E2): advice, so warnings; a misspelt value fails ----
     def brief(self, **over):
         s = script(120, format="how-to", audience="new analysts who freeze at Excel", goal="comment")
+        s["lines"][0]["show"] = s["lines"][0]["say"] = "3 Excel habits that hide your mistakes"
+        s["lines"][0]["source"] = "s1"
         s["lines"][1]["show"] = s["lines"][1]["say"] = "Here is what you do first when the sheet looks scary okay"
         s["lines"][1]["role"] = "step"
         s["lines"][2]["role"] = "step"
@@ -163,6 +165,27 @@ class ScriptCheck(unittest.TestCase):
         r, _ = self.check(self.brief())
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertNotIn("WARN", r.stdout)
+
+    def test_wording_fails_block_e1(self):
+        # plain spoken words (PLAYBOOK §E2): a preamble hook or leaked AI text fails E1, naming the line
+        s = self.brief()
+        s["lines"][0]["show"] = s["lines"][0]["say"] = "Hey guys, in this video, 3 Excel habits"
+        s["lines"][2]["say"] = s["lines"][2]["show"] = "As of my last update this works"
+        r, _ = self.check(s)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("E1 FAIL:", r.stdout)
+        self.assertIn("  - line l0: greeting", r.stdout)
+        self.assertIn("  - line l2: last-update", r.stdout)
+
+    def test_wording_warnings_reach_SCRIPT_md(self):
+        s = self.brief()
+        s["lines"][2]["say"] = s["lines"][2]["show"] = "Here's the thing about the sheet you fear"
+        d = scratch(self)
+        rep = os.path.join(d, "SCRIPT.md")
+        r = run("script-check.py", "--script", write(os.path.join(d, "script.json"), s), "--report", rep)
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("E1 WARN: line l2: here-thing", r.stdout)
+        self.assertIn("line l2: here-thing", read(rep))
 
     def test_a_bare_script_is_told_what_is_missing(self):
         r, _ = self.check(script(120))

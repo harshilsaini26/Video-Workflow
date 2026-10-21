@@ -134,6 +134,19 @@ for key in ("payoff", "cta"):
 
 # ---- the brief: what the reel is for, and the shape that makes it land (warnings) -------------------------------------
 warnings = []
+
+# ---- plain spoken words (PLAYBOOK §E2.9; the kit's wording.py): fails block E1, the rest is for the writer -----------
+notes = []
+sys.path.insert(0, HERE)
+import explainer_lib as E
+if E.kit_dir():
+    _w = E.find_kit("wording").check_lines([{"id": ln.get("id"), "text": ln.get("show", ""), "say": ln.get("say")} for ln in lines],
+                                           rate=rate)
+    errors += _w["fail"]
+    warnings += _w["warn"]
+    notes += _w["note"]
+else:
+    warnings.append("the kit's wording check was not found (install the kit next to this skill): the words were not checked")
 fmt, goal, aud = S.get("format"), S.get("goal"), S.get("audience")
 if fmt is not None and fmt not in FORMATS:
     errors.append("format %r is not one of %s" % (fmt, ", ".join(FORMATS)))
@@ -188,8 +201,8 @@ if a.report:
             out.append("- **%s** %s: %s%s" % (k, v.get("title", ""), v.get("url", ""), (" (%s)" % v["note"]) if v.get("note") else ""))
         else:   # a plain "Publisher, Title, date, link" string
             out.append("- **%s** %s" % (k, v))
-    if warnings:
-        out += ["", "## Worth a look", ""] + ["- " + w for w in warnings]
+    if warnings or notes:
+        out += ["", "## Worth a look", ""] + ["- " + w for w in warnings + notes]
     if errors:
         out += ["", "## Gate E1: FAIL", ""] + ["- " + e for e in errors]
     with open(a.report, "w", encoding="utf-8") as f:
@@ -197,6 +210,8 @@ if a.report:
 
 for w in warnings:
     print("E1 WARN: " + w)
+for n in notes:
+    print("E1 NOTE: " + n)
 if errors:
     print("E1 FAIL: " + summary)
     for e in errors:
