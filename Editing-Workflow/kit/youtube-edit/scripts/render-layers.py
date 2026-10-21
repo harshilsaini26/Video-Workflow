@@ -13,7 +13,7 @@ import argparse, json, os, re, shlex, subprocess, sys
 
 def pix_fmt(path):
     r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=pix_fmt", "-of", "csv=p=0", path],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
     return r.stdout.strip()
 
 
@@ -43,7 +43,7 @@ def main():
         dst = os.path.abspath(os.path.join(a.out, l["name"] + ".mov"))
         cmd = shlex.split(a.hf) + ["render", os.path.abspath(a.public), "-c", l["page"], "--format", "mov", "--fps", fps,
                                    "-o", dst, "--workers", str(a.workers), "--quiet"]
-        r = subprocess.run(cmd, capture_output=True, text=True)
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
         pf = pix_fmt(dst) if os.path.isfile(dst) else ""
         if r.returncode != 0 or not pf.startswith("yuva"):
             bad.append(l["name"])

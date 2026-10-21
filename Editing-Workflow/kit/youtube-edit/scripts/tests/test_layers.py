@@ -107,7 +107,7 @@ class Render(unittest.TestCase):
         r = run("render-layers.py", "--public", os.path.join(d, "public"), "--out", os.path.join(d, "gfx"), "--only", "l0", "--workers", "1")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=pix_fmt,duration", "-of", "json",
-                              os.path.join(d, "gfx", "l0.mov")], capture_output=True, text=True).stdout
+                              os.path.join(d, "gfx", "l0.mov")], capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
         s = json.loads(out)["streams"][0]
         self.assertTrue(s["pix_fmt"].startswith("yuva"), s)
         self.assertAlmostEqual(float(s["duration"]), 0.5, delta=1 / 60.0 + 1e-3)
