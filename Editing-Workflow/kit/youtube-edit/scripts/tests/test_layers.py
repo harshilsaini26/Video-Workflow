@@ -52,6 +52,9 @@ class Pages(unittest.TestCase):
         self.assertEqual((by["l0"]["kind"], by["l0"]["t_in"], by["l0"]["t_out"]), ("host", 0.0, 2.5))
         self.assertEqual((by["l1"]["t_in"], by["l1"]["t_out"]), (2.5, 6.0))
         self.assertEqual((by["ground"]["t_in"], by["ground"]["t_out"]), (0.0, 6.0))
+        # the ground is opaque and runs the whole reel: H.264, not ProRes 4444 (a 33 s ground was 1.7 GB as 4444)
+        self.assertEqual(by["ground"]["ext"], "mp4")
+        self.assertTrue(all(l["ext"] == "mov" for l in layers if l["name"] != "ground"))
         for l in layers:
             self.assertTrue(os.path.isfile(os.path.join(d, "public", l["page"])), l)
             self.assertEqual(l["page"], "layer-%s.html" % l["name"])

@@ -9,7 +9,8 @@ out of every layer page: they reach the editor as their own clips.
 
   python3 layer-pages.py --index videos/<p>/public/index.html
   -> public/layer-<name>.html (next to index.html, so its relative asset paths still resolve) and public/layers.json:
-     [{"name", "kind": "ground|thread|brand|captions|host", "t_in", "t_out", "page"}]
+     [{"name", "kind": "ground|thread|brand|captions|host", "t_in", "t_out", "page", "ext": "mov|mp4"}]
+     (the ground is opaque and runs the whole reel, so it is H.264 .mp4; every other layer is transparent ProRes .mov)
 """
 import argparse, json, os, re, sys
 
@@ -63,7 +64,8 @@ def main():
         rel = "layer-%s.html" % name
         with open(os.path.join(pub, rel), "w", encoding="utf-8") as f:
             f.write(layer_page(page, cid, var, sel, t_in, t_out, minus))
-        out.append({"name": name, "kind": kind, "t_in": round(t_in, 3), "t_out": round(t_out, 3), "page": rel})
+        out.append({"name": name, "kind": kind, "t_in": round(t_in, 3), "t_out": round(t_out, 3), "page": rel,
+                    "ext": "mp4" if kind == "ground" else "mov"})   # the ground is opaque and long: H.264, not ProRes 4444
     with open(os.path.join(pub, "layers.json"), "w", encoding="utf-8") as f:
         json.dump(out, f, indent=1)
     print("LAYERS: %d pages (%s) in %s" % (len(out), ", ".join(l["name"] for l in out), pub))

@@ -100,7 +100,7 @@ def main():
     missing = []
     for s in sections:
         for l in H.load(os.path.join(s, "public", "layers.json"), []):
-            if l["kind"] in ("host", "captions", "brand") and not os.path.isfile(os.path.join(s, "layers", l["name"] + ".mov")):
+            if l["kind"] in ("host", "captions", "brand") and not os.path.isfile(os.path.join(s, "layers", l["name"] + "." + l.get("ext", "mov"))):
                 missing.append("%s/%s" % (os.path.basename(s), l["name"]))
     if missing:
         fail("no clip for %s: make them with python3 \"%s\" --public <section>/public --out <section>/layers"
@@ -155,7 +155,8 @@ def main():
         for l in H.load(os.path.join(pub, "layers.json"), []):
             if l["kind"] not in ("host", "captions", "brand"):
                 continue
-            dst = shutil.copy(os.path.join(s, "layers", l["name"] + ".mov"), os.path.join(media, "gfx", tag + l["name"] + ".mov"))
+            fn = l["name"] + "." + l.get("ext", "mov")
+            dst = shutil.copy(os.path.join(s, "layers", fn), os.path.join(media, "gfx", tag + fn))
             (v_caps if l["kind"] == "captions" else v_cards).clip(dst, off + l["t_in"], off + l["t_out"], duration=l["t_out"] - l["t_in"], name=l["name"])
         for n in H.load(os.path.join(s, "notes.json"), []) or []:
             markers.append((off + float(n["t"]), n.get("name", "Note"), n.get("comment", "")))

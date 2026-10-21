@@ -5,8 +5,8 @@
   python3 render-layers.py --public videos/<p>/public --out videos/<p>/edit/media/gfx [--only l0,l3] [--workers 2]
       [--hf "npx --yes hyperframes@0.8.171"]      # default: $HYPERFRAMES_CMD, else "npx --no-install hyperframes"
 
-Writes <out>/<name>.mov per layer and checks each one has an alpha channel (pix_fmt yuva*); a layer that fails is
-named and the script exits 1 after trying the rest.
+Writes <out>/<name>.mov per transparent layer and checks it has an alpha channel (pix_fmt yuva*), and <out>/ground.mp4
+for the opaque ground (H.264, CRF 18); a layer that fails is named and the script exits 1 after trying the rest.
 """
 import argparse, json, os, re, shlex, subprocess, sys
 
@@ -40,12 +40,13 @@ def main():
     for l in layers:
         if only and l["name"] not in only:
             continue
-        dst = os.path.abspath(os.path.join(a.out, l["name"] + ".mov"))
-        cmd = shlex.split(a.hf) + ["render", os.path.abspath(a.public), "-c", l["page"], "--format", "mov", "--fps", fps,
-                                   "-o", dst, "--workers", str(a.workers), "--quiet"]
+        ext = l.get("ext", "mov")
+        dst = os.path.abspath(os.path.join(a.out, l["name"] + "." + ext))
+        cmd = shlex.split(a.hf) + ["render", os.path.abspath(a.public), "-c", l["page"], "--format", ext, "--fps", fps,
+                                   "-o", dst, "--workers", str(a.workers), "--quiet"] + (["--crf", "18"] if ext == "mp4" else [])
         r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
         pf = pix_fmt(dst) if os.path.isfile(dst) else ""
-        if r.returncode != 0 or not pf.startswith("yuva"):
+        if r.returncode != 0 or not pf or (ext == "mov" and not pf.startswith("yuva")):
             bad.append(l["name"])
             print("  %-10s FAIL %s" % (l["name"], (r.stderr or r.stdout).strip().splitlines()[-1:] if r.returncode else "no alpha (pix_fmt %s)" % pf))
         else:

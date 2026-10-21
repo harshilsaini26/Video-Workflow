@@ -87,7 +87,8 @@ def main():
         print(r.stdout.rstrip())
         if r.returncode != 0:
             fail("the layer clips did not all render (see above)")
-    missing = [l["name"] for l in layers if not os.path.isfile(os.path.join(work, l["name"] + ".mov"))]
+    clip = lambda l: l["name"] + "." + l.get("ext", "mov")
+    missing = [l["name"] for l in layers if not os.path.isfile(os.path.join(work, clip(l)))]
     if missing:
         fail("no clip for %s in %s: make them with python3 \"%s\" --public \"%s\" --out \"%s\""
              % (", ".join(missing), work, kit_script("render-layers.py"), pub, work))
@@ -106,7 +107,7 @@ def main():
         tr = tl.video_track(tname, enabled=tname != "captions (styled)")
         here = [l for l in layers if l["kind"] in kinds]
         for l in here:
-            dst = shutil.copy(os.path.join(work, l["name"] + ".mov"), os.path.join(gfx, l["name"] + ".mov"))
+            dst = shutil.copy(os.path.join(work, clip(l)), os.path.join(gfx, clip(l)))
             tr.clip(dst, l["t_in"], l["t_out"], duration=l["t_out"] - l["t_in"], name=l["name"])
         legend.append(("V%d" % k, tname, ", ".join(l["name"] for l in here) or "(empty)"))
     for k, (tname, fn) in enumerate(AUDIO, 1):

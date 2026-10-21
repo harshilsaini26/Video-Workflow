@@ -19,7 +19,7 @@ def project(test, board=None):
     gfx = os.path.join(d, "layers")                 # render-layers.py writes here; the hand-off copies into edit/media/gfx
     os.makedirs(gfx)
     for n in GFX:
-        write(os.path.join(gfx, n + ".mov"), "stand-in")
+        write(os.path.join(gfx, n + (".mp4" if n == "ground" else ".mov")), "stand-in")
     return d
 
 
@@ -41,6 +41,7 @@ class Layout(unittest.TestCase):
         self.assertEqual((p["width"], p["height"], p["timebase"]), (1080, 1920, 60))
         self.assertEqual([t["name"] for t in p["video"]], ["ground", "thread", "scenes", "brand", "captions (styled)"])
         self.assertEqual([t["enabled"] for t in p["video"]], [True, True, True, True, False])
+        self.assertTrue(p["video"][0]["clips"][0]["pathurl"].endswith("/gfx/ground.mp4"))
         self.assertEqual([t["name"] for t in p["audio"]], ["voice", "music", "sfx"])
         self.assertTrue(all(t["clips"] for t in p["audio"]))
 
