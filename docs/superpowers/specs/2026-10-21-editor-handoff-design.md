@@ -1,37 +1,46 @@
-# Premiere hand-off and human-in-the-loop: design
+# Editor hand-off (filmcraft) and human-in-the-loop: design
 
 Date: 2026-10-21. Status: approved in conversation (sections 1 and 2); this file is for the creator's review.
 
 ## 1. Intent
 
 **What the creator asked for**
-- No finished, rendered reel at the end of a run. Instead, a project the creator opens in **Adobe Premiere Pro** and
+- No finished, rendered reel at the end of a run. Instead, a project the creator opens in a video editor and
   finishes by hand, so the work keeps a human hand and costs fewer agent tokens.
+- The creator's editor is **filmcraft** (github.com/storytold/filmcraft; MIT or Apache-2.0, free, native on macOS,
+  Windows and Linux). The project must also open in Premiere Pro or DaVinci Resolve, so the hand-off is never tied to
+  one editor.
 - Applies to all three profiles: explainer, reels and long-form YouTube.
 - Take the useful parts of three MIT-licensed repositories (sergebulaev/instagram-skills,
   Jakeschincariol/instagram-agent-skill, Anil-matcha/AI-Youtube-Shorts-Generator), as the six items in §5.
 
 **Decisions taken with the creator**
-- Explainer scenes reach Premiere as **separate transparent clips** (ProRes 4444 with alpha), one per scene, on
+- Explainer scenes reach the editor as **separate transparent clips** (ProRes 4444 with alpha), one per scene, on
   their own track.
-- Captions come two ways: an **editable `.srt`** imported as Premiere captions, and the **styled caption
+- Captions come two ways: an **editable `.srt`** imported onto a caption track, and the **styled caption
   animation** as its own clip track, switched off by default.
 - The full render stays as an **opt-in** command. Agents never run it unless the creator asks.
 
 **Success looks like this**
-- The creator imports one `.xml` into Premiere and gets the right sequence size and frame rate, every track, and
+- The creator opens one project in filmcraft (or imports the `.xml` into another editor) and gets the right sequence size and frame rate, every track, and
   every clip on its word.
 - The raw camera files are cut without re-encoding.
 - Every gate up to Checkpoint B still runs. The suites stay green.
 
 **Assumptions**
-- Premiere Pro 2020 or later on macOS or Windows.
-- The creator copies or syncs the project folder to the editing machine. Premiere relinks by file name when paths
-  differ.
+- filmcraft from its current releases. Premiere Pro 2020 or later and DaVinci Resolve also import the same XML.
+- The creator copies or syncs the project folder to the editing machine. filmcraft relinks moved media
+  (`media.autoRelink`, Link Media), as Premiere does.
 
 ## 2. The exchange format
 
-**Final Cut Pro 7 XML** (`xmeml` version 4). Premiere imports it natively through File → Import, with no plugin.
+**Final Cut Pro 7 XML** (`xmeml` version 4).
+- filmcraft reads and writes it with round-trip tests (its `docs/file-format-parity.md`). Premiere and Resolve import
+  it natively through File → Import, with no plugin.
+- filmcraft reads ProRes 4444 with alpha, so the transparent clips composite. It imports `.srt` onto a caption track.
+- **A native filmcraft project too.** When `filmcraft-cli` is installed, the hand-off imports the XML and the `.srt`
+  with it and saves `<project>.fcproj` (filmcraft's JSON project file), so the creator just opens it. Without
+  `filmcraft-cli`, the `.xml` is the deliverable and the creator imports it (File → Import).
 
 **What it carries**
 - One `<sequence>` with timebase and NTSC flag, width and height: 1080x1920 at 60 fps for reels and explainer, the
@@ -42,11 +51,13 @@ Date: 2026-10-21. Status: approved in conversation (sections 1 and 2); this file
 - Sequence markers (name and comment), clip opacity and audio levels.
 
 **Rejected alternatives**
+- Writing `.fcproj` ourselves: its schema is filmcraft's internal model and changes between versions (13 so far).
+  Letting `filmcraft-cli` write it from the XML keeps us on the stable interchange format.
 - Native `.prproj`: undocumented and version-fragile.
 - CMX 3600 EDL: only one video track.
 - OpenTimelineIO: needs a plugin.
 
-**New shared module:** `Editing-Workflow/kit/youtube-edit/scripts/premiere_xml.py`, standard library only.
+**New shared module:** `Editing-Workflow/kit/youtube-edit/scripts/nle_xml.py`, standard library only.
 
 ```
 Timeline(name, width, height, fps)            # integer fps (60, 30, 25, 24) or 29.97/59.94 (timebase 30/60, ntsc TRUE)
@@ -66,16 +77,17 @@ Timeline.validate() -> [problems]             # in <= out <= source duration, no
 The stage replaces **Render → QA render → Package** after Checkpoint B:
 
 ```
-... Checkpoint B (stills approved) → Hand-off (new) → creator edits in Premiere → (optional) qa-export on the creator's export → Learn
+... Checkpoint B (stills approved) → Hand-off (new) → creator edits in filmcraft → (optional) qa-export on the creator's export → Learn
 ```
 
 ### 3.2 The output folder
 
-`videos/<project>/premiere/` holds:
+`videos/<project>/edit/` holds:
 
 | File | What it is |
 |---|---|
-| `<project>.xml` | the sequence |
+| `<project>.fcproj` | the filmcraft project (when `filmcraft-cli` is installed) |
+| `<project>.xml` | the sequence, for any editor |
 | `media/` | voice, music and sound effects WAVs; `gfx/<id>.mov` (each scene, card or overlay as transparent ProRes 4444); `captions-styled.mov` |
 | `captions.srt` | the editable captions |
 | `HANDOFF.md` | each track and what is on it, the marker legend, how to relink, the checks still to run, and what is left to the creator |
@@ -112,9 +124,9 @@ Markers:
 
 | Script | What it does |
 |---|---|
-| `handoff.py` (one per profile) | the explainer's `explainer/skill/explainer/scripts/handoff.py`, the reels' `reels/skill/reels/scripts/reels-handoff.py`, and long-form's use of the reels one with `--format 16x9`. Each maps the profile's existing data (storyboard, `moments.json`, `cut-list.json`, the sound events) onto `premiere_xml.Timeline`. |
+| `handoff.py` (one per profile) | the explainer's `explainer/skill/explainer/scripts/handoff.py`, the reels' `reels/skill/reels/scripts/reels-handoff.py`, and long-form's use of the reels one with `--format 16x9`. Each maps the profile's existing data (storyboard, `moments.json`, `cut-list.json`, the sound events) onto `nle_xml.Timeline`. |
 | `handoff-check.py` (gate H1, in the kit) | parses the XML back. It checks that every `pathurl` exists, every clip is inside its source, the sequence settings match the profile, the voice track has no gap the transcript says is speech, every scene in the storyboard has its clip, and the `.srt` matches the transcript. FAIL names the clip. |
-| `qa-export.py` (optional) | runs the existing checks on the creator's own Premiere export: loudness, size and frame rate, black frames, and the motion check (E6) for explainer. It reports only; it never edits. |
+| `qa-export.py` (optional) | runs the existing checks on the creator's own export from the editor: loudness, size and frame rate, black frames, and the motion check (E6) for explainer. It reports only; it never edits. |
 
 ### 3.6 The opt-in render
 
@@ -231,7 +243,7 @@ is skipped when that is missing.
 
 - For each kept segment it samples frames and writes the median x of the largest face to `face-x.json`, or nothing
   for a segment with no face.
-- `reels-handoff.py` turns that into each V1 clip's horizontal position. The creator can adjust it in Premiere.
+- `reels-handoff.py` turns that into each V1 clip's horizontal position. The creator can adjust it in the editor.
 - The Ingest value stays the fallback.
 
 ### 5.6 Playbook and docs
@@ -265,7 +277,7 @@ is skipped when that is missing.
   makes it.
 
 **Tests (standard-library unittest, test first)**
-- `premiere_xml`: the structure parsed back, frames from seconds at 60 and 30 fps, `pathurl` encoding (spaces, a
+- `nle_xml`: the structure parsed back, frames from seconds at 60 and 30 fps, `pathurl` encoding (spaces, a
   `#`, a Windows path), one `<file>` per path, `validate()`.
 - `handoff` (each profile): built from the existing test fixtures, with a fake `.mov` per scene; the track layout,
   every clip on its word, the markers.
@@ -273,8 +285,12 @@ is skipped when that is missing.
 - `wording`, `post-check`, `reels-moments`, `wf`: fixtures for each rule. `reels-face-x` is skipped without OpenCV.
 - The existing suites stay green.
 
-**Manual check:** Premiere can't run here. A small sample project (about 3 s, two tracks, one marker) goes to the
-creator to import, as the one check that cannot be automated.
+**A real import, tested here.** `filmcraft-cli` is built from source in the test environment (Rust is installed).
+An integration test imports each profile's hand-off XML and `.srt` headlessly, then reads the sequence back with
+`filmcraft-cli --project … inspect sequence`. It checks the sequence size and frame rate, the track count, every clip
+on its frame, the markers, the captions, and that no media is offline. The test is skipped when `filmcraft-cli` is not
+on the PATH, as the Kokoro tests are. If filmcraft cannot be built here, a small sample project goes to the creator
+to open instead.
 
 **What stays as it is**
 - Every gate up to Checkpoint B.
