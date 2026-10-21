@@ -34,7 +34,8 @@ Date: 2026-10-21. Status: approved in conversation (sections 1 and 2); this file
 **Final Cut Pro 7 XML** (`xmeml` version 4). Premiere imports it natively through File → Import, with no plugin.
 
 **What it carries**
-- One `<sequence>` with timebase and NTSC flag, width and height, and a 60 fps (or 30 fps long-form) timebase.
+- One `<sequence>` with timebase and NTSC flag, width and height: 1080x1920 at 60 fps for reels and explainer, the
+  recorded size and frame rate for long-form (3840x2160 at 30 fps by default).
 - Video and audio tracks, each with `enabled` on or off.
 - `<clipitem>`s with `start`, `end`, `in` and `out` in frames, and a `<file>` holding a `pathurl` (`file://`,
   percent-encoded), the source duration and the source media's characteristics.
@@ -48,7 +49,7 @@ Date: 2026-10-21. Status: approved in conversation (sections 1 and 2); this file
 **New shared module:** `Editing-Workflow/kit/youtube-edit/scripts/premiere_xml.py`, standard library only.
 
 ```
-Timeline(name, width, height, fps)            # fps 60 or 30, integer timebase, ntsc FALSE
+Timeline(name, width, height, fps)            # integer fps (60, 30, 25, 24) or 29.97/59.94 (timebase 30/60, ntsc TRUE)
   .video_track(name, enabled=True) -> Track   # index = order added (V1 first)
   .audio_track(name, enabled=True) -> Track
   .marker(t, name, comment="")                # sequence marker
@@ -79,8 +80,9 @@ The stage replaces **Render → QA render → Package** after Checkpoint B:
 | `captions.srt` | the editable captions |
 | `HANDOFF.md` | each track and what is on it, the marker legend, how to relink, the checks still to run, and what is left to the creator |
 
-The raw camera files are **referenced where they are** (the file the cut list was made on, from `ingest.json`).
-They are not copied.
+The raw camera files are **referenced where they are**, never copied. When Ingest joined several clips, `ingest.json`
+maps each kept segment back to its original clip and time, and a segment that spans two clips becomes two clips on
+the timeline.
 
 ### 3.3 Tracks per profile
 
@@ -88,7 +90,7 @@ They are not copied.
 |---|---|---|
 | Explainer | V1 ground (the background colour and glows as one clip), V2 the thread, V3 scenes, V4 headlines, V5 styled captions (off) | A1 voice, A2 sound bed, A3 sound effects |
 | Reels | V1 footage (the kept segments from `cut-list.json`, source in/out on the camera file), V2 b-roll, V3 cards and overlays, V4 styled captions (off) | A1 footage audio, A2 music, A3 sound effects |
-| Long-form | as reels at 1920x1080 and the profile's frame rate, one sequence per project | as reels, with sections laid end to end |
+| Long-form | as reels at the recorded size and frame rate (3840x2160 at 30 fps by default), one sequence per project | as reels, with sections laid end to end |
 
 Markers:
 - the hook window;
