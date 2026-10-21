@@ -28,6 +28,14 @@ longform/
 
 ## 1. What makes long-form different
 
+> **The end of every run is a project you edit, not a finished video.** After you approve the stills, the team hands
+> you an editor project: open `<project>.fcproj` in [filmcraft](https://github.com/storytold/filmcraft) (free, open
+> source; or import the `.xml` into filmcraft, Premiere Pro or DaVinci Resolve). Your own camera files are cut by word
+> on the first track (never re-encoded), every card or scene is its own transparent clip on its own track, the voice,
+> music and sound effects are on theirs, captions come as an editable `.srt`, and markers show the hook and each
+> scene's word and source. You trim, re-time, mix and export. A finished render is still there when you want one:
+> just ask (`python3 Editing-Workflow/wf.py render ...`).
+
 The kit edits hooks and sections well. A long video adds problems a hook doesn't have, and this team is built around
 them:
 

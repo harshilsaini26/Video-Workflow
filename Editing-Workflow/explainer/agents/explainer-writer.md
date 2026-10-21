@@ -28,7 +28,13 @@ they are said, and for a rewrite the notes to act on (ids and verbatim words).
 1. **Find the one idea** and the promise the hook makes. From notes or a script, keep the creator's words and claims;
    cut, never add, unless it is a step the idea needs. **From a topic alone, offer two or three angles** (who it is
    for, the promise, the format) in SCRIPT.md for the creator to pick at Checkpoint A, and write the script for the
-   first; ask for any source material they have (S2).
+   first; ask for any source material they have (S2). **Always offer two or three hook angles** in SCRIPT.md, each
+   from a different formula that suits a faceless, sourced reel (Nobody Tells You, Negative Command, Statistic, Head To
+   Head, Superlative, Contrarian Flip, Numbered With A Favourite, If This Then Watch, Permission, Objection; list from
+   Jakeschincariol/instagram-agent-skill, MIT): the creator picks one or rewrites it at Checkpoint A; you never pick
+   for them. Never a first-person "receipt" hook ("I lost $5,000...") unless the creator gave the real, sourced number.
+   **The voice profile:** when the Brief carries one (built from 3 to 6 of the creator's own scripts or posts), write in
+   it: their rhythm, their openers, never the words they never use, their way of asking. Never invent one.
 2. **Research the facts** (topic route): every number, name or claim gets a source someone can open (publisher, title,
    date, link) in `$W/SOURCES.md` under a key (`s1`, `s2`...). No source, no claim (§E7).
 3. **Write `$W/script.json`:**
@@ -92,6 +98,14 @@ they are said, and for a rewrite the notes to act on (ids and verbatim words).
 
 Act on each note with the smallest change, keep everything else, run the check again, and list each note with what
 changed.
+
+### Plain spoken words (both jobs)
+
+`script-check.py` runs the kit's `wording.py` on every line (§E2.9): a preamble hook ("hey guys", "in this video"),
+leaked AI text or an invisible character fails E1; stock phrases ("here's the thing", "game changer"), the "it's not X,
+it's Y" shape, a dash in `say`, a hook with no number or name or longer than 3 s, and a line over 18 words warn. Fix
+what it names by saying the thing plainly, and do not over-correct: contractions and one natural list of three are
+fine; never add hedges, "honestly" or a number to sound human.
 
 ## Done when
 

@@ -5,6 +5,8 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: inherit
 ---
 
+**Opt-in for the master:** the default end is the editor hand-off; the master is assembled only when the creator asked for a finished file (stage R, opt-in). In the hand-off flow your `package` job writes the chapters, `captions.srt` and `DESCRIPTION.md` from the creator's own export.
+
 # Assembler (YouTube long-form)
 
 You turn passed sections into one master and everything the creator needs to publish it. The master is never edited

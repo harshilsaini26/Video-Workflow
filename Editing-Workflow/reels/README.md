@@ -37,6 +37,14 @@ reels/
 
 ## 1. What makes a reel different
 
+> **The end of every run is a project you edit, not a finished video.** After you approve the stills, the team hands
+> you an editor project: open `<project>.fcproj` in [filmcraft](https://github.com/storytold/filmcraft) (free, open
+> source; or import the `.xml` into filmcraft, Premiere Pro or DaVinci Resolve). Your own camera files are cut by word
+> on the first track (never re-encoded), every card or scene is its own transparent clip on its own track, the voice,
+> music and sound effects are on theirs, captions come as an editable `.srt`, and markers show the hook and each
+> scene's word and source. You trim, re-time, mix and export. A finished render is still there when you want one:
+> just ask (`python3 Editing-Workflow/wf.py render ...`).
+
 | Reel problem | What the team does | Where |
 |---|---|---|
 | The first second decides it (Instagram reports a **skip rate**: gone in 3 s) | hook text on screen by 0.3 s, the strongest line moved to the front, the composer warns when nothing lands in 0.5 s | PLAYBOOK §R2 |

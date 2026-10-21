@@ -71,9 +71,10 @@ Then: `mkdir -p "$W"`, copy the templates (`cp "$LF/templates/"{STATUS,NOTES}.md
 | 6v | Voice polish (if proposed) | `longform-sound-designer` · voice (prepare) | pair ready | B |
 | 7 | Compose, per section | `longform-animator` · build | G7 G8 G9 | B |
 | B | **Checkpoint B** | you, with the creator | approval | 8 |
-| 8 | Render, per section | `longform-renderer` · render | file exists | 9 |
-| 9 | Verify, per section | `longform-qa` (it asks for `longform-transcriber` · render) | G10 G11 | 10 when all parts PASS |
-| 10 | Assemble and deliver | `longform-assembler` (+ `longform-sound-designer` · bed) | G12 with `longform-qa` on the master | 11 |
+| 8 | **Hand-off** | `longform-animator` · handoff: `python3 "$RS/scripts/reels-handoff.py" --project $W --format 16x9 --section $W/<part> ...` (the sections in order, the cut on the camera files, each card a transparent clip, chapters, the filmcraft project) | H1 (`handoff-check.py`) | 9 |
+| 9 | The creator edits | the creator, in filmcraft (or Premiere, or Resolve): trims, pacing, the mix, the export; `qa-export.py` on their export if they want it | their call | 10 |
+| 10 | Package | `longform-assembler` · package: chapters, captions, description and the rest of the package from the creator's export | G12 | 11 |
+| R | Render (opt-in) | `longform-renderer` · render per section, `longform-qa`, then `longform-assembler` · master: only when the creator asks for a finished file | G10 to G12 | 10 |
 | 11 | Notes | you, with the creator | every note routed | 5, 4 or 8 for the next version |
 | 12 | Learn | `longform-librarian` | G13 | - |
 | - | After publishing | `longform-analyst` · retention; every two videos · teardown | - | proposals to the creator |
@@ -87,6 +88,8 @@ Every brief has six parts. Copy this shape:
 
 ```
 PROJECT   videos/<project> · part <NN-slug or -> · version v<n> · profile youtube (3840x2160, 30 fps)
+VOICE     the creator's voice profile, if they gave 3 to 6 of their own scripts or videos (rhythm, openers, words they
+          never use, how they ask); never invented: "none" when they gave none
 JOB       <the agent's job name>
 INPUTS    <exact files>
 TASK      <one or two sentences>
@@ -120,7 +123,8 @@ Send one message:
 - the paper cut: `PAPER-CUT.md` (and `CUT-REVIEW.html` for anything over 3 minutes): raw length → flat length, what was
   removed and why, anything "kept on purpose";
 - the story (`STORY.md`): the sections with their chapter titles and lengths, the **but / therefore** line, every
-  **WEAK** join with its suggested fix, the hook plan (and a flash-forward if proposed), the re-engagement map, the
+  **WEAK** join with its suggested fix, the hook plan (and a flash-forward if proposed) with two or three **hook angles** for the creator to pick or
+  rewrite, the wording notes on the kept words (`wording.py`: notes to read, never automatic rewrites), the re-engagement map, the
   candidate cuts (tangents, repeats), the colour / level / voice proposals;
 - the **questions**, numbered, each answerable in a few words.
 
@@ -156,8 +160,16 @@ Render each approved section; QA each. For every FAIL, route by the owner QA nam
 
 Log each FAIL as a Blocker in STATUS.md; close it when QA passes the next attempt.
 
-## 8. Assembly and delivery
+## 8. Delivery: the hand-off (default), assembly (opt-in render)
 
+The default end is an editable project, not a rendered master: the creator finishes it by hand. After Checkpoint B,
+brief the Animator (`handoff`) with the parts in order from STORY.md: `reels-handoff.py --format 16x9` lays every
+section end to end on one sequence (the kept cut on the camera files, never re-encoded; each card a transparent clip;
+a chapter marker at each section) and writes `$W/edit/` with `<project>.fcproj` for filmcraft (or the `.xml` for
+filmcraft, Premiere or Resolve), `captions.srt` and `HANDOFF.md`. On H1's PASS tell the creator where it is. When the
+creator has exported, the Assembler's `package` job writes the chapters, captions and description from their export.
+
+The rest of this section is the **opt-in render**, only when the creator asks for a finished master.
 When every part has a QA PASS: brief the Assembler (parts in order from STORY.md, tease, music, sponsor, terms list).
 With music, the Assembler needs the Sound designer's `bed` job after the voice master exists. Then QA on the master.
 On PASS, tell the creator:

@@ -219,6 +219,13 @@ content inside the centre **1080x1440** so the profile grid crop keeps it), `cap
 draft: the first ~125 characters carry the hook (S21), 3 to 5 relevant hashtags, any credits; the posting checklist),
 `STORYBOARD.md`.
 
+**The post caption** is a draft the creator edits, checked by `post-check.py` (the kit): the hook in the first 125
+characters, never opening on a hashtag or a handle; one call to action, and it gives a reason ("save this for your next
+launch", "comment CABLE and I'll send the list"), never bait that gives nothing back ("tag 3 friends", "double tap",
+"comment YES"); no dead closer ("thoughts?", "what do you think?"); 3 to 5 hashtags at the end: 2 to 3 niche, 1 to 2
+mid, 0 to 1 broad, every one on topic, rotated between posts; every number one the script sources. Adapted from
+sergebulaev/instagram-skills and Jakeschincariol/instagram-agent-skill (MIT); the numbers are ours (S21).
+
 **Posting checklist:** post as a Reel (not a feed video); the cover set; music added in-app if chosen (low under the
 voice); no watermark; the same file to Shorts and TikTok if wanted (upload `captions.srt` where accepted).
 

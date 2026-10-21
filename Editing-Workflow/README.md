@@ -48,6 +48,14 @@ jobs, a fixed order, file hand-offs, quality gates and a learning loop.
 
 ## 1. The workflow at a glance
 
+> **The end of every run is a project you edit, not a finished video.** After you approve the stills, the team hands
+> you an editor project: open `<project>.fcproj` in [filmcraft](https://github.com/storytold/filmcraft) (free, open
+> source; or import the `.xml` into filmcraft, Premiere Pro or DaVinci Resolve). Your own camera files are cut by word
+> on the first track (never re-encoded), every card or scene is its own transparent clip on its own track, the voice,
+> music and sound effects are on theirs, captions come as an editable `.srt`, and markers show the hook and each
+> scene's word and source. You trim, re-time, mix and export. A finished render is still there when you want one:
+> just ask (`python3 Editing-Workflow/wf.py render ...`).
+
 You do four things: **record**, answer **Checkpoint A** (the cut), answer **Checkpoint B** (the plan) and give **notes**
 on the draft. Everything else is the agents' job.
 

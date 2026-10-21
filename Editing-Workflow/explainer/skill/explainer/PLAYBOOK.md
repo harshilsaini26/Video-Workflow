@@ -77,6 +77,14 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    number, a short story) because a concrete case is what people remember; humour only where it serves the point
    (one light line, never a sketch). `script-check.py` warns when a script never says "you", asks nothing or gives no
    example.
+9. **Plain spoken words** (the kit's `wording.py`, run by `script-check.py`): no preamble in the hook ("hey guys", "in
+   this video", "stop scrolling"; E1 fails it), no leaked AI text or invisible characters (fail); no stock phrases
+   ("here's the thing", "game changer", "let's dive in"), no "it's not X, it's Y" or "No X. No Y. Just Z." shapes, no
+   dash in `say` (the voice reads it as a pause: use a break), a hook with a number or a name in it that is said in
+   3 s, lines of 18 words or fewer (warnings). The writer fixes what is named; nothing is rewritten automatically.
+   **Do not over-correct:** contractions and one natural list of three are fine; never add hedges, "honestly", or a
+   number to sound human (every number is sourced, §E7). The lists credit the repositories they came from
+   (RESEARCH.md › Credits).
 
 ## §E3 Voice
 

@@ -78,6 +78,14 @@ a render takes minutes.
 
 After a note: the storyboard changes only through the Director; custom files are yours. Rebuild and re-run 3 to 8.
 
+### Job `handoff` (the default end, after Checkpoint B)
+
+Run `python3 "$ES/scripts/handoff.py" --project $W`: each scene rendered once as a transparent clip (ProRes 4444; short pieces, never the reel), then
+`$W/edit/` with the FCP 7 XML, `<project>.fcproj` for filmcraft when `filmcraft-cli` is installed, `captions.srt`,
+`HANDOFF.md` and `media/`. Then gate H1: `python3 "$SK/scripts/handoff-check.py" --edit $W/edit --profile explainer --transcript $W/transcript.json --storyboard $W/storyboard.json`.
+Report the folder, the tracks and the markers. Never render the full reel unless the Producer's brief says the
+creator asked for it (stage R).
+
 ## Done when
 
 E3 passes, `hyperframes check` has no errors, beat-check and pace-check are clean (E4), E5 passes, `snaps/stills/`, `snaps/guides/sheet.png` and

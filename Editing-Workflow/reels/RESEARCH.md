@@ -108,3 +108,14 @@ added in the app at posting.
 - **Bitrate**: recommendations range 5 to 25 Mb/s; 20 Mb/s at 1080p60 sits under the quoted ceiling and leaves the
   platform's transcode good material.
 - **Ideal length**: platform limits are clear; what works for this creator comes from their own Insights (§R13).
+
+## Credits: ideas taken from other open-source projects (2026-10-21)
+
+Read and compared against this kit; the rules were kept, their unsourced numbers were not.
+
+| Project (licence) | What we took | Where it lives |
+|---|---|---|
+| [sergebulaev/instagram-skills](https://github.com/sergebulaev/instagram-skills) (MIT) | the caption writer's rules (a hook in the first 125 characters, one ask with a reason, no dead closer, sized hashtags) and the humanizer's scrub list (leaked AI text, reveal bridges, "it's not X, it's Y", sincerity markers, staccato) with its "do not over-correct" guard | `post-check.py`, `wording.py` / `wording.json` (kit); explainer PLAYBOOK §E2.9; reels PLAYBOOK §R13 |
+| [Jakeschincariol/instagram-agent-skill](https://github.com/Jakeschincariol/instagram-agent-skill) (MIT) | the hook dealbreakers (a greeting, "in this video", "stop scrolling", a hashtag or emoji in a spoken hook), stock phrases from its slop list, invisible characters, and its hook formulas as angles to offer the creator; not its hook score (its own README reports it cannot tell a creator's hits from their misses) nor its automatic rewriting (it changes meaning) | `wording.py` / `wording.json`; the Writer's hook angles |
+| [Anil-matcha/AI-Youtube-Shorts-Generator](https://github.com/Anil-matcha/AI-Youtube-Shorts-Generator) (MIT) | the eight signals for picking reels from a long video, the one-command entry point, and following the speaker's face (per segment here, not per frame); not its paid services, its clipper or its chunked highlight code | `reels-moments.py`, reels PLAYBOOK §R12; `wf.py`; `reels-face-x.py` |
+| [storytold/filmcraft](https://github.com/storytold/filmcraft) (MIT OR Apache-2.0) | the editor the hand-off is made for: it imports our FCP 7 XML and `.srt`, and `filmcraft-cli` makes the native project and reads it back for the checks | `nle_xml.py`, `filmcraft.py` (kit); every profile's hand-off |

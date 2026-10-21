@@ -37,6 +37,14 @@ make your first video of each kind. The detailed design lives in [`Editing-Workf
 
 ## 1. How it works
 
+> **The end of every run is a project you edit, not a finished video.** After you approve the stills, the team hands
+> you an editor project: open `<project>.fcproj` in [filmcraft](https://github.com/storytold/filmcraft) (free, open
+> source; or import the `.xml` into filmcraft, Premiere Pro or DaVinci Resolve). Your own camera files are cut by word
+> on the first track (never re-encoded), every card or scene is its own transparent clip on its own track, the voice,
+> music and sound effects are on theirs, captions come as an editable `.srt`, and markers show the hook and each
+> scene's word and source. You trim, re-time, mix and export. A finished render is still there when you want one:
+> just ask (`python3 Editing-Workflow/wf.py render ...`).
+
 You talk to one AI, **the Producer**. It is the project manager: it asks what you want, starts the right specialist
 agents in order, keeps the project's status, and is the only one that talks to you. Each agent does one job (cutting,
 planning the screen, finding free B-roll, animating, rendering, checking...) and hands the next one a file.
@@ -188,7 +196,22 @@ From each installed skill's `scripts` folder:
 | Reels | `cd .claude/skills/reels/scripts && python3 -m unittest tests` | 51 tests, OK |
 | Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 446 tests, OK (a few skip without Kokoro, Chrome or the local vendor folder) |
 
-### 3.6 Open a new conversation
+### 3.6 One command for everything: `wf.py`
+
+`Editing-Workflow/wf.py` wraps the steps above and the checks the agents run, so you can do them yourself:
+
+```bash
+python3 Editing-Workflow/wf.py install reels            # the README's copy steps (kit, longform, reels, explainer)
+python3 Editing-Workflow/wf.py test                     # every suite
+python3 Editing-Workflow/wf.py handoff videos/my-reel --profile reels       # make the editor project again
+python3 Editing-Workflow/wf.py gates videos/my-reel --profile reels --stage H1
+python3 Editing-Workflow/wf.py render videos/my-reel --profile reels        # opt-in: a finished file
+```
+
+For the native filmcraft project, install `filmcraft-cli` (see `Editing-Workflow/kit/README.md`); without it you get
+the `.xml` to import.
+
+### 3.7 Open a new conversation
 
 Skills and agents load when a conversation starts. **After installing anything, open a new conversation.** Your
 folder now looks like this:
@@ -269,8 +292,11 @@ You get a sheet of stills (`snaps/sheet.png`) and a list of what is on screen wh
 
 Nothing renders until you say OK.
 
-### Step 8. Wait while it renders, is checked and assembled
+### Step 8. Your edit project (a render only if you ask)
 
+By default the team hands you `videos/<project>/edit/`: one sequence with every section end to end on your camera
+files, each card a transparent clip, chapter markers, captions; open it in filmcraft and finish it your way. If you
+ask for a finished master instead:
 - The **Renderer** makes each section in 4K.
 - The **QA agent** checks every file: black frames, size, colour tags, bitrate, clipped words, loudness. A failure goes
   back to the agent that owns it, automatically.
@@ -339,9 +365,10 @@ zone **by construction** (never under the like/comment buttons or the caption st
 `snaps/guides/sheet.png` shows every moment with the app's covered areas drawn in red and orange, plus the first and
 last frame side by side (the loop). Answer: *"Move the price card up. Captions off during the hook."*
 
-### Step 8. Wait while it renders and is checked
+### Step 8. Your edit project (a render only if you ask)
 
-1080x1920 at 60 fps, checked frame by frame, levelled to -14 LUFS.
+`videos/<project>/edit/`: your clip cut by word on V1, b-roll, each card a transparent clip, sound effects, captions,
+markers. Open it in filmcraft, finish it, export at 1080x1920. Ask for a render if you want the team to finish it.
 
 ### Step 9. Ready to post
 
@@ -452,9 +479,11 @@ Before you see anything, the checks make sure that:
 A still of every scene once it has settled (with the app's covered areas drawn on), the hook at 0.3, 0.7 and 1.0 s,
 a list of what is on screen when, and the full voiceover to listen to: listening is yours, no check replaces it. Answer: *"The chart comes in too late. Say 'EBITDA' slower."*
 
-### Step 8. Render, check, package
+### Step 8. Your edit project, then the package
 
-The Reels renderer, QA and packager finish it: `deliver/reel.mp4`, covers, `captions.srt` and the posting checklist.
+The team hands you `videos/<project>/edit/` (each scene a transparent clip, the voice, music and sound effects on their
+own tracks, captions, markers); you finish it in filmcraft and export. The packager then writes the covers,
+`captions.srt` and the posting checklist, and checks the post caption with `post-check.py` (a render only if you ask).
 The checklist covers:
 - the cover;
 - 3 to 5 hashtags that fit: one broad, one for the format, the rest for the topic;

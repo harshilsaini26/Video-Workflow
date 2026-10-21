@@ -99,9 +99,10 @@ created".
 | 4 | Storyboard | `explainer-director` · plan (from `plan-storyboard.py`'s draft) | its self-check | 5 |
 | 5 | Compose | `explainer-animator` · build | E3, E4 (beat-check, pace-check, hold time), E5 (layout-check: a clean picture, every handover) | B |
 | B | **Checkpoint B** | you, with the creator (`stills.py`: every scene settled, the hook at 0.3/0.7/1.0 s; the voiceover) | approval | 6 |
-| 6 | Render | `reels-renderer` | file exists | 7 |
-| 7 | Verify | `reels-qa` · render, plus E6 (`motion-check.py`) and a real transcription of the render | its gates | 8 |
-| 8 | Package | `reels-packager`, then `reels-qa` · final | its gates | 9 |
+| 6 | **Hand-off** | `explainer-animator` · handoff: `python3 "$ES/scripts/handoff.py" --project $W` (each scene a transparent clip; the filmcraft project) | H1 (`handoff-check.py`) | 7 |
+| 7 | The creator edits | the creator, in filmcraft (or Premiere, or Resolve): trims, pacing, the mix, the export; `qa-export.py` on their export if they want it | their call | 8 |
+| 8 | Package | `reels-packager`: `POST.md` as a draft through `post-check.py`, `captions.srt`, covers from the creator's export | post-check | 9 |
+| R | Render (opt-in) | `reels-renderer`, then `reels-qa` · render with E6 (`motion-check.py`): only when the creator asks for a finished file | its gates | 8 |
 | 9 | Notes | you, with the creator | every note routed | 2, 3, 4 or 6 |
 | 10 | Learn | `reels-librarian` | its gate | - |
 | - | After posting | `reels-analyst` · insights | - | proposals |
@@ -153,6 +154,8 @@ chooses (S12).
 
 ```
 PROJECT   videos/<project> · version v<n> · profile explainer (1080x1920, 60 fps, 30 to 90 s, free tools only)
+VOICE     the creator's voice profile, if they gave 3 to 6 of their own scripts or posts (rhythm, openers, words they
+          never use, how they ask); never invented: "none" when they gave none
 JOB       <the agent's job>
 INPUTS    <exact files>
 TASK      <one or two sentences>
@@ -168,8 +171,10 @@ its **real length** (S4; the estimate uses the voice's measured rate from `voice
 sure).
 
 One message: `SCRIPT.md` (the shown lines, numbered, with the spoken version where it differs), the real length, the
-hook, the payoff and the call to action, the sources (`SOURCES.md`), anything the Writer flagged, the angles to choose
-from when the creator gave only a topic (S2), and on the first project the three voice samples (`$W/samples/*.wav`,
+hook, the payoff and the call to action, the sources (`SOURCES.md`), anything the Writer flagged, the **hook angles**:
+two or three hooks from different formulas for the creator to pick or rewrite (the Writer's list; the creator chooses,
+the agents never do), the wording notes beside each line (`wording.py`, through `script-check.py`: notes to read, never
+automatic rewrites), the angles to choose from when the creator gave only a topic (S2), and on the first project the three voice samples (`$W/samples/*.wav`,
 10 s or more each, from the Voice agent's `samples` job) for the creator to **listen to** and choose from (S6).
 **Length is decided here (S16):** if the voicing runs over the target or the 90 s ceiling, the creator chooses between
 trimming (the lines script-check lists) and keeping it, and the target is set to what they choose, never quietly to a
@@ -196,12 +201,21 @@ Record answers (B01...): words and timing → Director (`replan`) then Animator 
 | black frames, size, frame rate | `reels-renderer` |
 | loudness, music level, the package | `reels-packager` |
 
-## 7. Delivery
+## 7. Delivery: the hand-off
 
-On QA's final PASS, tell the creator: where the reel is (`deliver/reel.mp4`, length, md5), the cover candidates, and
-the posting checklist from `POST.md` (post as a Reel; the cover; music in the app if chosen; the AI-voice label where
-the platform asks for it; the same file to Shorts / TikTok with `captions.srt` if wanted). Offer an Insights review in
-about a week.
+The default end is an editable project, not a rendered reel: the creator finishes it by hand. On H1's PASS, tell the
+creator where `$W/edit/` is and what is in it (`HANDOFF.md`): `<project>.fcproj` to open in filmcraft (made by
+`filmcraft-cli` when installed; otherwise File > Import the `.xml`, which Premiere and Resolve also open), each scene as
+a transparent clip on its own track, the voice, the music and the sound effects on theirs, the styled captions (off)
+and `captions.srt`, and markers for the hook and each scene's word and source. The render (stage R) happens only when
+the creator asks for a finished file.
+
+Then `POST.md`: a draft for the creator to edit, checked with `python3 "$SK/scripts/post-check.py" --post POST.md
+--script $W/script.json --keyword <the comment keyword, if any>`: a hook in the first 125 characters, one ask with a
+reason ("save this for when you buy a cable"), 3 to 5 hashtags (2 to 3 niche, 1 to 2 mid, 0 to 1 broad, all on topic,
+rotated), every number sourced. The posting checklist: post as a Reel; the cover; music in the app if chosen; the
+AI-voice label where the platform asks for it; the same file to Shorts / TikTok with `captions.srt` if wanted. Offer an
+Insights review in about a week.
 
 ## 8. Notes, versions, learning
 

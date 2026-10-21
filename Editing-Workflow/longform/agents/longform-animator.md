@@ -72,6 +72,14 @@ If it isn't, stop and report `blocked`.
 11. **New or rarely used formats** (`*` in the library): run the seek-back check: seek past a beat, seek back inside
     it, compare with a fresh seek (SKILL › Traps: text that changes step by step).
 
+### Job `handoff` (the default end, after Checkpoint B)
+
+Run `python3 "$RS/scripts/reels-handoff.py" --project $W --format 16x9 --section $W/<part> ...`: each card of every section rendered once as a transparent clip (ProRes 4444; short pieces, never the reel), then
+`$W/edit/` with the FCP 7 XML, `<project>.fcproj` for filmcraft when `filmcraft-cli` is installed, `captions.srt`,
+`HANDOFF.md` and `media/`. Then gate H1: `python3 "$SK/scripts/handoff-check.py" --edit $W/edit --profile longform`.
+Report the folder, the tracks and the markers. Never render the full video unless the Producer's brief says the
+creator asked for it (stage R).
+
 ## Done when
 
 Gates G7, G8 and (body sections) G9 pass, `snaps/sheet.png` is current, and you have looked at every still and listed
