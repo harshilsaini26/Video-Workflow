@@ -15,7 +15,7 @@ A re-run moves the old edit/ aside as edit.v<N>/ (the creator may have saved wor
 Tracks: V1 ground, V2 thread, V3 scenes, V4 brand, V5 captions (styled; off), A1 voice, A2 music, A3 sfx.
 Markers: the hook window, each scene on its word with its source, and every note.
 """
-import argparse, glob, json, os, re, shutil, subprocess, sys, wave
+import argparse, json, os, re, shutil, subprocess, sys, wave
 import explainer_lib as E
 
 VIDEO = (("ground", ("ground",)), ("thread", ("thread",)), ("scenes", ("host",)), ("brand", ("brand",)),
@@ -49,47 +49,6 @@ def kit_script(name):
     return os.path.join(E.kit_dir(), name)
 
 
-def set_aside(edit):
-    if not os.path.isdir(edit):
-        return None
-    n = 1
-    while os.path.exists("%s.v%d" % (edit, n)):
-        n += 1
-    shutil.move(edit, "%s.v%d" % (edit, n))
-    return "%s.v%d" % (edit, n)
-
-
-def handoff_md(name, tracks, markers, fcproj):
-    rows = "\n".join("| %s | %s | %s |" % (k, n, what) for k, n, what in tracks)
-    marks = "\n".join("- **%s** at %.2f s: %s" % (m[1], m[0], m[2] or "") for m in markers)
-    opened = ("Open `%s.fcproj` in filmcraft." % name) if fcproj else ("In filmcraft: File > Import > `%s.xml` (Premiere and Resolve: "
-                                                                       "File > Import the same file)." % name)
-    return """# %s: the edit
-
-%s Every file it uses is in `media/`; the captions are `captions.srt` (filmcraft: Captions > Import Captions).
-If you move this folder, filmcraft finds the media again with File > Link Media.
-
-## Tracks
-
-| Track | Name | What is on it |
-|---|---|---|
-%s
-
-The styled captions (V5) are switched off: turn them on for the reel's own caption look, or use the editable
-caption track from `captions.srt` instead.
-
-## Markers
-
-%s
-
-## What is left to you
-
-- the edit itself: trims, pacing, any scene you want to move, swap or drop;
-- the final mix and the export (1080x1920, 60 fps, H.264, -14 LUFS for the apps);
-- then, if you like, check your export: `python3 qa-export.py --video <your export> --profile explainer`.
-""" % (name, opened, rows, marks)
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--project", required=True)
@@ -105,7 +64,7 @@ def main():
         fail("no composed page at %s (compose first: explainer-compose.py)" % index)
     if not E.kit_dir():
         fail("the kit's youtube-edit scripts were not found (install the kit or set KIT_SCRIPTS)")
-    X = E.find_kit("nle_xml")
+    X, H = E.find_kit("nle_xml"), E.find_kit("handoff_lib")
     with open(index, encoding="utf-8") as f:
         page = f.read()
     D = float(re.search(r'id="stage"[^>]*data-duration="([\d.]+)"', page).group(1))
@@ -138,7 +97,7 @@ def main():
 
     # 2. the edit folder
     edit = os.path.join(P, "edit")
-    aside = set_aside(edit)
+    aside = H.set_aside(edit)
     media, gfx = os.path.join(edit, "media"), os.path.join(edit, "media", "gfx")
     os.makedirs(gfx)
     tl = X.Timeline(name, 1080, 1920, fps)
@@ -175,19 +134,13 @@ def main():
     L = E.L
     with open(os.path.join(edit, "captions.srt"), "w", encoding="utf-8") as f:
         f.write(L.to_srt(L.chunk_words(words)))
-    fcproj = None
-    if not a.xml_only:
-        F = E.find_kit("filmcraft")
-        if F.find_cli():
-            try:
-                res = F.to_project(xml, os.path.join(edit, "captions.srt"), os.path.join(edit, name + ".fcproj"))
-                if res["offlineMedia"]:
-                    fail("filmcraft could not find %s" % ", ".join(str(m) for m in res["offlineMedia"]))
-                fcproj = os.path.join(edit, name + ".fcproj")
-            except F.FilmcraftError as e:
-                fail(str(e))
-    with open(os.path.join(edit, "HANDOFF.md"), "w", encoding="utf-8") as f:
-        f.write(handoff_md(name, legend, markers, fcproj))
+    try:
+        fcproj = None if a.xml_only else H.make_project(xml, os.path.join(edit, "captions.srt"), os.path.join(edit, name + ".fcproj"))
+    except H.HandoffError as e:
+        fail(str(e))
+    H.write_handoff_md(os.path.join(edit, "HANDOFF.md"), name, legend, markers, fcproj, "1080x1920, 60 fps, H.264, -14 LUFS", "explainer",
+                       "The styled captions (V5) are switched off: turn them on for the reel's own caption look, or use the editable "
+                       "caption track from `captions.srt` instead.")
     print("HANDOFF PASS: %s (%d video tracks, %d audio, %d markers%s)%s"
           % (edit, len(VIDEO), len(AUDIO), len(markers), ", filmcraft project" if fcproj else "",
              ("; the last hand-off is kept as %s" % aside) if aside else ""))
