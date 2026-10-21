@@ -23,6 +23,26 @@ def find_reels_lib():
 
 L = find_reels_lib()
 
+
+def kit_dir():
+    """The kit's youtube-edit/scripts folder: $KIT_SCRIPTS, installed side by side, or this repository; None if absent."""
+    for c in [os.environ.get("KIT_SCRIPTS", ""),
+              os.path.join(HERE, "..", "..", "youtube-edit", "scripts"),                      # .claude/skills/youtube-edit/scripts
+              os.path.join(HERE, "..", "..", "..", "..", "kit", "youtube-edit", "scripts")]:   # Editing-Workflow/kit
+        if c and os.path.exists(os.path.join(c, "nle_xml.py")):
+            return os.path.abspath(c)
+    return None
+
+
+def find_kit(module):
+    """Import one of the kit's shared modules (nle_xml, filmcraft, wording) from kit_dir()."""
+    d = kit_dir()
+    if not d:
+        sys.exit("the kit's youtube-edit scripts were not found: install the kit (.claude/skills/youtube-edit) or set KIT_SCRIPTS")
+    if d not in sys.path:
+        sys.path.insert(0, d)
+    return importlib.import_module(module)
+
 # The frame, top to bottom (the editorial pass, 2026-10-18: the centre is always the animation's):
 #   the handle band (y 281 to 321), the scene area (y 345 to 1105), the captions, small, at the bottom of the safe area
 #   (CAPTION_BAND, y 1130 to 1235). No text of any kind goes below TEXT_BOTTOM (SOP S7, from the RAG reel: QA and the

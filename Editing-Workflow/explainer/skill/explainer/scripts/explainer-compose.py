@@ -557,7 +557,7 @@ def main():
         evs = sound.events([(kinds[k], timed[k][3]) for k in range(1, len(timed))], item_times, chimes) if want_sfx else []
         moments["sounds"] = [[t, kind] for t, kind in evs]
         sound.mix_bed(os.path.join(out, "voice.wav"), None if music in (None, "none") else (sound.pad_file() if music == "pad" else music),
-                      evs, D, os.path.join(out, "bed.wav"), float(snd.get("music_db", -22)))
+                      evs, D, os.path.join(out, "bed.wav"), float(snd.get("music_db", -22)), stems=out)
         bed = ('    <audio id="bed" src="bed.wav" data-start="0" data-duration="%.3f" data-track-index="40" data-volume="1"></audio>\n' % D)
     brand = S.get("brand") or {}
     if brand.get("handle") or brand.get("part"):

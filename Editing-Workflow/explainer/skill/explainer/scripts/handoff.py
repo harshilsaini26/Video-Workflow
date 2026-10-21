@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""handoff.py: the explainer's end point, the editor hand-off. No rendered reel: an editable project the creator
+finishes in filmcraft (or Premiere, or Resolve), with every layer on its own track.
+
+  python3 handoff.py --project videos/<p> [--no-render] [--xml-only] [--hf "npx --yes hyperframes@0.8.171"]
+
+It reads what compose already wrote (public/index.html, moments.json, voice.wav, music.wav, sfx.wav), the
+transcript and storyboard, and notes.json (the agents' "check this" notes: [{t, name, comment}]), then:
+  1. layer-pages.py and render-layers.py (the kit): each layer as a transparent clip in <project>/layers/
+     (--no-render: use the clips already there);
+  2. writes <project>/edit/: <p>.xml (FCP 7 XML), <p>.fcproj (filmcraft, when filmcraft-cli is installed and not
+     --xml-only), captions.srt, HANDOFF.md, media/ (voice, music, sfx, gfx/<layer>.mov).
+A re-run moves the old edit/ aside as edit.v<N>/ (the creator may have saved work in it).
+
+Tracks: V1 ground, V2 thread, V3 scenes, V4 brand, V5 captions (styled; off), A1 voice, A2 music, A3 sfx.
+Markers: the hook window, each scene on its word with its source, and every note.
+"""
+import argparse, glob, json, os, re, shutil, subprocess, sys, wave
+import explainer_lib as E
+
+VIDEO = (("ground", ("ground",)), ("thread", ("thread",)), ("scenes", ("host",)), ("brand", ("brand",)),
+         ("captions (styled)", ("captions",)))
+AUDIO = (("voice", "voice.wav"), ("music", "music.wav"), ("sfx", "sfx.wav"))
+
+
+def fail(msg):
+    print("HANDOFF FAIL: " + msg)
+    sys.exit(1)
+
+
+def load(path, default=None):
+    if not os.path.isfile(path):
+        return default
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def wav_seconds(path):
+    with wave.open(path) as w:
+        return w.getnframes() / float(w.getframerate())
+
+
+def word_at(anchor, words):
+    m = re.match(r"word:(\d+)", str(anchor or ""))
+    return words[int(m.group(1))]["text"] if m and int(m.group(1)) < len(words) else str(anchor or "")
+
+
+def kit_script(name):
+    return os.path.join(E.kit_dir(), name)
+
+
+def set_aside(edit):
+    if not os.path.isdir(edit):
+        return None
+    n = 1
+    while os.path.exists("%s.v%d" % (edit, n)):
+        n += 1
+    shutil.move(edit, "%s.v%d" % (edit, n))
+    return "%s.v%d" % (edit, n)
+
+
+def handoff_md(name, tracks, markers, fcproj):
+    rows = "\n".join("| %s | %s | %s |" % (k, n, what) for k, n, what in tracks)
+    marks = "\n".join("- **%s** at %.2f s: %s" % (m[1], m[0], m[2] or "") for m in markers)
+    opened = ("Open `%s.fcproj` in filmcraft." % name) if fcproj else ("In filmcraft: File > Import > `%s.xml` (Premiere and Resolve: "
+                                                                       "File > Import the same file)." % name)
+    return """# %s: the edit
+
+%s Every file it uses is in `media/`; the captions are `captions.srt` (filmcraft: Captions > Import Captions).
+If you move this folder, filmcraft finds the media again with File > Link Media.
+
+## Tracks
+
+| Track | Name | What is on it |
+|---|---|---|
+%s
+
+The styled captions (V5) are switched off: turn them on for the reel's own caption look, or use the editable
+caption track from `captions.srt` instead.
+
+## Markers
+
+%s
+
+## What is left to you
+
+- the edit itself: trims, pacing, any scene you want to move, swap or drop;
+- the final mix and the export (1080x1920, 60 fps, H.264, -14 LUFS for the apps);
+- then, if you like, check your export: `python3 qa-export.py --video <your export> --profile explainer`.
+""" % (name, opened, rows, marks)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--project", required=True)
+    ap.add_argument("--no-render", action="store_true")
+    ap.add_argument("--xml-only", action="store_true")
+    ap.add_argument("--hf", default="")
+    a = ap.parse_args()
+    P = os.path.abspath(a.project)
+    name = os.path.basename(P.rstrip("/"))
+    pub = os.path.join(P, "public")
+    index = os.path.join(pub, "index.html")
+    if not os.path.isfile(index):
+        fail("no composed page at %s (compose first: explainer-compose.py)" % index)
+    if not E.kit_dir():
+        fail("the kit's youtube-edit scripts were not found (install the kit or set KIT_SCRIPTS)")
+    X = E.find_kit("nle_xml")
+    with open(index, encoding="utf-8") as f:
+        page = f.read()
+    D = float(re.search(r'id="stage"[^>]*data-duration="([\d.]+)"', page).group(1))
+    fps = float(re.search(r'data-fps="(\d+)"', page).group(1))
+    moments = load(os.path.join(pub, "moments.json"), {})
+    words = (load(os.path.join(P, "transcript.json"), {}) or {}).get("words", [])
+    board = load(os.path.join(P, "storyboard.json"), {}) or {}
+    by_id = {s.get("id"): s for s in board.get("scenes", [])}
+    notes = load(os.path.join(P, "notes.json"), []) or []
+
+    # 1. the layer clips
+    r = subprocess.run([sys.executable, kit_script("layer-pages.py"), "--index", index], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        fail(r.stdout.strip() or r.stderr.strip())
+    layers = load(os.path.join(pub, "layers.json"), [])
+    work = os.path.join(P, "layers")
+    if not a.no_render:
+        cmd = [sys.executable, kit_script("render-layers.py"), "--public", pub, "--out", work] + (["--hf", a.hf] if a.hf else [])
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        print(r.stdout.rstrip())
+        if r.returncode != 0:
+            fail("the layer clips did not all render (see above)")
+    missing = [l["name"] for l in layers if not os.path.isfile(os.path.join(work, l["name"] + ".mov"))]
+    if missing:
+        fail("no clip for %s in %s: make them with python3 \"%s\" --public \"%s\" --out \"%s\""
+             % (", ".join(missing), work, kit_script("render-layers.py"), pub, work))
+    for n in ("voice.wav",):
+        if not os.path.isfile(os.path.join(pub, n)):
+            fail("no %s in %s (compose first)" % (n, pub))
+
+    # 2. the edit folder
+    edit = os.path.join(P, "edit")
+    aside = set_aside(edit)
+    media, gfx = os.path.join(edit, "media"), os.path.join(edit, "media", "gfx")
+    os.makedirs(gfx)
+    tl = X.Timeline(name, 1080, 1920, fps)
+    legend = []
+    for k, (tname, kinds) in enumerate(VIDEO, 1):
+        tr = tl.video_track(tname, enabled=tname != "captions (styled)")
+        here = [l for l in layers if l["kind"] in kinds]
+        for l in here:
+            dst = shutil.copy(os.path.join(work, l["name"] + ".mov"), os.path.join(gfx, l["name"] + ".mov"))
+            tr.clip(dst, l["t_in"], l["t_out"], duration=l["t_out"] - l["t_in"], name=l["name"])
+        legend.append(("V%d" % k, tname, ", ".join(l["name"] for l in here) or "(empty)"))
+    for k, (tname, fn) in enumerate(AUDIO, 1):
+        src = os.path.join(pub, fn)
+        tr = tl.audio_track(tname)
+        if os.path.isfile(src):
+            dst = shutil.copy(src, os.path.join(media, fn))
+            sec = wav_seconds(dst)
+            tr.clip(dst, 0.0, min(sec, D), duration=sec, name=fn)
+        legend.append(("A%d" % k, tname, fn if os.path.isfile(src) else "(none)"))
+    markers = [(0.0, "Hook", "the promise, whole on screen by 1.0 s")]
+    for s in moments.get("scenes", []):
+        sc = by_id.get(s["id"], {})
+        comment = "on “%s”" % word_at(sc.get("in"), words)
+        if sc.get("source"):
+            comment += " · source: %s" % sc["source"]
+        markers.append((float(s["in"]), "%s · %s" % (s["id"], s.get("type", "")), comment))
+    markers += [(float(n["t"]), n.get("name", "Note"), n.get("comment", "")) for n in notes]
+    for t, mname, c in markers:
+        tl.marker(t, mname, c)
+    probs = tl.validate()
+    if probs:
+        fail("; ".join(probs))
+    xml = tl.write(os.path.join(edit, name + ".xml"))
+    L = E.L
+    with open(os.path.join(edit, "captions.srt"), "w", encoding="utf-8") as f:
+        f.write(L.to_srt(L.chunk_words(words)))
+    fcproj = None
+    if not a.xml_only:
+        F = E.find_kit("filmcraft")
+        if F.find_cli():
+            try:
+                res = F.to_project(xml, os.path.join(edit, "captions.srt"), os.path.join(edit, name + ".fcproj"))
+                if res["offlineMedia"]:
+                    fail("filmcraft could not find %s" % ", ".join(str(m) for m in res["offlineMedia"]))
+                fcproj = os.path.join(edit, name + ".fcproj")
+            except F.FilmcraftError as e:
+                fail(str(e))
+    with open(os.path.join(edit, "HANDOFF.md"), "w", encoding="utf-8") as f:
+        f.write(handoff_md(name, legend, markers, fcproj))
+    print("HANDOFF PASS: %s (%d video tracks, %d audio, %d markers%s)%s"
+          % (edit, len(VIDEO), len(AUDIO), len(markers), ", filmcraft project" if fcproj else "",
+             ("; the last hand-off is kept as %s" % aside) if aside else ""))
+
+
+if __name__ == "__main__":
+    main()
