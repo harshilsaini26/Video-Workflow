@@ -27,14 +27,16 @@ explainer/
 │       ├── align-script.py         gate E2: what Parakeet heard → the shown words with times (transcript.json)
 │       ├── plan-storyboard.py      the draft storyboard from the script's viz hints and the aligned words
 │       ├── explainer-compose.py    gate E3: storyboard.json → a 1080x1920, 60 fps HyperFrames page and its sound bed
-│       ├── transitions.py          how each scene comes in: fade, whip, zoom-through, wipe, burst, cut
+│       ├── transitions.py          how each scene comes in: fade, whip, zoom-through, wipe, burst, cut, brush; the close
 │       ├── sound.py                the sound bed: a generated pad or the creator's music, ducked, with sound effects
 │       ├── snap-page.py            a real page's screenshot with local Chrome, for the browser scene
-│       ├── pace-check.py           gate E4 (pacing): no still stretch over 3 s, no picture held over 8 s, on the page
+│       ├── pace-check.py           gate E4 (pacing): no still stretch over 3 s, no picture held over 8 s, one read at a time
 │       ├── layout-check.py         gate E5 (a clean picture): every scene in Chromium, no overlap, spill or unsafe text
 │       ├── layout-probe.mjs        what layout-check runs in Chromium (HyperFrames' puppeteer and Chrome)
-│       ├── motion-check.py         gate E6 (a living picture): measured on the rendered file, never still over 1 s
+│       ├── motion-check.py         gate E6 (a living picture): on the page before any render, and on the rendered file
 │       ├── stills.py               the Checkpoint B stills, settled, plus the hook at 0.3, 0.7 and 1.0 s, and a fresh sheet
+│       ├── review.py               the Animator's review sheets: a strip per cut, a timing sheet per scene, 1:1 crops
+│       ├── paper.py                the paper look's seeded texture (assets/paper.png)
 │       ├── preflight.py            prepares a machine once (Windows included) and writes PREFLIGHT.md
 │       ├── skill-version.py        pins the skill's files at the brief; a changed skill stops the next stage
 │       ├── new-version.py          a clean folder for each version of a reel (v2, v3...)
@@ -44,7 +46,7 @@ explainer/
 │       ├── explainer_lib.py        shared: word anchors, the scene area, the looks, text measured with real glyph widths
 │       ├── scenes/                 one module per scene type (48, custom included), found without a list
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
-│       └── tests/                  457 tests (python3 -m unittest discover -s tests -t .)
+│       └── tests/                  490 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
     explainer-writer.md · explainer-voice.md · explainer-director.md · explainer-animator.md
 ```
@@ -67,7 +69,7 @@ explainer/
 | The voice must say "one thousand dollars" while the screen shows "$1,000" | every line is kept twice, `say` and `show`; captions show `show`, timed across the whole `say` span | §E2, §E5 |
 | A misread acronym spoils the reel | a pronunciation lexicon shared by every project; a bad line is regenerated alone | §E3 |
 | Graphics drift off their words | every scene and item is anchored to a word (`word:N`), never to seconds; the kit's beat-check checks every entrance against its word | §E4 |
-| A scene that sits still too long | `pace-check.py` fails any stretch over 3 s with nothing changing and any picture held over 8 s (a flow that travels may hold longer); on the rendered file, `motion-check.py` (E6) fails a still stretch over 1 s or a reel still more than 15% of the time; a slow camera drift and particles keep every frame alive | §E1, §E6 |
+| A scene that sits still too long | `pace-check.py` fails any stretch over 3 s with nothing changing and any picture held over 8 s (a flow that travels may hold longer); on the page and on the rendered file, `motion-check.py` (E6) fails a still stretch over 1 s or a reel still more than 15% of the time; a slow camera drift and particles keep every frame alive | §E1, §E6 |
 | A diagram that overflows or collides | gate E5 (`layout-check.py`) opens every scene in Chromium on your machine and fails on text over text, text crossing a shape, text out of its card, anything outside the safe area, small text, clipped text and WCAG contrast; the hub computes its own geometry; every scene type passes it at three lengths of text (`test_every_scene_case_is_clean`) | §E4 |
 | A hook that costs tokens to write | the `kinetic` scene: kinetic type from a one-line hint in script.json, no code | §E6 |
 | A small widget in an empty frame | every library scene is scaled up (to 1.8x) to fill the scene area, y 345 to 1105, the centre of the frame, with small captions under it (44 px with a soft halo, y 1130 to 1235, the one bottom line for any text) and bare shapes running on to y 1650; no ease overshoots, nothing breathes without a reason, every cut is velocity-matched; the hook is kinetic type from data, and custom scenes are kept for what the library can't draw ([MOTION.md](skill/explainer/MOTION.md)) | §E6 |
@@ -210,7 +212,7 @@ flowchart TD
 | `script-check.py` | gate E1 on `script.json`; writes `SCRIPT.md` | 16: lengths and target (30 to 90 s), the brief's warnings (format, audience, goal, you, a question, an example, the format's shape), hook, sources (objects or plain strings), payoff and call to action, the report |
 | `tts-kokoro.py` | Kokoro line by line (`--only` one line), pauses by break, high-pass, compression, two-pass loudnorm to -16 LUFS / -1 dBTP (a peak over -1 dBTP fails); `--samples` for the voice choice; a `fake` engine for tests | 7 (1 needs Kokoro) |
 | `align-script.py` | gate E2: sequence alignment of heard to spoken words (tolerant of spelling, of the lexicon's respellings, of digits heard for number words: "1,000", "10%", "2024", "2.5"), shown words timed across their spoken span, spoken-only words at the start included | 11 |
-| `pace-check.py` | gate E4's pacing, from the `moments.json` the composer writes next to the page: every tween, count and item is a moment of change, ambient motion is not; a still stretch over 3 s fails, over 2 s warns (the kit's gap-scan can't see it: scenes always cover the voice) | 5, and it runs in the end-to-end test |
+| `pace-check.py` | gate E4's pacing, from the `moments.json` the composer writes next to the page: every tween, count and item is a moment of change, ambient motion is not; a still stretch over 3 s fails, over 2 s warns (the kit's gap-scan can't see it: scenes always cover the voice); the read floor: a number on screen 1.0 s, the last read 1.5 s before the end, two reads at once warned | 11, and it runs in the end-to-end test |
 | `plan-storyboard.py` | the draft storyboard: `viz` hints into scenes with each item on its word (an unspoken item halfway between its neighbours), money into count-ups, steps into numbers, brands into logo cards, the rest into draft titles; `PLAN.md` says which rule made each scene | 6, including the draft composing and passing pace-check, and a line with two pictures |
 | `transitions.py` | the transition for each scene (fade first, wipe on a new background, then a zoom-through and a whip, velocity-matched with a motion blur), the matching exit, the background wipe, the seeded burst | 7 |
 | `sound.py` | the generated pad and sound effects (the same bytes every time), the events (a whoosh per moving transition, a chime on the payoff, pops 0.35 s apart), the bed: looped, faded, ducked under the voice | 6: never silent, at least 6 dB of ducking, the creator's track looped and faded |
@@ -219,7 +221,9 @@ flowchart TD
 | `scenes/*.py` | 47 library scenes (build-up scenes, UI objects, the hero stat, giant captions and the logo card among them) and the sandboxed custom scene | 39 across the scene and asset suites (a screenshot punching in on its focus line among them), 10 for the custom contract (unique build names, and MOTION.md's banned eases, loops and randomness) |
 | heights | each scene's predicted height against Chromium, 3 cases × 2 column widths × every scene type, and the kinetic hook at the width it was composed at | over 236 measured rows (one fixture per scene group): every one 0 to 4 px over, never under |
 | `layout-check.py` | gate E5: every scene in Chromium at the moment it is fully built, and every handover (overlap, cover, crossing, spill, safe area, size, contrast on the composited ground; `hyperframes check` adds clipping) | 4, including every scene type at three lengths of text, clean |
-| `motion-check.py` | gate E6 on the rendered file: FFmpeg at 10 frames a second; fails a still stretch over 1 s or more than 15% still | in `test_motion.py` |
+| `motion-check.py` | gate E6 on the page (`--index`: the stills tool's seek at 10 fps, grey, boil off) and on the rendered file (FFmpeg at 10 frames a second); fails a still stretch over 1 s or more than 15% still | 8 in `test_motion.py` |
+| `review.py` | the Animator's sheets from the page in Chromium: 25 frames around every cut, a scene's timing sheet, every item as it lands, 1:1 crops, a crop that follows one element | 6 in `test_review.py` |
+| `paper.py`, the brush, the boil, the close | the seeded paper texture (≤ 6% darker), the five-band brush wipe, hand-drawn stroke boil in paper, the last scene leaving onto the hook's ground | `test_paper.py`, `test_transitions.py`, `test_boil.py` |
 | `stills.py` | Checkpoint B: every scene settled, the hook at 0.3, 0.7 and 1.0 s, a sheet that is always fresh | in `test_sops.py` |
 | `preflight.py`, `skill-version.py`, `new-version.py` | the machine prepared once; the skill pinned at the brief; a clean folder per version | in `test_sops.py` and `test_portable.py` (every text file opened as UTF-8, so Windows passes) |
 | theme | both looks (Latte and paper), every role pair at its WCAG ratio, every colour on every scene case in the look's palette | 5 |
@@ -232,7 +236,7 @@ flowchart TD
 | end to end | script-check → fake voice → alignment → compose → beat-check → `hyperframes check` → a 60 fps render → the kit's `verify-render.py --res 1080x1920` | 1 (needs FFmpeg, the kit, HyperFrames and a local GSAP), plus 1 with real Kokoro and Parakeet |
 
 **How it was verified** (2026-10-14 to 2026-10-18, on Linux with HyperFrames 0.8.157 to 0.8.171, and Chromium):
-- the whole suite: 457 tests, all passing; 3 skipped where Kokoro or a long render is not available (2026-10-21, after the editor hand-off; before that, 2026-10-18, after the
+- the whole suite: 490 tests, all passing; 3 skipped where Kokoro or a long render is not available (2026-10-22, after the craft pass from ClaudeAnimationBase; 2026-10-21, after the editor hand-off; before that, 2026-10-18, after the
   editorial pass: the paper look, the headline layer, the thread and nine new scenes);
 - a 33 s paper-look demo (USB-C, with stand-in images) passed E1 to E5 before rendering, then E6 and
   `verify-render.py` on the render;

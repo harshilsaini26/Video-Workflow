@@ -59,7 +59,7 @@ Distilled from three free, open sources, read as references (none of their code 
    two thirds of the RAG reel's frames frozen). The camera moves through every scene: a steady push-in from 0.95 to
    0.995 (linear, so it never comes to rest; shallower where the scene's smallest text would drop under 28 px) with a 1.5° turn that alternates scene to scene (`.cam`, the composer's), and a field of small squares and
    dots rises behind the scenes for the whole reel. Both are quiet enough to read through and never count as a new
-   picture for pace-check. Gate E6 (`motion-check.py`) measures the rendered file: no still stretch over 1 s, under
+   picture for pace-check. Gate E6 (`motion-check.py`) measures the page before any render (`--index`) and the rendered file: no still stretch over 1 s, under
    15% still (a frame is still when under 0.1% of it changes visibly). **Pieces still arrive on the words that name them**; a screenshot punches in on its `focus` word; a
    build keeps one small alive thing while it waits.
 2. **The background moves on the cut.** Its glows travel with each cut (expo.out, about 1.2 s) and hold between cuts.
@@ -76,6 +76,19 @@ Distilled from three free, open sources, read as references (none of their code 
 7. **One read at a time; fast actions, slow meanings.** Two items of one scene land at least 0.6 s apart unless they
    are one stagger (E4 lists them as "two reads at once"); a number stays on screen at least 1.0 s before its scene
    leaves; the last read of the reel lands at least 1.5 s before the end (both E4 FAIL, `pace-check.py`).
+8. **Lead the eye.** Before an important item lands, the thread or the camera moves there first; the viewer is already
+   looking when it arrives.
+9. **Cause, then reaction, never on the same frame.** The strike lands, then the price drops; the circle draws, then
+   its label slides in (the annotation waits 0.3 s for its leader). Two things that happen together read as one.
+10. **Avoid twinning.** Two pieces never move as mirror images on the same frame: offset their staggers (the brush's
+    bands start at 0, .14, .06, .18 and .1 of the cover), vary their distances.
+11. **Into, between and out of.** Every scene enters, holds alive and leaves, the last one included: the close takes it
+    off over the last 0.4 s onto the hook's ground, and **the ending rhymes with the hook** (the same ground, the same
+    word, the same shape back), so the loop seams back into the start.
+12. **Hand-drawn strokes (paper).** In the paper look the strokes boil: the thread, annotation circles and leaders and
+    line-art wobble a little, an SVG turbulence whose seed steps 12 times a second (ambient, after
+    ClaudeAnimationBase). Never text, never a fill. Gate E6 samples the page with it off (`data-boil="off"`), so a boil
+    never hides a frozen stretch.
 
 ## 3. Cuts
 
@@ -86,6 +99,13 @@ short blur carries the speed (HyperFrames' cut catalogue). **The old scene is go
 - **zoom-through:** out 1 to 1.2 with a 10 px blur, `power3.in` 0.2 s; in 0.75 to 1 out of an 8 px blur, `expo.out` 0.5 s;
 - **whip (push):** out 260 px up with a 12 px blur; in from 300 px below out of a 10 px blur;
 - **wipe:** a new background opens as a circle; **burst:** a spray for the hook or a reveal; **cut:** a hard cut.
+- **brush** (the paper look's wipe): five ragged bands in the outgoing ground's accent and ink sweep across, cover
+  the frame on the cut, then sweep off in 0.3 s (`expo.out`); the new ground swaps under them;
+- **the close:** the last scene leaves over the last 0.4 s, onto the hook's ground.
+
+**Choose a transition for a reason**, not in turn: a new place (a new ground, a new subject) gets a wipe or a brush;
+the same idea continuing gets a fade or no more than the camera's push; a jolt (a reversal, "but") gets a whip. The
+composer's defaults follow this; a scene's `"transition"` overrides it when the voice asks for another.
 
 ## 4. The hook, and bespoke moments
 

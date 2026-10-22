@@ -53,6 +53,31 @@ class Docs(unittest.TestCase):
             for root, name in re.findall(r"\$(ES|RS|SK)/scripts/([\w.-]+\.(?:py|mjs))", read(p)):
                 self.assertTrue(os.path.exists(os.path.join(ROOTS[root], name)), "%s cites $%s/scripts/%s" % (p, root, name))
 
+    def test_craft_doctrine_is_written(self):
+        motion = read(os.path.join(ES, "MOTION.md"))
+        for phrase in ("lead the eye", "cause, then reaction", "rhymes with the hook", "into, between and out of",
+                       "twinning", "a transition for a reason"):
+            self.assertIn(phrase, motion.lower(), phrase)
+        director = read(AGENTS[2])
+        self.assertIn("for a reason", director)
+        self.assertIn("rhyme", director)
+
+    def test_the_push_in_contradiction_is_gone(self):
+        pb = read(PLAYBOOK)
+        self.assertNotIn("No scene pushes in on its own", pb.replace("\n   ", " "))
+        self.assertIn("brush", pb)
+        self.assertIn("the close", pb)
+
+    def test_the_new_tools_are_cited(self):
+        skill, animator = read(SKILL), read(AGENTS[3])
+        self.assertIn('"$ES/scripts/motion-check.py" --index', skill)
+        self.assertIn("review.py", skill)
+        self.assertIn("$ES/scripts/review.py", animator)
+        research = read(os.path.join(PROFILE, "RESEARCH.md"))
+        self.assertIn("JohnHeibel/ClaudeAnimationBase", research)
+        for skipped in ("Clawd", "p5.brush", "overshoot"):
+            self.assertIn(skipped, research)
+
     def test_playbook_references_resolve(self):
         heads = set(re.findall(r"^#+ (§E\d+)\b", read(PLAYBOOK), re.M))
         self.assertEqual(heads, {"§E%d" % i for i in range(9)})

@@ -97,8 +97,8 @@ created".
 | A | **Checkpoint A** | you, with the creator (script, sources, the real length; voice samples on the first project) | approval | 3 |
 | 3 | Voice | `explainer-voice` · voice | E2 | 4 |
 | 4 | Storyboard | `explainer-director` · plan (from `plan-storyboard.py`'s draft) | its self-check | 5 |
-| 5 | Compose | `explainer-animator` · build | E3, E4 (beat-check, pace-check, hold time), E5 (layout-check: a clean picture, every handover) | B |
-| B | **Checkpoint B** | you, with the creator (`stills.py`: every scene settled, the hook at 0.3/0.7/1.0 s; the voiceover) | approval | 6 |
+| 5 | Compose | `explainer-animator` · build | E3, E4 (beat-check, pace-check, hold time, the read floor), E5 (layout-check: a clean picture, every handover), E6 on the page (`motion-check.py --index`) | B |
+| B | **Checkpoint B** | you, with the creator (`stills.py`: every scene settled, the hook at 0.3/0.7/1.0 s; the review sheets from `review.py`; the voiceover) | approval | 6 |
 | 6 | **Hand-off** | `explainer-animator` · handoff: `python3 "$ES/scripts/handoff.py" --project $W` (each scene a transparent clip; the filmcraft project) | H1 (`handoff-check.py`) | 7 |
 | 7 | The creator edits | the creator, in filmcraft (or Premiere, or Resolve): trims, pacing, the mix, the export; `qa-export.py` on their export if they want it | their call | 8 |
 | 8 | Package | `reels-packager`: `POST.md` as a draft through `post-check.py`, `captions.srt`, covers from the creator's export | post-check | 9 |
@@ -129,7 +129,8 @@ chooses (S12).
     guides and E5 use; a scene's text and cards end by y 1105, above the captions; a shape with no text on it may run
     to y 1650, behind the captions (they keep a halo of their ground); anything else lower, or in the right column
     below y 960, is a FAIL;
-  - **motion (E6):** `"$ES/scripts/motion-check.py" --video output.mp4`: no still stretch over 1 s, under 15% still;
+  - **motion (E6):** `"$ES/scripts/motion-check.py" --index public/index.html` before any render, then
+    `--video output.mp4` on the render: no still stretch over 1 s, under 15% still;
   - **bitrate:** flat motion graphics average under the floor even at a 20 Mb/s target; `verify-render.py` passes them
     when x264 was asked for the floor or more (it says "a simple picture");
   - skip the face and footage checks; loudness and frame rate apply unchanged.
@@ -186,7 +187,9 @@ choice into the Brief.
 `snaps/stills/` from `"$ES/scripts/stills.py"` (S10): one full-size still of every scene **once it has settled** (all of
 it arrived; never mid-entrance), the hook at 0.3, 0.7 and 1.0 s, and `sheet.png`, made fresh each time so no still from
 an earlier build is shown; `snaps/guides/sheet.png` (the safe zone drawn on); `snaps/SCENES.md` (what is on screen
-when, with each scene's words and source); and `voice.wav` for the creator to listen to in full.
+when, with each scene's words and source); the review sheets in `snaps/review/` from `"$ES/scripts/review.py"` (a
+strip for every cut, a timing sheet per scene, a crop per hero), which the Animator has looked at; and `voice.wav` for
+the creator to listen to in full.
 Record answers (B01...): words and timing → Director (`replan`) then Animator (`rebuild`); a pronunciation → Voice
 (`fix`); a fact → Writer. Show the changed stills again.
 

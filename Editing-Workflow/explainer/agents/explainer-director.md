@@ -47,7 +47,9 @@ re-plan the notes to act on.
    a `screenshot` you take with `python3 "$ES/scripts/snap-page.py" --url <page> --out "$W/shots/<name>.png"` (look at
    it: no cookie banner, no sign-in wall); never a title that repeats what the voice is saying (§E5.5); a background
    change only at a section break; transitions are automatic (name one only for a reason: `"transition": "burst"` on
-   a reveal).
+   a reveal; a new place gets a wipe or a brush, the same idea a fade, a jolt a whip: MOTION.md §3). Lead the eye:
+   put the thread or the next scene where the important item will land. **Plan the rhyme:** the last scene echoes
+   the hook (its word, its shape, its ground), so the close seams the loop back into the start.
 3. **The storyboard's shape** (the planner writes it; keep it when you edit):
    ```json
    {"id": "<project>", "fps": 60, "voice": "voice.wav", "transcript": "transcript.json",

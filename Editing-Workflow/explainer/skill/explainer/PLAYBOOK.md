@@ -242,8 +242,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    and a missing function. A function defined in a `<script type="module">` (three.js) also needs
    `window.build<Id> = build<Id>;`: a module's names are its own, so the page could not call it. GSAP is always there; KaTeX and three.js come from the local vendor folder. Checkpoint B shows them at in, middle and out;
    one the creator likes is promoted into the library by the Librarian, with a test.
-6. **Motion with a reason** (MOTION.md §2): nothing moves unless the voice gives it a reason. No scene pushes in on
-   its own and the background never drifts: its three glows travel with each cut (up to 380 px across and 420 px down,
+6. **Motion with a reason** (MOTION.md §2): every scene's camera pushes in slowly and steadily (0.95 to 0.995, linear,
+   so the picture is never still), but nothing on the content pushes in unless the voice asks for it, and the
+   background never drifts: its three glows travel with each cut (up to 380 px across and 420 px down,
    expo.out over 1.2 s, each move written from where the last one ended, so every render is the same) and hold
    between cuts. A build-up scene keeps one
    idle motion while it holds (a pulse down a connector, a float, a slow turn); a screenshot holds still and punches
@@ -253,7 +254,11 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    in as a growing circle, and the rest alternate a zoom-through (the old scene rushes past the viewer into a blur,
    the new one lands from behind) and a whip (the old one flies up, the new one lands from below), each exit
    accelerating into the cut and each entrance decelerating out of it. A scene can name its own with `"transition"`:
-   `fade`, `push`, `zoom`, `wipe`, `burst` (a spray of colour, for a hook or a reveal) or `cut`.
+   `fade`, `push`, `zoom`, `wipe`, `burst` (a spray of colour, for a hook or a reveal), `cut` or `brush`. In the paper
+   look a new ground comes in with the **brush** (five ragged bands cover the frame on the cut and sweep off). Every
+   scene leaves, the last one too: **the close** takes it off over the last 0.4 s onto the hook's ground, so the loop
+   seams into the hook. Choose a transition for a reason (MOTION.md §3): a new place, a wipe or brush; the same idea,
+   a fade; a jolt, a whip.
 8. **Fill the frame:** the composer lays each library scene out narrower and scales it up (to 1.8x; a title to
    150 px, a number to 1.3x) to fill the scene area; `moments.json` records each scene's box and scale. Two scenes in
    a row with the same layout get a WARN: change the picture, or merge them into one build.

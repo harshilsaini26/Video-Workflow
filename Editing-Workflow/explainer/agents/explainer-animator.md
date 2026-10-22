@@ -57,6 +57,11 @@ a render takes minutes.
    frames across its cut: the old scene must be gone before the new one shows (S9). It runs in Chromium on this machine (HyperFrames' own puppeteer and
    Chrome) and costs no tokens. A failure names the scene and the text: shorten the words in the storyboard (the
    Director's) or fix a custom file (yours), compose again, and re-run until it prints E5 PASS.
+   **Gate E6 on the page, a living picture:** `python3 "$ES/scripts/motion-check.py" --index "$W/public/index.html"`
+   samples the page at 10 fps (boil off): no still stretch over 1 s, under 15% still, before any render.
+   **Look, not only measure:** `python3 "$ES/scripts/review.py" --index "$W/public/index.html" --out "$W/snaps/review" --cuts`
+   (then `--scene <id>`, `--items`, `--crop`, `--follow '#<id>-...'`): the strips show a cut that jars, a read that
+   comes too soon, a hero that is soft, which no gate sees.
 8. **Stills, settled (S10):**
    ```bash
    python3 "$ES/scripts/stills.py" --index "$W/public/index.html" --out "$W/snaps/stills"
