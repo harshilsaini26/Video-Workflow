@@ -89,7 +89,12 @@ creator asked for it (stage R).
 ## Done when
 
 E3 passes, `hyperframes check` has no errors, beat-check and pace-check are clean (E4), E5 passes, `snaps/stills/`, `snaps/guides/sheet.png` and
-`SCENES.md` are current, and you have looked at every guided still.
+`SCENES.md` are current, and you have looked at every guided still. And, from `review.py` (into `snaps/review/`,
+listed in `SCENES.md`), looked at before Checkpoint B:
+
+- a viewer-timing sheet for every scene (`"$ES/scripts/review.py" --index public/index.html --out snaps/review --scene <id>`);
+- a strip for every cut (`--cuts`): no frame where the cut jars, no frame with two scenes fighting;
+- a crop for every hero (the kinetic hook, a stat, a product-hero: `--crop`, or `--follow '#<id>-...'`), sharp at 1:1.
 
 ## Never
 
