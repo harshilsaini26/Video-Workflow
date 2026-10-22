@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """handoff_lib.py: what every profile's editor hand-off shares (explainer handoff.py, reels-handoff.py for reels and
 long-form): keeping the last edit/ aside, the filmcraft project, HANDOFF.md."""
-import json, os, shutil, subprocess
+import contextlib, json, os, shutil, subprocess
 
 import filmcraft
 
@@ -14,7 +14,10 @@ def load(path, default=None):
     if not os.path.isfile(path):
         return default
     with open(path, encoding="utf-8") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except ValueError as e:
+            raise HandoffError("%s is not valid JSON (%s)" % (path, e))
 
 
 def set_aside(edit):
@@ -26,6 +29,46 @@ def set_aside(edit):
         n += 1
     shutil.move(edit, "%s.v%d" % (edit, n))
     return "%s.v%d" % (edit, n)
+
+
+@contextlib.contextmanager
+def staged(edit):
+    """Build a new edit/ with the last one kept aside (edit.v<N>); if anything fails, the half-built folder goes and the
+    last edit/ comes back exactly as it was. Yields the aside path (or None)."""
+    aside = set_aside(edit)
+    try:
+        yield aside
+    except BaseException as e:            # a failure, or a script's own sys.exit: the last edit/ comes back either way
+        shutil.rmtree(edit, True)
+        if aside:
+            shutil.move(aside, edit)
+        if isinstance(e, (SystemExit, KeyboardInterrupt)):
+            raise
+        raise HandoffError(str(e) if isinstance(e, HandoffError) else "%s: %s" % (type(e).__name__, e))
+
+
+def place(tl, lanes, path, start, end, **kw):
+    """Put a clip on the first lane where it does not overlap (cards and scenes may overlap at a handover); a new lane
+    ("<name> 2", ...) is added above when none is free."""
+    f = tl.frames
+    for tr in lanes:
+        if all(f(end) <= f(c["start"]) or f(start) >= f(c["end"]) for c in tr.clips):
+            return tr.clip(path, start, end, **kw)
+    tr = tl.video_track("%s %d" % (lanes[0].name, len(lanes) + 1), enabled=lanes[0].enabled)
+    lanes.append(tr)
+    return tr.clip(path, start, end, **kw)
+
+
+def link_or_copy(src, dst):
+    """The same file in two places without twice the disk: a hard link, else a copy."""
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    if os.path.exists(dst):
+        os.remove(dst)
+    try:
+        os.link(src, dst)
+    except OSError:
+        shutil.copy(src, dst)
+    return dst
 
 
 def media_seconds(path):

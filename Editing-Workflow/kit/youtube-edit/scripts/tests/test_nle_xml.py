@@ -60,6 +60,21 @@ class Writer(unittest.TestCase):
         self.assertEqual(text.count("<pathurl>"), 1)
         self.assertEqual(text.count('<file id="'), 2)
 
+    def test_scale_and_position_are_written(self):
+        # a landscape camera file on a vertical reel: scaled to cover the frame (filmcraft imports at 100%)
+        import nle_xml as X
+        d = scratch(self)
+        a, = files(d, "a.mov")
+        tl = X.Timeline("t", 1080, 1920, 60)
+        tl.video_track("v").clip(a, 0, 1, duration=1, scale=177.7778, position=(0.6321, 0.0))
+        p = X.parse(tl.write(os.path.join(d, "t.xml")))
+        self.assertIn("basic", p["video"][0]["clips"][0]["effects"])
+        with open(os.path.join(d, "t.xml"), encoding="utf-8") as f:
+            text = f.read()
+        self.assertIn("<parameterid>scale</parameterid>", text)
+        self.assertIn("<value>177.7778</value>", text)
+        self.assertIn("<horiz>0.6321</horiz>", text)
+
     def test_validate_names_each_problem(self):
         import nle_xml as X
         d = scratch(self)

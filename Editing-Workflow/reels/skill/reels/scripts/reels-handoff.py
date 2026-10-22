@@ -24,6 +24,7 @@ KIT = next((os.path.abspath(k) for k in [os.environ.get("KIT_SCRIPTS", ""), os.p
             if k and os.path.exists(os.path.join(k, "nle_xml.py"))), None)
 if KIT:
     sys.path.insert(0, KIT)
+    import handoff_lib as H
 sys.path.insert(0, HERE)
 
 
@@ -53,6 +54,32 @@ def to_camera(t0, t1, clips):
     return out
 
 
+def segments(section):
+    """[(flat start, source start, source end)]: from cut-map.json (where apply-cut put each segment, snapped to the
+    source's frames, as the cards and captions are timed), else from the cut list laid end to end."""
+    cm = H.load(os.path.join(section, "cut-map.json"))
+    if cm and cm.get("segments"):
+        return [(float(g["flat_start"]), float(g["src_start"]), float(g["src_end"])) for g in cm["segments"]]
+    out, t = [], 0.0
+    for k in H.load(os.path.join(section, "cut-list.json"))["kept"]:
+        out.append((t, float(k["start"]), float(k["end"])))
+        t += float(k["end"]) - float(k["start"])
+    return out
+
+
+def framing(clip, W, Hh, face):
+    """(scale %, centre offset) for a camera clip on the sequence: scaled to cover the frame, and moved so the face (0 to 1
+    of the clip's width) sits in the middle, never so far that the frame shows past the clip's edge."""
+    ws, hs = clip.get("width"), clip.get("height")
+    if not ws or not hs:
+        return None, None
+    s = max(W / float(ws), Hh / float(hs))
+    if face is None:
+        return round(100 * s, 4), None
+    room = max(0.0, (ws * s - W) / 2.0 / W)
+    return round(100 * s, 4), (round(max(-room, min(room, (0.5 - float(face)) * ws * s / W)), 4), 0.0)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--project", required=True)
@@ -66,7 +93,6 @@ def main():
     if not KIT:
         fail("the kit's youtube-edit scripts were not found (install the kit or set KIT_SCRIPTS)")
     import nle_xml as X
-    import handoff_lib as H
     import reels_lib as L
     P = os.path.abspath(a.project)
     name = os.path.basename(P.rstrip("/"))
@@ -107,90 +133,93 @@ def main():
              % (", ".join(missing), os.path.join(KIT, "render-layers.py")))
 
     edit = os.path.join(P, "edit")
-    aside = H.set_aside(edit)
-    media = os.path.join(edit, "media")
-    for sub in ("gfx", "b-roll", "sfx"):
-        os.makedirs(os.path.join(media, sub))
-    tl = X.Timeline(name, W, Hh, fps)
-    v_foot, v_broll, v_cards, v_caps = (tl.video_track("footage"), tl.video_track("b-roll"), tl.video_track("cards"),
-                                        tl.video_track("captions (styled)", enabled=False))
-    a_foot, a_music, a_sfx = tl.audio_track("footage audio"), tl.audio_track("music"), tl.audio_track("sfx")
-    markers, words, off = [(0.0, "Hook", "the promise: on screen by 0.3 s, whole by 1.0 s")], [], 0.0
-    for s in sections:
-        sname = os.path.basename(s) if s != P else ""
-        tag = (sname + "-") if sname else ""
-        if a.format == "16x9":
-            markers.append((off, "Chapter: %s" % (sname or name), ""))
-        cut = H.load(os.path.join(s, "cut-list.json"))
-        face = H.load(os.path.join(s, "face-x.json"), {}) or {}
-        t = off
-        for i, k in enumerate(cut["kept"]):
-            for c, i0, i1 in to_camera(float(k["start"]), float(k["end"]), clips):
-                pos = (float(face[str(i)]) - 0.5, 0.0) if str(i) in face else None
-                v_foot.clip(c["path"], t, t + (i1 - i0), src_in=i0, duration=c["duration"], name=c["file"], position=pos)
-                a_foot.clip(c["path"], t, t + (i1 - i0), src_in=i0, duration=c["duration"], name=c["file"])
-                t += i1 - i0
-        pub = os.path.join(s, "public")
-        with open(os.path.join(pub, "index.html"), encoding="utf-8") as f:
-            page = f.read()
-        D = float(re.search(r'id="stage"[^>]*data-duration="([\d.]+)"', page).group(1))
-        for tagm in re.findall(r"<video\b[^>]*>", page):
-            if "cutaway-video" not in tagm:
-                continue
-            src = os.path.join(pub, attr(tagm, "src"))
-            dst = shutil.copy(src, os.path.join(media, "b-roll", tag + os.path.basename(src)))
-            t0, dur = float(attr(tagm, "data-start")), float(attr(tagm, "data-duration"))
-            v_broll.clip(dst, off + t0, off + t0 + dur, src_in=float(attr(tagm, "data-media-start") or 0), duration=H.media_seconds(dst))
-        for tagm in re.findall(r"<audio\b[^>]*>", page):
-            src = os.path.join(pub, attr(tagm, "src"))
-            if not os.path.isfile(src):
-                continue
-            dst = os.path.join(media, "sfx", tag + os.path.basename(src))
-            if not os.path.exists(dst):
-                shutil.copy(src, dst)
-            t0, dur, vol = float(attr(tagm, "data-start")), float(attr(tagm, "data-duration")), float(attr(tagm, "data-volume") or 1)
-            sec = H.media_seconds(dst) or dur
-            a_sfx.clip(dst, off + t0, off + t0 + min(dur, sec), duration=sec, name=os.path.basename(src),
-                       level_db=20 * math.log10(max(vol, 1e-4)))
-        for l in H.load(os.path.join(pub, "layers.json"), []):
-            if l["kind"] not in ("host", "captions", "brand"):
-                continue
-            fn = l["name"] + "." + l.get("ext", "mov")
-            dst = shutil.copy(os.path.join(s, "layers", fn), os.path.join(media, "gfx", tag + fn))
-            (v_caps if l["kind"] == "captions" else v_cards).clip(dst, off + l["t_in"], off + l["t_out"], duration=l["t_out"] - l["t_in"], name=l["name"])
-        for n in H.load(os.path.join(s, "notes.json"), []) or []:
-            markers.append((off + float(n["t"]), n.get("name", "Note"), n.get("comment", "")))
-        words += [dict(w, start=w["start"] + off, end=w["end"] + off) for w in (H.load(os.path.join(s, "transcript.json"), {}) or {}).get("words", [])]
-        off += D
-    if s != P:
-        for n in H.load(os.path.join(P, "notes.json"), []) or []:
-            markers.append((float(n["t"]), n.get("name", "Note"), n.get("comment", "")))
-    if a.music:
-        dst = shutil.copy(a.music, os.path.join(media, os.path.basename(a.music)))
-        sec = H.media_seconds(dst) or off
-        a_music.clip(dst, 0.0, min(sec, off), duration=sec, level_db=-18)
-    for t, mname, c in markers:
-        tl.marker(t, mname, c)
-    probs = tl.validate()
-    if probs:
-        fail("; ".join(probs))
-    xml = tl.write(os.path.join(edit, name + ".xml"))
-    srt = os.path.join(edit, "captions.srt")
-    with open(srt, "w", encoding="utf-8") as f:
-        f.write(L.to_srt(L.chunk_words(words)) if words else "")
     try:
-        fcproj = None if a.xml_only else H.make_project(xml, srt, os.path.join(edit, name + ".fcproj"))
+        with H.staged(edit) as aside:
+            media = os.path.join(edit, "media")
+            for sub in ("gfx", "b-roll", "sfx"):
+                os.makedirs(os.path.join(media, sub))
+            tl = X.Timeline(name, W, Hh, fps)
+            v_foot, v_broll, v_cards, v_caps = (tl.video_track("footage"), tl.video_track("b-roll"), tl.video_track("cards"),
+                                                tl.video_track("captions (styled)", enabled=False))
+            a_foot, a_music, a_sfx = tl.audio_track("footage audio"), tl.audio_track("music"), tl.audio_track("sfx")
+            card_lanes, cap_lanes = [v_cards], [v_caps]
+            markers, words, off = [(0.0, "Hook", "the promise: on screen by 0.3 s, whole by 1.0 s")], [], 0.0
+            for s in sections:
+                sname = os.path.basename(s) if s != P else ""
+                tag = (sname + "-") if sname else ""
+                if a.format == "16x9":
+                    markers.append((off, "Chapter: %s" % (sname or name), ""))
+                face = H.load(os.path.join(s, "face-x.json"), {}) or {}
+                for i, (flat, s0, s1) in enumerate(segments(s)):
+                    t = off + flat
+                    for c, i0, i1 in to_camera(s0, s1, clips):
+                        scale, pos = framing(c, W, Hh, face.get(str(i)))
+                        v_foot.clip(c["path"], t, t + (i1 - i0), src_in=i0, duration=c["duration"], name=c["file"], position=pos, scale=scale)
+                        a_foot.clip(c["path"], t, t + (i1 - i0), src_in=i0, duration=c["duration"], name=c["file"])
+                        t += i1 - i0
+                pub = os.path.join(s, "public")
+                with open(os.path.join(pub, "index.html"), encoding="utf-8") as f:
+                    page = f.read()
+                D = float(re.search(r'id="stage"[^>]*data-duration="([\d.]+)"', page).group(1))
+                for tagm in re.findall(r"<video\b[^>]*>", page):
+                    if "cutaway-video" not in tagm:
+                        continue
+                    src = os.path.join(pub, attr(tagm, "src"))
+                    dst = shutil.copy(src, os.path.join(media, "b-roll", tag + os.path.basename(src)))
+                    t0, dur = float(attr(tagm, "data-start")), float(attr(tagm, "data-duration"))
+                    v_broll.clip(dst, off + t0, off + t0 + dur, src_in=float(attr(tagm, "data-media-start") or 0), duration=H.media_seconds(dst))
+                for tagm in re.findall(r"<audio\b[^>]*>", page):
+                    src = os.path.join(pub, attr(tagm, "src"))
+                    if not os.path.isfile(src):
+                        continue
+                    dst = os.path.join(media, "sfx", tag + os.path.basename(src))
+                    if not os.path.exists(dst):
+                        shutil.copy(src, dst)
+                    t0, dur, vol = float(attr(tagm, "data-start")), float(attr(tagm, "data-duration")), float(attr(tagm, "data-volume") or 1)
+                    sec = H.media_seconds(dst) or dur
+                    a_sfx.clip(dst, off + t0, off + t0 + min(dur, sec), duration=sec, name=os.path.basename(src),
+                               level_db=20 * math.log10(max(vol, 1e-4)))
+                for l in H.load(os.path.join(pub, "layers.json"), []):
+                    if l["kind"] not in ("host", "captions", "brand"):
+                        continue
+                    fn = l["name"] + "." + l.get("ext", "mov")
+                    dst = H.link_or_copy(os.path.join(s, "layers", fn), os.path.join(media, "gfx", tag + fn))
+                    H.place(tl, cap_lanes if l["kind"] == "captions" else card_lanes, dst, off + l["t_in"], off + l["t_out"],
+                            duration=l["t_out"] - l["t_in"], name=l["name"])
+                for n in H.load(os.path.join(s, "notes.json"), []) or []:
+                    markers.append((off + float(n["t"]), n.get("name", "Note"), n.get("comment", "")))
+                words += [dict(w, start=w["start"] + off, end=w["end"] + off) for w in (H.load(os.path.join(s, "transcript.json"), {}) or {}).get("words", [])]
+                off += D
+            if s != P:
+                for n in H.load(os.path.join(P, "notes.json"), []) or []:
+                    markers.append((float(n["t"]), n.get("name", "Note"), n.get("comment", "")))
+            if a.music:
+                dst = shutil.copy(a.music, os.path.join(media, os.path.basename(a.music)))
+                sec = H.media_seconds(dst) or off
+                a_music.clip(dst, 0.0, min(sec, off), duration=sec, level_db=-18)
+            for t, mname, c in markers:
+                tl.marker(t, mname, c)
+            probs = tl.validate()
+            if probs:
+                fail("; ".join(probs))
+            xml = tl.write(os.path.join(edit, name + ".xml"))
+            srt = os.path.join(edit, "captions.srt")
+            with open(srt, "w", encoding="utf-8") as f:
+                f.write(L.to_srt(L.chunk_words(words)) if words else "")
+            fcproj = None if a.xml_only else H.make_project(xml, srt, os.path.join(edit, name + ".fcproj"))
+            legend = [("V1", "footage", "your camera files, cut by word (%d clips)" % len(v_foot.clips)),
+                      ("V2", "b-roll", "%d cutaways" % len(v_broll.clips)),
+                      ("V3", "cards", "%d cards, each a transparent clip%s" % (sum(len(t.clips) for t in card_lanes),
+                                                                               " (overlaps on the lanes above)" if len(card_lanes) > 1 else "")),
+                      ("V4", "captions (styled)", "the reel's own caption look (off)"), ("A1", "footage audio", "the camera sound"),
+                      ("A2", "music", os.path.basename(a.music) if a.music else "(none: add yours)"), ("A3", "sfx", "%d sound effects" % len(a_sfx.clips))]
+            H.write_handoff_md(os.path.join(edit, "HANDOFF.md"), name, legend, markers, fcproj, export, "longform" if a.format == "16x9" else "reels",
+                               "The styled captions (V4) are switched off: turn them on for the reel's caption look, or use the editable caption "
+                               "track from `captions.srt` instead.")
     except H.HandoffError as e:
         fail(str(e))
-    legend = [("V1", "footage", "your camera files, cut by word (%d clips)" % len(v_foot.clips)),
-              ("V2", "b-roll", "%d cutaways" % len(v_broll.clips)), ("V3", "cards", "%d cards, each a transparent clip" % len(v_cards.clips)),
-              ("V4", "captions (styled)", "the reel's own caption look (off)"), ("A1", "footage audio", "the camera sound"),
-              ("A2", "music", os.path.basename(a.music) if a.music else "(none: add yours)"), ("A3", "sfx", "%d sound effects" % len(a_sfx.clips))]
-    H.write_handoff_md(os.path.join(edit, "HANDOFF.md"), name, legend, markers, fcproj, export, "longform" if a.format == "16x9" else "reels",
-                       "The styled captions (V4) are switched off: turn them on for the reel's caption look, or use the editable caption "
-                       "track from `captions.srt` instead.")
     print("HANDOFF PASS: %s (%d footage clips, %d cards, %d markers%s)%s"
-          % (edit, len(v_foot.clips), len(v_cards.clips), len(markers), ", filmcraft project" if fcproj else "",
+          % (edit, len(v_foot.clips), sum(len(t.clips) for t in card_lanes), len(markers), ", filmcraft project" if fcproj else "",
              ("; the last hand-off is kept as %s" % aside) if aside else ""))
 
 

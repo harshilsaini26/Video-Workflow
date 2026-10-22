@@ -118,16 +118,64 @@ class Reels(unittest.TestCase):
         self.assertEqual((sfx["start"], sfx["name"]), (12, "pop.mp3"))
         self.assertIn("audiolevels", sfx["effects"])
 
-    def test_face_x_sets_position(self):
+    def test_face_x_sets_position_and_every_clip_is_scaled_to_cover(self):
+        # a 1920x1080 camera file on a 1080x1920 reel: scaled 177.78% to cover the frame; with the face at 0.30 of the
+        # width, the clip moves right by (0.5 - 0.30) of its scaled width so the face sits in the middle
         W, a, b = self.two_cameras()
         section(self, W, None, [(0.5, 1.5), (1.6, 2.0)], [(a, 3)])
         ingest(W, [(a, 3)])
         write(os.path.join(W, "face-x.json"), {"0": 0.30})
         v1 = self.handoff(W)["video"][0]["clips"]
         self.assertIn("basic", v1[0]["effects"])
-        self.assertNotIn("basic", v1[1]["effects"])
+        self.assertIn("basic", v1[1]["effects"])           # scaled even without a face
         xml = read(os.path.join(W, "edit", "reel-01.xml"))
-        self.assertIn("<horiz>-0.2000</horiz>", xml)
+        self.assertIn("<horiz>0.6321</horiz>", xml)
+        self.assertEqual(xml.count("<horiz>"), 1)
+        self.assertEqual(xml.count("<value>177.7778</value>"), 2)
+
+    def test_overlapping_cards_take_a_second_lane(self):
+        W, a, b = self.two_cameras()
+        section(self, W, None, [(0.5, 1.5)], [(a, 3)])
+        ingest(W, [(a, 3)])
+        page = os.path.join(W, "public", "index.html")
+        write(page, read(page).replace('<div class="clip cap-layer"', '<div class="card-host clip" id="host-c2" data-card-id="c2" data-start="0.800" '
+                                        'data-duration="0.600" data-track-index="6"><div class="card">B</div></div>\n    <div class="clip cap-layer"'))
+        write(os.path.join(W, "layers", "c2.mov"), "stand-in")
+        p = self.handoff(W)
+        names = [t["name"] for t in p["video"]]
+        self.assertIn("cards 2", names)
+        self.assertEqual([c["name"] for c in p["video"][names.index("cards 2")]["clips"]], ["c2"])
+
+    def test_a_failed_run_keeps_the_last_edit(self):
+        W, a, b = self.two_cameras()
+        section(self, W, None, [(0.5, 1.5)], [(a, 3)])
+        ingest(W, [(a, 3)])
+        self.handoff(W)
+        write(os.path.join(W, "cut-list.json"), "{ not json")
+        r = run("reels-handoff.py", "--project", W, "--no-render", "--xml-only")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("HANDOFF FAIL", r.stdout)
+        self.assertNotIn("Traceback", r.stdout + r.stderr)
+        self.assertTrue(os.path.isfile(os.path.join(W, "edit", "reel-01.xml")))
+        self.assertFalse(os.path.exists(os.path.join(W, "edit.v1")))
+
+    def test_footage_follows_the_cut_map(self):
+        # apply-cut snaps each segment to the source's frames; the cards and captions follow that flat cut, so does V1
+        W, a, b = self.two_cameras()
+        section(self, W, None, [(0.5, 1.5), (3.2, 4.0)], [(a, 3), (b, 3)])
+        ingest(W, [(a, 3), (b, 3)])
+        write(os.path.join(W, "cut-map.json"), {"segments": [
+            {"flat_start": 0.0, "flat_end": 1.0167, "src_start": 0.5, "src_end": 1.5167, "frames": 61},
+            {"flat_start": 1.0167, "flat_end": 1.8167, "src_start": 3.2, "src_end": 4.0, "frames": 48}]})
+        v1 = self.handoff(W)["video"][0]["clips"]
+        self.assertEqual([(c["start"], c["end"]) for c in v1], [(0, 61), (61, 109)])
+
+    def test_layer_clips_are_hard_linked_not_copied(self):
+        W, a, b = self.two_cameras()
+        section(self, W, None, [(0.5, 1.5)], [(a, 3)])
+        ingest(W, [(a, 3)])
+        self.handoff(W)
+        self.assertEqual(os.stat(os.path.join(W, "layers", "c1.mov")).st_ino, os.stat(os.path.join(W, "edit", "media", "gfx", "c1.mov")).st_ino)
 
     def test_longform_sections_and_chapters(self):
         d = scratch(self)

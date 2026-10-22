@@ -39,8 +39,8 @@ class Layout(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         p, _ = xml_of(d)
         self.assertEqual((p["width"], p["height"], p["timebase"]), (1080, 1920, 60))
-        self.assertEqual([t["name"] for t in p["video"]], ["ground", "thread", "scenes", "brand", "captions (styled)"])
-        self.assertEqual([t["enabled"] for t in p["video"]], [True, True, True, True, False])
+        self.assertEqual([t["name"] for t in p["video"]], ["ground", "thread", "scenes", "transitions", "brand", "captions (styled)"])
+        self.assertEqual([t["enabled"] for t in p["video"]], [True, True, True, True, True, False])
         self.assertTrue(p["video"][0]["clips"][0]["pathurl"].endswith("/gfx/ground.mp4"))
         self.assertEqual([t["name"] for t in p["audio"]], ["voice", "music", "sfx"])
         self.assertTrue(all(t["clips"] for t in p["audio"]))
@@ -85,6 +85,19 @@ class Layout(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(d, "edit", "media", n)), n)
         self.assertTrue(os.path.isfile(os.path.join(d, "edit", "HANDOFF.md")))
         self.assertIn("captions (styled)", read(os.path.join(d, "edit", "HANDOFF.md")))
+
+
+class Disk(unittest.TestCase):
+    def test_layer_clips_are_hard_linked_and_a_failed_run_keeps_the_last_edit(self):
+        d = project(self)
+        self.assertEqual(handoff(d).returncode, 0)
+        self.assertEqual(os.stat(os.path.join(d, "layers", "n1.mov")).st_ino, os.stat(os.path.join(d, "edit", "media", "gfx", "n1.mov")).st_ino)
+        write(os.path.join(d, "notes.json"), "[ broken")
+        r = handoff(d)
+        self.assertEqual(r.returncode, 1)
+        self.assertNotIn("Traceback", r.stdout + r.stderr)
+        self.assertTrue(os.path.isfile(os.path.join(d, "edit", os.path.basename(d) + ".xml")))
+        self.assertFalse(os.path.exists(os.path.join(d, "edit.v1")))
 
 
 class Stems(unittest.TestCase):

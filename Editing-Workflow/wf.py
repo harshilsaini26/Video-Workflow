@@ -96,8 +96,8 @@ def gates(p, profile, stage):
         ("explainer", "E5"): [[py, ex + "/layout-check.py", "--index", p + "/public/index.html"]],
         ("explainer", "H1"): [[py, kit + "/handoff-check.py", "--edit", p + "/edit", "--profile", "explainer", "--transcript", p + "/transcript.json",
                                "--storyboard", p + "/storyboard.json"]],
-        ("reels", "wording"): [[py, kit + "/wording.py", "--transcript", p + "/transcript.json", "--kept", p + "/cut-list.json"]],
-        ("longform", "wording"): [[py, kit + "/wording.py", "--transcript", p + "/transcript.json", "--kept", p + "/cut-list.json"]],
+        ("reels", "wording"): [[py, kit + "/wording.py", "--transcript", p + "/transcript-raw.json", "--kept", p + "/cut-list.json"]],
+        ("longform", "wording"): [[py, kit + "/wording.py", "--transcript", p + "/transcript-raw.json", "--kept", p + "/cut-list.json"]],
         ("reels", "H1"): [[py, kit + "/handoff-check.py", "--edit", p + "/edit", "--profile", "reels"]],
         ("longform", "H1"): [[py, kit + "/handoff-check.py", "--edit", p + "/edit", "--profile", "longform"]],
     }

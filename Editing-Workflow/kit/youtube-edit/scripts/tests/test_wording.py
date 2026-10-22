@@ -65,6 +65,11 @@ class Rules(unittest.TestCase):
         r = W.check_lines(lines("USB-C changes how you charge things", "Then it gets cheaper", END))
         self.assertFalse(any("number or a name" in m for m in r["warn"]))
 
+    def test_a_rank_is_not_a_hashtag(self):
+        import wording as W
+        r = W.check_lines(lines("The #1 mistake new investors make", "Then", END))
+        self.assertFalse(any("hashtag" in m for m in r["fail"]), r)
+
     def test_hook_timing(self):
         import wording as W
         r = W.check_lines(lines("9 things about Excel that nobody ever tells you", "Then", END), rate=2.4)   # 9 words: 3.75 s

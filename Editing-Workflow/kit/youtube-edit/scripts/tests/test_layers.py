@@ -59,6 +59,13 @@ class Pages(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(d, "public", l["page"])), l)
             self.assertEqual(l["page"], "layer-%s.html" % l["name"])
 
+    def test_burst_transitions_are_their_own_layer(self):
+        d = scratch(self)
+        write(os.path.join(d, "public", "index.html"), PAGE.replace('<div class="clip cap-layer"', '<div class="tx-layer" id="tx"><i class="spark"></i></div>\n    <div class="clip cap-layer"'))
+        self.assertEqual(run("layer-pages.py", "--index", os.path.join(d, "public", "index.html")).returncode, 0)
+        by = {l["name"]: l for l in load(os.path.join(d, "public", "layers.json"))}
+        self.assertEqual((by["tx"]["kind"], by["tx"]["ext"]), ("tx", "mov"))
+
     def test_a_layer_page_shows_only_its_layer(self):
         d, _ = make(self)
         p = read(os.path.join(d, "public", "layer-l1.html"))

@@ -47,6 +47,9 @@ class Wf(unittest.TestCase):
     def test_gates_run_the_stage_scripts(self):
         out = wf("gates", "videos/p", "--profile", "explainer", "--stage", "E1", "--dry-run").stdout
         self.assertIn("script-check.py --script videos/p/script.json --report videos/p/SCRIPT.md", out)
+        for prof in ("reels", "longform"):   # the kept cut is in source time: the source's transcript, not the flat cut's
+            out = wf("gates", "videos/p", "--profile", prof, "--stage", "wording", "--dry-run").stdout
+            self.assertIn("wording.py --transcript videos/p/transcript-raw.json --kept videos/p/cut-list.json", out)
         out = wf("gates", "videos/p", "--profile", "reels", "--stage", "H1", "--dry-run").stdout
         self.assertIn("handoff-check.py --edit videos/p/edit --profile reels", out)
 

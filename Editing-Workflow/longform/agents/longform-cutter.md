@@ -102,7 +102,7 @@ times, with each section's folder name `NN-slug`).
 
 ### Wording notes (after the cut)
 
-Run `python3 "$SK/scripts/wording.py" --transcript $W/transcript.json --kept $W/cut-list.json` and list its FAIL, WARN and NOTE lines
+Run `python3 "$SK/scripts/wording.py" --transcript $W/transcript-raw.json --kept $W/cut-list.json` and list its FAIL, WARN and NOTE lines
 in the cut report for Checkpoint A. A FAIL (a greeting or "in this video" as the first line, leaked text) is fixed by
 moving or cutting, never by rewriting the creator's words; the rest are notes for the creator.
 

@@ -49,7 +49,7 @@ class Flow(unittest.TestCase):
 
     def test_the_cutter_runs_the_wording_check(self):
         for rel in ("reels/agents/reels-cutter.md", "longform/agents/longform-cutter.md"):
-            self.assertIn("wording.py", read(rel), rel)
+            self.assertIn("wording.py\" --transcript $W/transcript-raw.json --kept", read(rel), rel)
 
     def test_the_render_agents_are_opt_in(self):
         for rel in ("reels/agents/reels-renderer.md", "longform/agents/longform-renderer.md", "longform/agents/longform-assembler.md"):

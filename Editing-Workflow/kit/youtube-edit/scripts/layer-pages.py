@@ -3,7 +3,8 @@
 hand-off. Each layer page shows its layer alone on a transparent ground, timed from 0 to the layer's length, so
 render-layers.py can write it as a transparent clip (ProRes 4444) that sits on its own track in the editor.
 
-Layers: ground (.bg), thread (svg.thread), brand (#brand), captions (.cap-layer without #brand), and one per
+Layers: ground (.bg), thread (svg.thread), brand (#brand), captions (.cap-layer without #brand), tx (.tx-layer, the
+burst transitions' sprays), and one per
 .card-host (its id without "host-"), each only when the page has it. Footage (<video>) and sound (<audio>) are taken
 out of every layer page: they reach the editor as their own clips.
 
@@ -15,7 +16,8 @@ out of every layer page: they reach the editor as their own clips.
 import argparse, json, os, re, sys
 
 GROUPS = (("ground", 'class="bg"', ".bg", None), ("thread", 'class="thread"', "svg.thread", None),
-          ("brand", 'id="brand"', "#brand", None), ("captions", "cap-layer", ".cap-layer", "#brand"))
+          ("brand", 'id="brand"', "#brand", None), ("captions", "cap-layer", ".cap-layer", "#brand"),
+          ("tx", 'class="tx-layer"', ".tx-layer", None))          # burst transitions: sprays above the scenes
 HOST = re.compile(r'class="card-host[^"]*" id="host-([^"]+)"[^>]*?data-start="([-\d.]+)"[^>]*?data-duration="([\d.]+)"')
 STAGE = re.compile(r'(<div id="stage" data-composition-id="([^"]+)") data-start="[-\d.]+" data-duration="([\d.]+)"')
 REG = re.compile(r'window\.__timelines\[(["\'])(.+?)\1\]\s*=\s*(\w+);')

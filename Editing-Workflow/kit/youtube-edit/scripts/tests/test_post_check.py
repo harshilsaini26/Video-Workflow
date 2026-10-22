@@ -75,6 +75,11 @@ class Post(unittest.TestCase):
         for same in ("240 W", "two hundred and forty watts", "80 Gbps", "eighty gigabits"):
             self.assertEqual(check(self, GOOD.replace("240 watts", same)).returncode, 0, same)
 
+    def test_finance_names_and_ranks_are_not_numbers_or_hashtags(self):
+        for first in ("The one habit that grows your 401k", "The #1 mistake new investors make", "Your 401(k) match, explained"):
+            r = check(self, GOOD.replace("One cable now carries 240 watts. Here is what that means for your drawer.", first))
+            self.assertEqual(r.returncode, 0, (first, r.stdout))
+
     def test_warnings_do_not_fail(self):
         r = check(self, GOOD.replace("#usbc #techtips #cables #gadgets", "#usbc") + "\n\nFollow for more and share it \U0001F525\U0001F525\U0001F525\U0001F525")
         self.assertEqual(r.returncode, 0, r.stdout)

@@ -18,6 +18,7 @@ import wording as W
 
 SMALL = {w: i for i, w in enumerate("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen "
                                     "fifteen sixteen seventeen eighteen nineteen".split())}
+del SMALL["one"]                    # "the one habit" is not a number; "one hundred" still is (below)
 TENS = {w: 10 * (i + 2) for i, w in enumerate("twenty thirty forty fifty sixty seventy eighty ninety".split())}
 SCALE = {"hundred": 100, "thousand": 1000, "million": 10 ** 6, "billion": 10 ** 9}
 BAIT = [re.compile(p, re.I) for p in (r"\btag (\d+|a|two|three|your) (friends?|people|someone)\b", r"\bdouble[- ]tap\b",
@@ -34,8 +35,11 @@ def numbers(text):
     for m in re.finditer(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM]\b)?", text):
         v = float(m.group(1).replace(",", ""))
         out.add(v * (1000 if (m.group(2) or "").lower() == "k" else 10 ** 6 if (m.group(2) or "").lower() == "m" else 1))
-    cur, total, seen = 0, 0, False
+    cur, total, seen, prev = 0, 0, False, ""
     for w in re.findall(r"[a-z]+", text.lower()) + ["."]:
+        if w in SCALE and not seen and prev == "one":
+            cur, seen = 1, True
+        prev = w
         if w in SMALL:
             cur += SMALL[w]; seen = True
         elif w in TENS:
@@ -73,14 +77,14 @@ def main():
         fails.append("the first line starts with %s: open on the hook" % first[0])
     if len(text) > 2200:
         fails.append("the caption is %d characters: the app stops at 2,200" % len(text))
-    tags = re.findall(r"(?<![\w&])#\w+", text)
+    tags = re.findall(r"(?<![\w&])#[A-Za-z_]\w*", text)        # "#1" is a rank, not a hashtag
     if len(tags) > 5:
         fails.append("%d hashtags: use 3 to 5 that match the reel" % len(tags))
     elif len(tags) < 3:
         warns.append("%d hashtag%s: 3 to 5 help the reel be found (2 to 3 niche, 1 to 2 mid, 0 to 1 broad)" % (len(tags), "" if len(tags) == 1 else "s"))
     for l in lines:
-        body = re.sub(r"(\s*#\w+)+\s*$", "", l)
-        if re.search(r"(?<![\w&])#\w+", body):
+        body = re.sub(r"(\s*#[A-Za-z_]\w*)+\s*$", "", l)
+        if re.search(r"(?<![\w&])#[A-Za-z_]\w*", body):
             fails.append("a hashtag mid-sentence (%r): hashtags go at the end" % l[:60])
     for l in lines:
         for rx in BAIT:
@@ -90,7 +94,7 @@ def main():
             if word != a.keyword:
                 fails.append("bait that gives nothing back (comment %s): a comment keyword must get the viewer something%s"
                              % (word, (" (the reel's keyword is %s)" % a.keyword) if a.keyword else ""))
-    words_only = [l for l in lines if not re.fullmatch(r"(#\w+\s*)+", l)]
+    words_only = [l for l in lines if not re.fullmatch(r"(#[A-Za-z_]\w*\s*)+", l)]
     if words_only and DEAD.search(words_only[-1]):
         fails.append("a dead closer (%r): end on one ask with a reason" % words_only[-1][:60])
     w = W.check_lines([{"id": "post %d" % i, "text": l} for i, l in enumerate(words_only)], hook_index=-1)
@@ -112,7 +116,8 @@ def main():
         if a.brief and os.path.isfile(a.brief):
             with open(a.brief, encoding="utf-8") as f:
                 known |= numbers(f.read())
-        body = " ".join(re.sub(r"#\w+", "", l) for l in words_only)
+        body = " ".join(re.sub(r"#[A-Za-z_]\w*|#\d+\b", "", l) for l in words_only)     # hashtags, and "#1" (a rank)
+        body = re.sub(r"\b\d{3}\s?\(?[kKbB]\)?(?![\w])", "", body)        # 401(k), 403b, 457(b): plan names
         body = re.sub(r"\bUSB-C\b|\b[A-Z]+\d+\b", "", body)       # names with digits in them (USB4) are names
         for v in sorted(numbers(body) - known):
             fails.append("%s is not a number the script sources: use the sourced figure or drop it" % ("%g" % v))

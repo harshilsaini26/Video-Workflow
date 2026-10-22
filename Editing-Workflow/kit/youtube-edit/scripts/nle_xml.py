@@ -33,10 +33,10 @@ class Track:
     def __init__(self, tl, kind, name, enabled):
         self.tl, self.kind, self.name, self.enabled, self.clips = tl, kind, name, enabled, []
 
-    def clip(self, path, start, end, src_in=0.0, name=None, duration=None, opacity=None, level_db=None, position=None):
+    def clip(self, path, start, end, src_in=0.0, name=None, duration=None, opacity=None, level_db=None, position=None, scale=None):
         self.clips.append({"path": str(path), "start": float(start), "end": float(end), "src_in": float(src_in),
                            "name": name or os.path.basename(str(path)), "duration": duration, "opacity": opacity,
-                           "level_db": level_db, "position": position})
+                           "level_db": level_db, "position": position, "scale": scale})
         return self
 
 
@@ -124,8 +124,10 @@ class Timeline:
         for tag, v in (("start", s), ("end", e), ("in", i), ("out", i + e - s)):
             ET.SubElement(ci, tag).text = str(v)
         self._file(ci, c, ids, kind)
-        if c["position"] is not None:
-            self._filter(ci, "Basic Motion", "basic", "motion", [("center", "Center", c["position"])])
+        motion = ([("scale", "Scale", float(c["scale"]))] if c.get("scale") is not None else []) + \
+                 ([("center", "Center", c["position"])] if c["position"] is not None else [])
+        if motion:
+            self._filter(ci, "Basic Motion", "basic", "motion", motion)
         if c["opacity"] is not None:
             self._filter(ci, "Opacity", "opacity", "motion", [("opacity", "opacity", 100.0 * c["opacity"])])
         if c["level_db"] is not None:
