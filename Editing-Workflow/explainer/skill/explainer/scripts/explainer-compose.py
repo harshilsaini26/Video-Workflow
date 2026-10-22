@@ -525,6 +525,15 @@ def main():
         moments["spans"] += th_spans
         css["~thread"] = TH.CSS
 
+    # ---- boil: strokes wobble as if drawn by hand (the paper look), an ambient seed walk, never on text -----------
+    if tok["motion"].get("boil"):
+        bg_html += ('    <svg width="0" height="0" style="position:absolute"><filter id="boil" x="-5%" y="-5%" width="110%" height="110%">'
+                    '<feTurbulence id="boil-turb" type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="14"/>'
+                    '<feDisplacementMap in="SourceGraphic" scale="2.5" xChannelSelector="R" yChannelSelector="G"/></filter></svg>\n')
+        bg_js.append("tl.fromTo({ v: 0 }, { v: 0 }, { v: 1, duration: %.3f, ease: 'none', immediateRender: false, onUpdate: function () { "
+                     "document.getElementById('boil-turb').setAttribute('seed', (Math.floor(tl.time() * 12) * 7919 + 13) %% 997 + 1); } }, 0);" % D)
+        css["~boil"] = '  html:not([data-boil="off"]) .boil { filter:url(#boil); }\n'
+
     # ---- captions -------------------------------------------------------------------------------------------------
     C = S.get("captions", {}) or {}
     em = {L.norm(x) for x in C.get("emphasis", [])}

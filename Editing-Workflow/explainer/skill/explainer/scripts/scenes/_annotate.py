@@ -73,9 +73,9 @@ def render(notes, ctx, w, h, sid):
         t, attrs = ctx.item(n["at"]) if n.get("at") else (ctx.t_in, "")
         if mark == "circle":
             circ = 2 * math.pi * r
-            parts.append('<svg style="left:%dpx;top:%dpx;width:%dpx;height:%dpx"><circle id="%s-n%dc" cx="%d" cy="%d" r="%d" fill="none" '
+            parts.append('<svg style="left:%dpx;top:%dpx;width:%dpx;height:%dpx"><circle id="%s-n%dc" class="%s" cx="%d" cy="%d" r="%d" fill="none" '
                          'stroke="%s" stroke-width="%d" stroke-linecap="round" style="stroke-dasharray:%.1f;stroke-dashoffset:%.1f"/></svg>'
-                         % (px - r - STROKE, py - r - STROKE, 2 * (r + STROKE), 2 * (r + STROKE), sid, i, r + STROKE, r + STROKE, r,
+                         % (px - r - STROKE, py - r - STROKE, 2 * (r + STROKE), 2 * (r + STROKE), sid, i, ctx.boil.strip(), r + STROKE, r + STROKE, r,
                             c["accent"], STROKE, circ, circ))
             js.append("tl.fromTo('#%s-n%dc', %s, %s, %.3f);" % (sid, i, js_obj({"strokeDashoffset": round(circ, 1)}),
                                                               js_obj({"strokeDashoffset": 0, "duration": 0.45, "ease": "power2.inOut",
@@ -85,8 +85,8 @@ def render(notes, ctx, w, h, sid):
                          % (sid, i, px - r, py - r, 2 * r, 2 * r, c["accent"]))
             js.append("tl.fromTo('#%s-n%dc', %s, %s, %.3f);" % (sid, i, js_obj({"scale": 0}), js_obj({"scale": 1, "duration": 0.2,
                                                                                                      "ease": "power3.out", "immediateRender": False}), t))
-        parts.append('<i class="an-l" id="%s-n%dl" style="left:%dpx;top:%dpx;width:%dpx;background:%s;transform-origin:%s 50%%"></i>'
-                     % (sid, i, l_left, py - 2, LEAD, c["accent"], "0" if side == "right" else "100%"))
+        parts.append('<i class="an-l%s" id="%s-n%dl" style="left:%dpx;top:%dpx;width:%dpx;background:%s;transform-origin:%s 50%%"></i>'
+                     % (ctx.boil, sid, i, l_left, py - 2, LEAD, c["accent"], "0" if side == "right" else "100%"))
         js.append("tl.fromTo('#%s-n%dl', %s, %s, %.3f);" % (sid, i, js_obj({"scaleX": 0}), js_obj({"scaleX": 1, "duration": 0.2,
                                                                                                 "ease": "power2.out", "immediateRender": False}), t + 0.3))
         parts.append('<div class="an-t" id="%s-n%dt"%s style="left:%dpx;top:%dpx;background:%s;color:%s">%s</div>'

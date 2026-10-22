@@ -59,6 +59,11 @@ class Ctx:
         p = self.pc
         return "background:%s;box-shadow:inset 0 0 0 2px %s, %s" % (p["card"], p["card_line"], self.c["shadow"])
 
+    @property
+    def boil(self):
+        """" boil" (a class) on a stroke when the look's strokes boil (tokens.motion.boil: on in paper), else ""."""
+        return " boil" if self.tokens["motion"].get("boil") else ""
+
     def ambient(self, line):
         self.ambient_lines.append(line)
 

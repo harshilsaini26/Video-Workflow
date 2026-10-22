@@ -68,7 +68,7 @@ class Looks(unittest.TestCase):
         self.assertEqual(paper["palette"]["text"], "#141414")
         self.assertEqual(E.theme(paper, "base")["accent"], "#D9472E")
         self.assertEqual(set(paper["palette"]), set(TOK["palette"]))          # the same 26 names: scenes resolve either look
-        self.assertEqual(paper["motion"], TOK["motion"])                      # what a look does not name stays
+        self.assertEqual(paper["motion"], dict(TOK["motion"], boil=True))     # what a look does not name stays (paper boils)
 
     def test_latte_is_the_default(self):
         self.assertEqual(E.LOOKS, ("latte", "paper"))

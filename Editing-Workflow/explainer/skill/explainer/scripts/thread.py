@@ -130,9 +130,10 @@ def render(spec, words, tok, D, ground_at, grounds=()):
     pts = [[[round(x + offs[i], 1), y] for x, y in p] if keys[i]["shape"] == "off" else p for i, p in enumerate(pts)]
     role = spec.get("color", "ink")
     color = E.theme(tok, ground_at(times[0]))[role]
-    html = ('    <svg class="thread" data-thread="1" width="1080" height="1920" viewBox="0 0 1080 1920"><g id="th-g"><path id="th-p" pathLength="1" '
+    html = ('    <svg class="thread" data-thread="1" width="1080" height="1920" viewBox="0 0 1080 1920"><g id="th-g"><path id="th-p"%s pathLength="1" '
             'd="M0 0" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round" stroke-linejoin="round" '
-            'style="stroke-dasharray:1;stroke-dashoffset:1"/></g></svg>\n' % (color, spec.get("width", 8)))
+            'style="stroke-dasharray:1;stroke-dashoffset:1"/></g></svg>\n' % (' class="boil"' if tok["motion"].get("boil") else "",
+                                                                    color, spec.get("width", 8)))
     js = ["const TH_K = %s;" % json.dumps(pts, separators=(",", ":")),
           "const TH_T = %s;" % json.dumps(times),
           "const TH_W = %s;" % json.dumps(waves),

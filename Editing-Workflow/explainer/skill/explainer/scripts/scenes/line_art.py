@@ -174,6 +174,7 @@ def render(scene, ctx, box):
         svg = clean_svg(raw, name, ICON_STROKE if scene.get("icon") is not None else None)
     except ValueError as e:
         ctx.fail(str(e))
+    svg = svg.replace('class="la-s"', 'class="la-s%s"' % ctx.boil)
     html = ['<div class="la-art" id="%s-art"%s style="color:%s">%s</div>' % (sid, attrs, ctx.ink, svg)]
     js = [ctx.enter("#%s-art" % sid, t, dur=0.2),
           "tl.fromTo('#%s .la-s', { strokeDashoffset: %s }, %s, %.3f);" % (sid, DASH, js_obj({"strokeDashoffset": 0, "duration": DRAW, "ease": "power2.inOut",
