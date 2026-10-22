@@ -68,7 +68,7 @@ class Reads(HTMLParser):
     def handle_data(self, data):
         for _, k in self.open:
             if k is not None:
-                self.out[k][1] += data
+                self.out[k][1] += " " + data       # elements are separate words ("NO MORE", "WRONG WAY UP")
 
 
 def fail(msg):

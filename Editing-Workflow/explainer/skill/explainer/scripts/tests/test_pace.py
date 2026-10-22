@@ -1,7 +1,7 @@
 """pace-check.py (gate E4, pacing): something on screen changes at least every few seconds. The kit's gap-scan cannot
 see this here: the scenes cover the whole voice by construction, so it never finds an empty stretch."""
 import copy, os, unittest
-from .helpers import load, run, scratch, write
+from .helpers import SCRIPTS, load, run, scratch, write
 from .test_compose import BOARD, D, VOICE, silent_wav, words30
 
 
@@ -73,6 +73,14 @@ class ReadFloor(unittest.TestCase):
         self.assertTrue(cu and all(i["number"] for i in cu))
         self.assertFalse(any(i["number"] for i in m["items"] if i["scene"] == "hook"))
         self.assertIn("Three certificates", " ".join(i["text"] for i in m["items"]))
+
+    def test_item_text_keeps_its_word_breaks(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("compose", os.path.join(SCRIPTS, "explainer-compose.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        reads = m.Reads('<div data-at="1.0"><span>NO MORE</span><span>WRONG WAY UP</span></div>').out
+        self.assertEqual(" ".join(reads[0][1].split()), "NO MORE WRONG WAY UP")
 
     def test_a_number_needs_a_second(self):
         r = self.check([it("a", 1.0), it("cu", 9.2 - 1.5, number=True), it("a", 4.2, number=True)], D=9.2)
