@@ -57,6 +57,14 @@ def main():
     ap.add_argument("--out")
     ap.add_argument("--scaffold")
     a = ap.parse_args()
+    try:
+        run(a, ap)
+    except (OSError, ValueError, AttributeError) as e:
+        print("MOMENTS ERROR: cannot read %s (%s)" % (getattr(e, "filename", None) or a.check or a.transcript, e))
+        sys.exit(2)
+
+
+def run(a, ap):
     with open(a.transcript, encoding="utf-8") as f:
         words = json.load(f).get("words", [])
     sents = sentences(words)

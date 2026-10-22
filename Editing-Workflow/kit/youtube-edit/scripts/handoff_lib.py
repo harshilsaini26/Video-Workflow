@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """handoff_lib.py: what every profile's editor hand-off shares (explainer handoff.py, reels-handoff.py for reels and
 long-form): keeping the last edit/ aside, the filmcraft project, HANDOFF.md."""
-import contextlib, json, os, shutil, subprocess
+import contextlib, filecmp, json, os, shutil, subprocess
 
 import filmcraft
 
@@ -71,6 +71,25 @@ def link_or_copy(src, dst):
     return dst
 
 
+def free_name(dst, src):
+    """dst, or dst with -2, -3... before its extension when another file already holds that name; the same file again
+    reuses its copy."""
+    base, ext = os.path.splitext(dst)
+    n, cand = 1, dst
+    while os.path.exists(cand) and not filecmp.cmp(cand, src, shallow=False):
+        n += 1
+        cand = "%s-%d%s" % (base, n, ext)
+    return cand
+
+
+def check_clip(path, need):
+    """A rendered layer clip must last its slot: one left over from an earlier build (--no-render) may be shorter."""
+    sec = media_seconds(path)
+    if sec is not None and sec < need - 0.05:
+        raise HandoffError("%s lasts %.2f s but its slot is %.2f s: it is from an earlier build; render the clips again "
+                           "(run without --no-render)" % (os.path.basename(path), sec, need))
+
+
 def media_seconds(path):
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
                        capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -101,7 +120,7 @@ def write_handoff_md(path, name, tracks, markers, fcproj, export, profile, off_n
     with open(path, "w", encoding="utf-8") as f:
         f.write("""# %s: the edit
 
-%s The clips it uses are in `media/` (your camera files stay where they are, never copied or re-encoded); the
+%s The clips it uses are in `media/`%s; the
 captions are `captions.srt` (filmcraft: Captions > Import Captions). If you move this folder, filmcraft finds the
 media again with File > Link Media.
 
@@ -121,6 +140,7 @@ media again with File > Link Media.
 
 - the edit itself: trims, pacing, anything you want to move, swap or drop;
 - the final mix and the export (%s);
-- then, if you like, check your export: `python3 qa-export.py --video <your export> --profile %s`.
-""" % (name, opened, rows, off_note, marks, export, profile))
+- then, if you like, check your export: `python3 "%s" --video <your export> --profile %s`.
+""" % (name, opened, "" if profile == "explainer" else " (your camera files stay where they are, never copied or re-encoded)",
+       rows, off_note, marks, export, os.path.join(os.path.dirname(os.path.abspath(__file__)), "qa-export.py"), profile))
     return path

@@ -13,7 +13,7 @@ Run it from the folder you run Claude Code in (the one holding .claude/ and Edit
 from the installed skills (.claude/skills/...) when present, else from this repository.
 The one-command shape is borrowed from Anil-matcha/AI-Youtube-Shorts-Generator (MIT).
 """
-import argparse, glob, os, shlex, shutil, subprocess, sys
+import argparse, json, glob, os, shlex, shutil, subprocess, sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PROFILES = ("kit", "longform", "reels", "explainer")
@@ -146,6 +146,11 @@ def main():
             cmd = ["python3", scripts("explainer") + "/handoff.py", "--project", p]
         else:
             cmd = ["python3", scripts("reels") + "/reels-handoff.py", "--project", p] + (["--format", "16x9"] if a.profile == "longform" else [])
+            sj = os.path.join(p, "sections.json")
+            if a.profile == "longform" and "--section" not in extra and os.path.isfile(sj):   # every section, in order
+                with open(sj, encoding="utf-8") as f:
+                    for sec in json.load(f):
+                        cmd += ["--section", "%s/%s" % (p, sec["part"])]
         return run([cmd + extra], a.dry_run)
     if a.command == "render":
         print("wf: the full render is opt-in: the default end is the editor hand-off (wf.py handoff). Rendering because you asked.")

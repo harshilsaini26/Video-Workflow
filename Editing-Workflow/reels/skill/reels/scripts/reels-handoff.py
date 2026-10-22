@@ -60,8 +60,11 @@ def segments(section):
     cm = H.load(os.path.join(section, "cut-map.json"))
     if cm and cm.get("segments"):
         return [(float(g["flat_start"]), float(g["src_start"]), float(g["src_end"])) for g in cm["segments"]]
-    out, t = [], 0.0
-    for k in H.load(os.path.join(section, "cut-list.json"))["kept"]:
+    out, t, path = [], 0.0, os.path.join(section, "cut-list.json")
+    cl = H.load(path)
+    if not isinstance(cl, dict) or not isinstance(cl.get("kept"), list):
+        raise H.HandoffError("%s has no \"kept\" list: write the cut again (apply-cut)" % path)
+    for k in cl["kept"]:
         out.append((t, float(k["start"]), float(k["end"])))
         t += float(k["end"]) - float(k["start"])
     return out
@@ -165,14 +168,19 @@ def main():
                     if "cutaway-video" not in tagm:
                         continue
                     src = os.path.join(pub, attr(tagm, "src"))
-                    dst = shutil.copy(src, os.path.join(media, "b-roll", tag + os.path.basename(src)))
+                    if not os.path.isfile(src):
+                        raise H.HandoffError("the cutaway %s is not there (the page names it): put it back or drop the cutaway" % src)
+                    dst = os.path.join(media, "b-roll", tag + os.path.basename(src))
+                    dst = H.free_name(dst, src)
+                    if not os.path.exists(dst):
+                        shutil.copy(src, dst)
                     t0, dur = float(attr(tagm, "data-start")), float(attr(tagm, "data-duration"))
                     v_broll.clip(dst, off + t0, off + t0 + dur, src_in=float(attr(tagm, "data-media-start") or 0), duration=H.media_seconds(dst))
                 for tagm in re.findall(r"<audio\b[^>]*>", page):
                     src = os.path.join(pub, attr(tagm, "src"))
                     if not os.path.isfile(src):
                         continue
-                    dst = os.path.join(media, "sfx", tag + os.path.basename(src))
+                    dst = H.free_name(os.path.join(media, "sfx", tag + os.path.basename(src)), src)
                     if not os.path.exists(dst):
                         shutil.copy(src, dst)
                     t0, dur, vol = float(attr(tagm, "data-start")), float(attr(tagm, "data-duration")), float(attr(tagm, "data-volume") or 1)
@@ -183,6 +191,7 @@ def main():
                     if l["kind"] not in ("host", "captions", "brand"):
                         continue
                     fn = l["name"] + "." + l.get("ext", "mov")
+                    H.check_clip(os.path.join(s, "layers", fn), l["t_out"] - l["t_in"])
                     dst = H.link_or_copy(os.path.join(s, "layers", fn), os.path.join(media, "gfx", tag + fn))
                     H.place(tl, cap_lanes if l["kind"] == "captions" else card_lanes, dst, off + l["t_in"], off + l["t_out"],
                             duration=l["t_out"] - l["t_in"], name=l["name"])

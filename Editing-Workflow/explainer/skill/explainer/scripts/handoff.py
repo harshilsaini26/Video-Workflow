@@ -105,6 +105,7 @@ def main():
                 lanes = [tl.video_track(tname, enabled=tname != "captions (styled)")]
                 here = [l for l in layers if l["kind"] in kinds]
                 for l in here:                      # scenes may overlap at a handover: the overlap goes to a lane above
+                    H.check_clip(os.path.join(work, clip(l)), l["t_out"] - l["t_in"])
                     dst = H.link_or_copy(os.path.join(work, clip(l)), os.path.join(gfx, clip(l)))
                     H.place(tl, lanes, dst, l["t_in"], l["t_out"], duration=l["t_out"] - l["t_in"], name=l["name"])
                 legend.append(("V%d" % k, tname, ", ".join(l["name"] for l in here) or "(empty)"))

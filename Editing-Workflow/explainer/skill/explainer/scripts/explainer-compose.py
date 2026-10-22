@@ -607,6 +607,9 @@ def main():
     cap_html = ('    <div class="clip cap-layer" id="captions" data-start="0" data-duration="%.3f" data-track-index="2">\n%s    </div>\n'
                 % (D, "".join(caps)))
     bed = ""
+    for n in ("bed.wav", "music.wav", "sfx.wav"):      # made fresh below, or not at all: never an earlier build's
+        if os.path.exists(os.path.join(out, n)):
+            os.remove(os.path.join(out, n))
     if music in (None, "none") and not want_sfx:
         pass
     elif music not in (None, "none") and not shutil.which("ffmpeg"):

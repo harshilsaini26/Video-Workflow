@@ -44,6 +44,14 @@ class Wf(unittest.TestCase):
         lf = wf("handoff", "videos/p", "--profile", "longform", "--dry-run", "--", "--section", "videos/p/01").stdout
         self.assertIn("reels-handoff.py --project videos/p --format 16x9 --section videos/p/01", lf)
 
+    def test_longform_handoff_reads_its_sections(self):
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        with open(os.path.join(d, "sections.json"), "w", encoding="utf-8") as f:
+            f.write('[{"part": "01-intro", "flat_start": 0, "flat_end": 60, "duration": 60}, {"part": "02-main"}]')
+        out = wf("handoff", d, "--profile", "longform", "--dry-run").stdout
+        self.assertIn("--section %s/01-intro --section %s/02-main" % (d, d), out)
+
     def test_gates_run_the_stage_scripts(self):
         out = wf("gates", "videos/p", "--profile", "explainer", "--stage", "E1", "--dry-run").stdout
         self.assertIn("script-check.py --script videos/p/script.json --report videos/p/SCRIPT.md", out)

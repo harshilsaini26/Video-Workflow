@@ -40,6 +40,14 @@ class Moments(unittest.TestCase):
         checked = json.loads(read(os.path.join(d, "moments.checked.json")))
         self.assertEqual((checked[0]["start"], checked[0]["end"]), (60.0, 91.9))   # the sentence's first word; its last word's end
 
+    def test_bad_json_is_named(self):
+        d = scratch(self)
+        bad = write(os.path.join(d, "transcript.json"), "{nope")
+        r = run("reels-moments.py", "--transcript", bad, "--windows")
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertIn("transcript.json", r.stdout + r.stderr)
+
     def test_length_bounds(self):
         d = scratch(self)
         t = long_transcript(d)

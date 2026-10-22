@@ -1,7 +1,7 @@
 """The editor hand-off (explainer): no rendered reel, an editable project. handoff.py lays the voice, the music, the
 sound effects and each scene as its own transparent clip on its own track of an FCP 7 XML (filmcraft, Premiere,
 Resolve), with markers for the hook and each scene's word and source, and the captions as an .srt."""
-import array, copy, glob, json, os, shutil, unittest, wave
+import array, copy, glob, json, os, re, shutil, unittest, wave
 from .helpers import load, read, run, scratch, write
 from .test_compose import BOARD, t_word
 from .test_foundations import compose
@@ -114,6 +114,41 @@ class Stems(unittest.TestCase):
         err = sum((bed[i] - music[i] - sfx[i]) ** 2 for i in range(0, n, 7)) / (n / 7.0)
         sig = sum(bed[i] ** 2 for i in range(0, n, 7)) / (n / 7.0)
         self.assertLess(err, sig * 1e-4 + 4)        # within -40 dB: the stems are the bed, split
+
+
+class Stale(unittest.TestCase):
+    def test_a_quiet_recompose_drops_the_old_stems(self):
+        d = project(self)
+        pub = os.path.join(d, "public")
+        self.assertTrue(os.path.exists(os.path.join(pub, "music.wav")))
+        b = load(os.path.join(d, "storyboard.json"))
+        b["sound"] = {"music": "none", "sfx": False}
+        write(os.path.join(d, "storyboard.json"), b)
+        r = run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", pub)
+        self.assertEqual(r.returncode, 0, r.stdout)
+        for n in ("music.wav", "sfx.wav", "bed.wav"):
+            self.assertFalse(os.path.exists(os.path.join(pub, n)), n)
+
+    def test_a_layer_clip_shorter_than_its_slot_is_named(self):
+        import subprocess
+        d = project(self)
+        clipf = os.path.join(d, "layers", "n1.mov")
+        os.remove(clipf)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=black:s=64x64:r=60:d=0.2", clipf], check=True)
+        r = handoff(d)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("n1.mov", r.stdout)
+        self.assertNotIn("Traceback", r.stdout + r.stderr)
+
+
+class Notes(unittest.TestCase):
+    def test_handoff_md_speaks_to_an_explainer_and_gives_the_qa_path(self):
+        d = project(self)
+        self.assertEqual(handoff(d).returncode, 0)
+        md = read(os.path.join(d, "edit", "HANDOFF.md"))
+        self.assertNotIn("camera files", md)
+        path = re.search(r'python3 "([^"]+qa-export\.py)"', md).group(1)
+        self.assertTrue(os.path.isfile(path), path)
 
 
 class Errors(unittest.TestCase):

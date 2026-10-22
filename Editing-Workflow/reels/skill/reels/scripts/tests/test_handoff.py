@@ -205,5 +205,47 @@ class Reels(unittest.TestCase):
         self.assertNotIn("Traceback", r.stdout + r.stderr)
 
 
+    def fails_named(self, W, text):
+        r = run("reels-handoff.py", "--project", W, "--no-render", "--xml-only")
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertNotIn("Traceback", r.stdout + r.stderr)
+        self.assertIn(text, r.stdout)
+
+    def test_a_bad_cut_list_is_named(self):
+        W, a, b = self.two_cameras()
+        section(self, W, None, [(0.5, 1.5)], [(a, 3)])
+        ingest(W, [(a, 3)])
+        write(os.path.join(W, "cut-list.json"), {"removed": []})
+        self.fails_named(W, "cut-list.json")
+
+    def test_a_missing_cutaway_is_named(self):
+        W, a, b = self.two_cameras()
+        section(self, W, None, [(0.5, 1.5)], [(a, 3)])
+        ingest(W, [(a, 3)])
+        os.remove(os.path.join(W, "public", "broll.mp4"))
+        self.fails_named(W, "broll.mp4")
+
+    def test_two_cutaways_with_one_name_both_keep_their_file(self):
+        W, a, b = self.two_cameras()
+        section(self, W, None, [(0.5, 1.5)], [(a, 3)])
+        ingest(W, [(a, 3)])
+        camera(os.path.join(W, "public", "more", "broll.mp4"), 1, size="320x240")
+        page = read(os.path.join(W, "public", "index.html")).replace(
+            '<div class="card-host', '<video class="cutaway-video clip" id="cut2" src="more/broll.mp4" muted playsinline '
+            'data-start="1.000" data-duration="0.400" data-media-start="0" data-track-index="4"></video>\n    <div class="card-host', 1)
+        write(os.path.join(W, "public", "index.html"), page)
+        p = self.handoff(W)
+        urls = [c["pathurl"] for c in p["video"][1]["clips"]]
+        self.assertEqual(len(set(urls)), 2, urls)
+
+    def test_a_card_clip_shorter_than_its_slot_is_named(self):
+        W, a, b = self.two_cameras()
+        section(self, W, None, [(0.5, 1.5)], [(a, 3)])
+        ingest(W, [(a, 3)])
+        os.remove(os.path.join(W, "layers", "c1.mov"))
+        ffmpeg("-f", "lavfi", "-i", "color=c=black:s=64x64:r=60:d=0.2", os.path.join(W, "layers", "c1.mov"))   # the slot is 1.0 s
+        self.fails_named(W, "c1")
+
+
 if __name__ == "__main__":
     unittest.main()

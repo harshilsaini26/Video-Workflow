@@ -2,7 +2,7 @@
 """render-layers.py: each layer page from layer-pages.py as a transparent clip (ProRes 4444 with alpha, HyperFrames
 `render --format mov`) for the editor hand-off. These are short pieces of the reel, never the reel itself.
 
-  python3 render-layers.py --public videos/<p>/public --out videos/<p>/edit/media/gfx [--only l0,l3] [--workers 2]
+  python3 render-layers.py --public videos/<p>/public --out videos/<p>/layers [--only l0,l3] [--workers 2]
       [--hf "npx --yes hyperframes@0.8.171"]      # default: $HYPERFRAMES_CMD, else "npx --no-install hyperframes"
 
 Writes <out>/<name>.mov per transparent layer and checks it has an alpha channel (pix_fmt yuva*), and <out>/ground.mp4
