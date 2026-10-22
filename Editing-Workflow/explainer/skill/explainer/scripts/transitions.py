@@ -108,11 +108,11 @@ def brush(k, t, colors):
     top, h, x0, x1 = -260, 500, -240, 1320          # tilted, five bands of 500 px still cover 1080x1920 edge to edge
     paths, js = [], []
     for i, f in enumerate(STAGGER):
-        y = top + i * (h - 40)
+        y = top + i * (h - 50)                       # 50 px of overlap: more than two edges' wander (2 x 22)
         xs = list(range(x0, x1 + 1, 60))
         edge = ["%d,%d" % (x, y + rng.randint(-22, 22)) for x in xs] + ["%d,%d" % (x, y + h + rng.randint(-22, 22)) for x in reversed(xs)]
         paths.append('<path class="tx-brush" id="txb%d-%d" d="M%sZ" fill="%s"/>' % (k, i, " L".join(edge), colors[i % len(colors)]))
-        start = round(t - BRUSH + f * BRUSH, 3)
+        start = round(max(0.0, t - BRUSH + f * BRUSH), 3)   # never before 0: GSAP would shift the whole page later
         js.append("tl.set('#txb%d-%d', { scaleX: 0 }, 0);" % (k, i))      # hidden until it sweeps in
         js.append("tl.fromTo('#txb%d-%d', %s, %s, %.3f);" % (k, i, js_obj({"scaleX": 0}), js_obj(
             {"scaleX": 1, "duration": round(t - start, 3), "ease": "power3.in", "transformOrigin": "0% 50%", "immediateRender": False}), start))

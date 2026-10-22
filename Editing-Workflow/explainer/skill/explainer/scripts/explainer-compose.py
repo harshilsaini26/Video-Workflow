@@ -62,10 +62,13 @@ class Reads(HTMLParser):
             self.open.append([tag, len(self.out) - 1 if at is not None else None])
 
     def handle_endtag(self, tag):
-        while self.open and self.open.pop()[0] != tag:
-            pass
+        if any(t == tag for t, _ in self.open):       # a void or self-closed tag's end was never opened: keep the stack
+            while self.open.pop()[0] != tag:
+                pass
 
     def handle_data(self, data):
+        if any(t in ("style", "script") for t, _ in self.open):
+            return
         for _, k in self.open:
             if k is not None:
                 self.out[k][1] += " " + data       # elements are separate words ("NO MORE", "WRONG WAY UP")
@@ -271,7 +274,10 @@ def main():
     words = L.load_words(tpath)
     with wave.open(vpath) as w:
         voice_len = round(w.getnframes() / float(w.getframerate()), 3)
-    D = round(voice_len + E.TAIL, 3)
+    tail = S.get("tail", E.TAIL)
+    if not isinstance(tail, (int, float)) or isinstance(tail, bool) or not E.TAIL <= tail <= 3.0:
+        fail("tail is the seconds the page runs past the voice, %.1f to 3 (got %r)" % (E.TAIL, tail))
+    D = round(voice_len + tail, 3)          # the last read needs time to land (E4): the planner may ask for more
     if voice_len > E.MAX_VOICE + 1e-6:
         fail("the voice is %.1f s, over the 90 s ceiling: trim the script (script-check.py --voice lists the lines to cut)"
              % voice_len)
@@ -526,8 +532,9 @@ def main():
         css["~thread"] = TH.CSS
 
     # ---- boil: strokes wobble as if drawn by hand (the paper look), an ambient seed walk, never on text -----------
+    # (its region in user space: a straight stroke has a zero-height box, and a box-sized region would draw nothing)
     if tok["motion"].get("boil"):
-        bg_html += ('    <svg width="0" height="0" style="position:absolute"><filter id="boil" x="-5%" y="-5%" width="110%" height="110%">'
+        bg_html += ('    <svg width="0" height="0" style="position:absolute"><filter id="boil" filterUnits="userSpaceOnUse" x="-50%" y="-50%" width="200%" height="200%">'
                     '<feTurbulence id="boil-turb" type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="14"/>'
                     '<feDisplacementMap in="SourceGraphic" scale="2.5" xChannelSelector="R" yChannelSelector="G"/></filter></svg>\n')
         bg_js.append("tl.fromTo({ v: 0 }, { v: 0 }, { v: 1, duration: %.3f, ease: 'none', immediateRender: false, onUpdate: function () { "
@@ -631,7 +638,7 @@ def main():
                        html.escape(part))) + cap_html
         for b, t0 in bgs[1:]:          # it takes each ground's quiet colour as the ground changes (3:1 on all four)
             cap_js.append("tl.set('#brand', { color: '%s' }, %.3f);" % (E.theme(tok, b)["muted"], t0))
-    if tx_html:   # transition sprays sit above the scenes, under the captions
+    if tx_html:   # burst sprays and brush bands sit above the scenes, under the captions
         cap_html = '    <div class="tx-layer" id="tx">%s</div>\n' % "".join(tx_html) + cap_html
     page = """<!doctype html>
 <html lang="en">

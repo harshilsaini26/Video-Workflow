@@ -12,7 +12,7 @@ transcript and storyboard, and notes.json (the agents' "check this" notes: [{t, 
      --xml-only), captions.srt, HANDOFF.md, media/ (voice, music, sfx, gfx/<layer>.mov).
 A re-run moves the old edit/ aside as edit.v<N>/ (the creator may have saved work in it).
 
-Tracks: V1 ground, V2 thread, V3 scenes, V4 transitions (burst sprays), V5 brand, V6 captions (styled; off), A1 voice,
+Tracks: V1 ground, V2 thread, V3 scenes, V4 transitions (burst sprays, brush bands), V5 brand, V6 captions (styled; off), A1 voice,
 A2 music, A3 sfx (scenes that overlap at a handover get a lane above).
 Markers: the hook window, each scene on its word with its source, and every note.
 """

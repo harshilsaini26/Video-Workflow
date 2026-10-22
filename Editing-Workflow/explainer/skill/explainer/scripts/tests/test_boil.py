@@ -67,3 +67,31 @@ class Boil(unittest.TestCase):
     def test_boil_off_switch(self):
         html, _ = self.page("paper")
         self.assertIn('html:not([data-boil="off"]) .boil { filter:url(#boil); }', html)
+
+
+class StraightStrokes(unittest.TestCase):
+    def test_a_straight_stroke_still_draws_when_it_boils(self):
+        # a flat or upright path has a zero-height (or zero-width) box: a filter sized by the box drew nothing at all
+        from .test_layout import have_browser
+        import subprocess
+        vendor = os.environ.get("EXPLAINER_VENDOR")
+        if not (have_browser() and vendor and os.path.exists(os.path.join(vendor, "gsap.min.js"))):
+            self.skipTest("needs node, puppeteer, Chrome and the real vendor folder (EXPLAINER_VENDOR)")
+        d = scratch(self)
+        b = copy.deepcopy(BOARD)
+        b["look"] = "paper"
+        for sc in b["scenes"]:
+            sc["bg"] = "base"
+        b["thread"] = {"color": "ink", "width": 8, "keys": [{"at": "word:0", "shape": "underline", "y": 1500, "x0": 65, "x1": 1015}]}
+        write(os.path.join(d, "transcript.json"), {"words": words30()})
+        silent_wav(os.path.join(d, "voice.wav"), VOICE)
+        r = run("explainer-compose.py", "--spec", write(os.path.join(d, "storyboard.json"), b), "--out", os.path.join(d, "public"),
+                "--vendor", vendor)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn('class="boil"', read(os.path.join(d, "public", "index.html")))
+        r = run("review.py", "--index", os.path.join(d, "public", "index.html"), "--out", os.path.join(d, "rv"), "--crop", "0,1480,1080,40")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        px = subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(d, "rv", "crop-02-n1-crop.png"), "-f", "rawvideo",
+                             "-pix_fmt", "gray", "-"], capture_output=True, check=True).stdout
+        dark = sum(1 for v in px if v < 100)
+        self.assertGreater(dark, 2000)                    # an 8 px line 950 px long

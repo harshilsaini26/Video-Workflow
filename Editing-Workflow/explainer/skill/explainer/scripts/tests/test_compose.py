@@ -70,6 +70,14 @@ class Compose(unittest.TestCase):
         self.assertIn(text, r.stdout + r.stderr)
         return r
 
+    def test_a_tail_runs_the_page_past_the_voice(self):
+        def edit(b):
+            b["tail"] = 1.4
+            b["scenes"][2]["out"] = "end"
+        html, _, _ = self.ok(edit)
+        self.assertIn('data-duration="%.3f" data-fps="60"' % (VOICE + 1.4), html)
+        self.fails(lambda b: b.update(tail=9), "tail is the seconds")
+
     def test_builds_vertical_60_with_voice_and_kit_markup(self):
         html, page, _ = self.ok()
         self.assertIn('data-fps="60" data-width="1080" data-height="1920"', html)

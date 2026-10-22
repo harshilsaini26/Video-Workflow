@@ -53,6 +53,20 @@ class Plan(unittest.TestCase):
             self.assertEqual(a["out"], b["in"])
         self.assertIn("| l1 |", read(os.path.join(d, "PLAN.md")))
 
+    def test_a_last_line_with_a_strike_and_a_caption_still_passes_e4(self):
+        script = copy.deepcopy(SCRIPT)
+        script["lines"][-1] = {"id": "l5", "show": "Pick a mode: slow, medium or fast.",
+                               "viz": {"type": "line-art", "icon": "clock", "caption": "Pick a mode", "at": "medium", "strike": "fast."}}
+        d, sb, words = self.plan(script)
+        said_by = lambda a: words[int(a.split(":")[1])]["text"]
+        la = sb["scenes"][-1]
+        self.assertEqual(said_by(la["strike"]), "fast.")                 # every piece stays on its word
+        self.assertGreater(sb["tail"], 0.5)                               # and the page runs on past the voice
+        r = run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        r = run("pace-check.py", "--index", os.path.join(d, "public", "index.html"))
+        self.assertNotIn("the last read", r.stdout)
+
     def test_viz_items_land_on_their_words(self):
         _, sb, words = self.plan()
         flow = next(s for s in sb["scenes"] if s["type"] == "flow")
@@ -91,7 +105,7 @@ class Plan(unittest.TestCase):
         self.assertEqual([said(m["at"]) for m in chat["messages"]], ["passages", "answer"])
         jd = next(s for s in sb["scenes"] if s["type"] == "jiggle-delete")
         self.assertEqual([("at" in t) for t in jd["tiles"]], [False, True, False])     # only the tile that goes away
-        self.assertEqual(said(jd["tiles"][1]["at"]), "capital")         # "risk." ends the voice: the last read moves up (E4)
+        self.assertEqual(said(jd["tiles"][1]["at"]), "risk.")
         script["lines"][2]["viz"] = {"type": "gravity-drop", "items": [{"text": "Cash", "at": "year"}, "saved"]}
         _, sb2, _ = self.plan(script)
         gd2 = next(s for s in sb2["scenes"] if s["type"] == "gravity-drop")
@@ -120,10 +134,8 @@ class Plan(unittest.TestCase):
         _, sb, words = self.plan()
         stack = next(s for s in sb["scenes"] if s["type"] == "stack")
         idx = [int(it["at"].split(":")[1]) for it in stack["items"]]
-        # "risk." ends the voice, so the last read moves up to "capital" (E4: 1.5 s to land); "Valuation" is never said:
-        # it was spread halfway between "cost" and "risk.", and moves up with it
-        self.assertEqual((words[idx[0]]["text"], words[idx[2]]["text"]), ("cost", "capital"))
-        self.assertEqual(idx[1], idx[2])
+        self.assertEqual((words[idx[0]]["text"], words[idx[2]]["text"]), ("cost", "risk."))
+        self.assertEqual(idx[1], (idx[0] + idx[2]) // 2)                 # "Valuation" is never said: halfway between its neighbours
         self.assertTrue(all(words[i]["line"] == "l5" for i in idx))
 
     def test_rules_without_a_hint(self):

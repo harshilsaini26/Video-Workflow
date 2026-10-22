@@ -28,6 +28,7 @@ from scenes import logo_card
 BEAT = 2.5
 HOOK_BY, LEAD = 0.8, 0.2          # explainer_lib's: the hook's items land by 0.8 s, an entrance 0.2 s before its word
 TAIL, LAST_READ = 0.5, 1.5        # the page runs TAIL past the voice; the last read lands LAST_READ before the end (E4)
+DERIVED = 0.8                     # and a scene may land a piece up to this long after its anchor (line-art's caption)
 BGS = ["mantle", "base"]          # the two light Latte surfaces (tokens.json), alternating at each section break
 HOOK_BG, PAYOFF_BG, BEAT_BG = "ink", "blue", "blue"
 ONE_GROUND = "base"                     # the paper look: every scene on the paper
@@ -135,6 +136,19 @@ def hook_anchors(sc, words, limit):
             piece["at"] = "word:%d" % early[int(round(j * (len(early) - 1) / float(max(1, len(seq) - 1))))]
         return sc
     return clamp_at(sc, early[-1])
+
+
+def anchors(o):
+    """Every word index an anchor ("in", "at", "strike", "<name>_at": word:N) anywhere in o points at."""
+    if isinstance(o, dict):
+        for k, v in o.items():
+            if (k in ("in", "at", "strike") or k.endswith("_at")) and isinstance(v, str) and v.startswith("word:"):
+                yield int(v[5:])
+            else:
+                yield from anchors(v)
+    elif isinstance(o, list):
+        for v in o:
+            yield from anchors(v)
 
 
 def clamp_at(o, last):
@@ -322,10 +336,9 @@ def main():
         sys.exit("no scenes: no transcript words carry the script's line ids")
     scenes[0]["in"] = "word:0"
     hook_anchors(scenes[0], words, HOOK_BY + LEAD)
-    limit = words[-1]["end"] + TAIL - LAST_READ + LEAD        # the last read needs LAST_READ s on screen (E4)
-    late = max([i for i, w in enumerate(words) if w["start"] <= limit] or [0])
-    for sc in scenes[1:]:
-        clamp_at(sc, max(late, int(sc["in"][5:])))
+    # the last read needs LAST_READ s on screen (E4): when the last line lands late, the page runs on past the voice
+    last = max([words[i]["start"] for i in anchors(scenes[-1])] or [0.0]) - LEAD + DERIVED
+    tail = round(last + LAST_READ - words[-1]["end"], 2)
     for x, y in zip(scenes, scenes[1:]):
         x["out"] = y["in"]
     scenes[-1]["out"] = "end"
@@ -336,6 +349,8 @@ def main():
              "voice": "voice.wav", "transcript": "transcript.json", "captions": {"emphasis": emphasis}, "scenes": scenes}
     if look != "latte":
         board["look"] = look
+    if tail > TAIL:
+        board["tail"] = tail                 # seconds the page runs past the voice (default TAIL)
     if S.get("thread"):
         board["thread"] = thread_anchors(S["thread"], words)    # one line through the reel, keyed on the voice's words
     if S.get("brand"):

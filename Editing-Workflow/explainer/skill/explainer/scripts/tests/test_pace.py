@@ -81,6 +81,8 @@ class ReadFloor(unittest.TestCase):
         spec.loader.exec_module(m)
         reads = m.Reads('<div data-at="1.0"><span>NO MORE</span><span>WRONG WAY UP</span></div>').out
         self.assertEqual(" ".join(reads[0][1].split()), "NO MORE WRONG WAY UP")
+        reads = m.Reads('<div data-at="1.0"><svg><path d="M0 0"/></svg><style>.x{color:red}</style><b>Ninety</b> percent</div>').out
+        self.assertEqual(" ".join(reads[0][1].split()), "Ninety percent")
 
     def test_a_number_needs_a_second(self):
         r = self.check([it("a", 1.0), it("cu", 9.2 - 1.5, number=True), it("a", 4.2, number=True)], D=9.2)

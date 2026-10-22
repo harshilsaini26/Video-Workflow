@@ -105,6 +105,18 @@ class Brush(unittest.TestCase):
         starts = [float(m) for m in re.findall(r"tl\.fromTo\('#txb2-\d', \{ scaleX: 0 \}.*?\}, ([\d.]+)\);", html)]
         self.assertEqual(starts, [round(cut - cover + f * cover, 3) for f in (0, .14, .06, .18, .1)])
 
+    def test_neighbouring_bands_always_overlap(self):
+        # each band's ragged edges may wander, but two neighbours must still overlap at every column on the cut frame
+        for k in range(1, 40):
+            html, _ = X.brush(k, 4.0, ["#000", "#f00"])
+            bands = []
+            for d in re.findall(r' d="M([^"]+)Z"', html):
+                pts = [tuple(int(v) for v in p.split(",")) for p in d.split(" L")]
+                half = len(pts) // 2
+                bands.append(([y for _, y in pts[:half]], [y for _, y in pts[half:]][::-1]))
+            for (_, bottom), (top, _) in zip(bands, bands[1:]):
+                self.assertGreater(min(b - t for b, t in zip(bottom, top)), 0, k)
+
     def test_brush_covers_then_uncovers(self):
         html = self.build(paper_board())
         cut = t_word(18) - E.LEAD
@@ -113,6 +125,15 @@ class Brush(unittest.TestCase):
             self.assertAlmostEqual(float(cover.group(1)) + float(cover.group(2)), cut, places=2)    # full cover on the cut
             self.assertRegex(html, r"tl\.to\('#txb2-%d', \{ scaleX: 0, transformOrigin: '100%% 50%%', duration: 0.3, ease: 'expo.out' \}, %.3f\);" % (i, cut))
         self.assertIn("tl.set('#bg1', { opacity: 1 }, %.3f);" % cut, html)           # the new ground swaps under the cover
+
+    def test_a_brush_on_the_first_scene_never_starts_before_0(self):
+        # GSAP pushes every other tween later by a child placed before 0: the whole page would drift off the voice
+        b = paper_board()
+        b["scenes"][0]["transition"] = "brush"
+        html = self.build(b)
+        times = [float(t) for t in re.findall(r"tl\.(?:fromTo|to|set)\('#txb0-\d'.*?\}, (-?[\d.]+)\);", html)]
+        self.assertEqual(len(times), 15)
+        self.assertGreaterEqual(min(times), 0.0)
 
     def test_paper_picks_brush_on_a_new_ground(self):
         self.assertEqual(X.pick(2, "base", "blue", None, look="paper"), "brush")
