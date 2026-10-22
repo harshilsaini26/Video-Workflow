@@ -3,6 +3,7 @@ built, for text that collides with text or crosses a shape, text that spills out
 safe area, and text too small to read on a phone; HyperFrames' own check adds overlap, clipping and WCAG contrast."""
 import json, os, shutil, subprocess, unittest
 from .helpers import SCRIPTS, run, scratch, write
+import explainer_lib as E
 
 LC = __import__("importlib").import_module("layout_check") if os.path.exists(os.path.join(SCRIPTS, "layout_check.py")) else None
 NODE = shutil.which("node")
@@ -99,7 +100,13 @@ class Gate(unittest.TestCase):
         # and in the editorial look: its colours on its grounds
         self.every_case("paper")
 
-    def every_case(self, look):
+    def test_every_scene_case_is_clean_in_each_palette(self):
+        # the five palettes (colour only), on paper: its texture darkens the base ground, the harder case for contrast
+        for name in E.PALETTES:
+            with self.subTest(palette=name):
+                self.every_case("paper", name)
+
+    def every_case(self, look, palette=None):
         from .test_theme import make_cases
         from .test_assets import COURSERA, png
         from .test_scenes_ui import stub_vendor
@@ -120,8 +127,10 @@ class Gate(unittest.TestCase):
                     png(os.path.join(d, rel), w, h)
                 bg = ("mantle", "blue", "base", "ink")[(len(pages) + 1) % 4]     # every scene type meets the dark grounds too
                 sc = dict({"type": typ, "id": "sc", "bg": bg, "in": "word:1", "out": 16.0}, **data)
-                sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "look": look, "scenes": [mc.LEAD_IN, sc],
-                                                                "sound": {"music": "none", "sfx": False}})
+                sb = {"id": "t", "look": look, "scenes": [mc.LEAD_IN, sc], "sound": {"music": "none", "sfx": False}}
+                if palette:
+                    sb["palette"] = palette
+                sp = write(os.path.join(d, "storyboard.json"), sb)
                 r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", vendor)
                 self.assertEqual(r.returncode, 0, "%s-%s: %s" % (typ, name, r.stdout))
                 with open(os.path.join(d, "public", "moments.json"), encoding="utf-8") as f:

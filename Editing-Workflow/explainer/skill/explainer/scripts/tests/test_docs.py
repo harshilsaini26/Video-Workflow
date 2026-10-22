@@ -78,6 +78,14 @@ class Docs(unittest.TestCase):
         for skipped in ("Clawd", "p5.brush", "overshoot"):
             self.assertIn(skipped, research)
 
+    def test_the_palettes_are_offered_and_explained(self):
+        import explainer_lib as E
+        pb, skill, director = read(PLAYBOOK), read(SKILL), read(AGENTS[2])
+        for name in E.PALETTES:
+            self.assertIn("`%s`" % name, pb, name)
+            self.assertIn(name, skill, name)
+        self.assertIn('"palette"', director)
+
     def test_playbook_references_resolve(self):
         heads = set(re.findall(r"^#+ (§E\d+)\b", read(PLAYBOOK), re.M))
         self.assertEqual(heads, {"§E%d" % i for i in range(9)})

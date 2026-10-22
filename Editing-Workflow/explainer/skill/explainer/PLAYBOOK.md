@@ -265,6 +265,19 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 9. **The hook is kinetic type from data** (`kinetic`, §E4.1): a big accent token, stacked words, a claim struck
    through and a punch, each on its word. No code to write, so a reel costs no tokens beyond its script. Custom scenes
    (§E6.5) are opt-in, only when the creator asks for a moment the library cannot make.
+10. **Palettes (colour only, on either look):** `"palette": "<name>"` in script.json or the storyboard recolours the
+    reel and keeps the look's fonts, texture and boil. Pick by the subject; leave it out for the look's own colours.
+
+    | Palette | Colours | Mood | Rule | Best for |
+    |---|---|---|---|---|
+    | `terracotta` | #E07A5F #F2CC8F #81B29A #3D405B #F4F1DE | warm, grounded, unhurried; handmade | #F4F1DE ground, #3D405B text (8.9:1), #E07A5F for shapes and buttons; accent words take it deeper | lifestyle, wellness, artisan food, interiors |
+    | `monochrome` | #000000 #2B2B2B #6E6E6E #C4C4C4 #FFFFFF | bold, editorial; composition does the work | no colour; restraint is the effect | fashion, photography, architecture, luxury |
+    | `electric-pop` | #FF006E #FB5607 #FFBE0B #8338EC #3A86FF | loud, made to stop a scroll | white ground; only #FF006E and #8338EC (the other three are the signals); never one bright colour on another | youth brands, events, music, entertainment |
+    | `nordic-frost` | #CAF0F8 #90E0EF #00B4D8 #0077B6 #03045E | clear, trustworthy | light for grounds, dark for type (#03045E on #CAF0F8), mid tones for accents | tech, SaaS, finance, healthcare |
+    | `bold-citrus` | #F94144 #F3722C #F8961E #F9C74F #90BE6D | fun, appetizing | each scene's ground is the next colour, in order; text #2A1D0E | food, fitness, kids, quick service |
+
+    Every palette passes the theme's contrast rules on every ground and gate E5 on every scene case; a colour too light
+    to read as text keeps its hue and is taken deeper for words only (`tokens.json` palettes; `explainer_lib.palette_tokens`).
 
 ## §E7 Sources and claims
 

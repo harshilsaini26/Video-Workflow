@@ -50,6 +50,8 @@ re-plan the notes to act on.
    a reveal; a new place gets a wipe or a brush, the same idea a fade, a jolt a whip: MOTION.md §3). Lead the eye:
    put the thread or the next scene where the important item will land. **Plan the rhyme:** the last scene echoes
    the hook (its word, its shape, its ground), so the close seams the loop back into the start.
+   **The palette** is the brief's (`"palette"` in the storyboard, colour only, PLAYBOOK §E6.10): keep its rule in what you
+   choose (electric-pop: two colours; bold-citrus: the ground steps by itself, so leave `bg` as the planner wrote it).
 3. **The storyboard's shape** (the planner writes it; keep it when you edit):
    ```json
    {"id": "<project>", "fps": 60, "voice": "voice.wav", "transcript": "transcript.json",

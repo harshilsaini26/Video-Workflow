@@ -349,6 +349,8 @@ def main():
              "voice": "voice.wav", "transcript": "transcript.json", "captions": {"emphasis": emphasis}, "scenes": scenes}
     if look != "latte":
         board["look"] = look
+    if S.get("palette"):
+        board["palette"] = S["palette"]      # colour only (tokens.palettes), laid over the look
     if tail > TAIL:
         board["tail"] = tail                 # seconds the page runs past the voice (default TAIL)
     if S.get("thread"):

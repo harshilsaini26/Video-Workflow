@@ -110,7 +110,7 @@ class Theme(unittest.TestCase):
         # the editorial look keeps the same rule: nothing on a page outside its own palette (a brand's mark aside)
         self.every_colour("paper", {k: v.lower() for k, v in E.load_tokens(look="paper")["palette"].items()})
 
-    def every_colour(self, look, pal):
+    def every_colour(self, look, pal, palette=None):
         rgbs = {tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h in pal.values()}
         mc = make_cases()
         root = scratch(self)
@@ -125,21 +125,23 @@ class Theme(unittest.TestCase):
                 d = os.path.join(root, "%s-%s" % (typ, name))
                 for rel, w, h in mc.images(data):           # every src anywhere in the data (photos[].src too)
                     png(os.path.join(d, rel), w, h)
-                html = self.compose(d, dict({"type": typ, "id": "sc", "bg": bgs[(k + j) % 4], "in": "word:1", "out": 16.0}, **data), vendor, look)
+                html = self.compose(d, dict({"type": typ, "id": "sc", "bg": bgs[(k + j) % 4], "in": "word:1", "out": 16.0}, **data), vendor, look, palette)
                 page = re.sub(r'<div class="lc-mark">.*?</div>', "", html, flags=re.S)   # a brand's own mark, in its own colour
                 for h in re.findall(r"#[0-9A-Fa-f]{6}\b", page):
                     self.assertIn(h.lower(), pal.values(), "%s %s-%s: %s" % (look, typ, name, h))
                 for rgb in re.findall(r"rgba?\((\d+),\s*(\d+),\s*(\d+)", page):
                     self.assertIn(tuple(map(int, rgb)), rgbs, "%s %s-%s: rgb%s" % (look, typ, name, rgb))
 
-    def compose(self, d, scene, vendor, look="latte"):
+    def compose(self, d, scene, vendor, look="latte", palette=None):
         from .helpers import run
         from .test_compose import silent_wav
         write(os.path.join(d, "transcript.json"), {"words": [{"text": "word%d" % i, "start": 0.5 + i * 0.4, "end": 0.8 + i * 0.4}
                                                               for i in range(40)]})
         silent_wav(os.path.join(d, "voice.wav"), 15.5)
-        sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "look": look, "scenes": [make_cases().LEAD_IN, scene],
-                                                        "sound": {"music": "none", "sfx": False}})
+        sb = {"id": "t", "look": look, "scenes": [make_cases().LEAD_IN, scene], "sound": {"music": "none", "sfx": False}}
+        if palette:
+            sb["palette"] = palette
+        sp = write(os.path.join(d, "storyboard.json"), sb)
         r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", vendor)
         self.assertEqual(r.returncode, 0, "%s: %s" % (scene["type"], r.stdout + r.stderr))
         return read(os.path.join(d, "public", "index.html"))

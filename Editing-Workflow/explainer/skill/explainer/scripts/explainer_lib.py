@@ -166,7 +166,110 @@ def _merge(base, over):
     return out
 
 
-def load_tokens(path=None, look=None):
+PALETTES = ("terracotta", "monochrome", "electric-pop", "nordic-frost", "bold-citrus")   # colour only (tokens.palettes)
+
+
+def _rgb(h):
+    return [int(h[i:i + 2], 16) for i in (1, 3, 5)]
+
+
+def _mix(a, b, t):
+    """a moved toward b by t (0 to 1), as #RRGGBB."""
+    return "#" + "".join("%02X" % int(round(x + (y - x) * t)) for x, y in zip(_rgb(a), _rgb(b)))
+
+
+def _lum(h):
+    f = lambda c: c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = (v / 255.0 for v in _rgb(h))
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+
+
+def _ratio(a, b):
+    hi, lo = sorted((_lum(a), _lum(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _readable(c, grounds, need):
+    """c, or c taken darker (on light grounds) or lighter (on dark) in its own hue until it reads at `need` on each."""
+    to = "#000000" if min(_lum(g) for g in grounds) > 0.18 else "#FFFFFF"
+    for k in range(34):
+        out = _mix(c, to, k * 0.03)
+        if all(_ratio(out, g) >= need for g in grounds):
+            return out
+    return to
+
+
+def palette_tokens(spec, look_ambient):
+    """A palette's colour tokens (palette names, roles, grounds, series, highlight, paper, ambient) from its few
+    choices in tokens.palettes: shapes keep its exact colours; text that would not read is taken deeper in its own hue."""
+    g, ink = spec["ground"], spec["ink"]
+    m = spec.get("mantle") or _mix(g, ink, 0.05)
+    crust = _mix(m, ink, 0.06)
+    lights = [g, m, crust]                    # text reads on both light grounds and over their darkest glow
+    p = {"base": g, "mantle": m, "crust": crust, "text": ink,
+         "subtext1": _readable(_mix(ink, g, 0.15), lights, 4.5), "subtext0": _readable(_mix(ink, g, 0.30), lights, 3.0),
+         "overlay2": _readable(_mix(ink, g, 0.45), lights, 3.0), "overlay1": _mix(ink, g, 0.55), "overlay0": _mix(ink, g, 0.65),
+         "surface2": _mix(ink, g, 0.75), "surface1": _mix(ink, g, 0.83), "surface0": _mix(ink, g, 0.90),
+         "flamingo": spec["accent"], "peach": _readable(spec["accent"], lights, 3.0),
+         "pink": spec["accent2"], "lavender": _readable(spec["accent2"], lights, 3.0),
+         "blue": spec["strong"], "mauve": spec["dark"],
+         "teal": spec["good"], "green": _readable(spec["good"], lights, 3.0),
+         "maroon": spec["bad"], "red": _readable(spec["bad"], lights, 3.0),
+         "sapphire": spec["warn"], "yellow": _readable(spec["warn"], lights, 3.0)}
+    p["rosewater"] = _mix(spec["accent"], g, 0.55)
+    p["sky"] = _mix(spec["accent2"], g, 0.55)
+    for k, c in enumerate(spec.get("cycle", []), 1):
+        p["c%d" % k] = c
+    named = {}
+    for n in ("flamingo", "pink", "blue", "mauve", "teal", "maroon", "sapphire", "text", "base", "mantle") + tuple("c%d" % k for k in range(1, 6)):
+        if n in p:
+            named.setdefault(p[n].upper(), n)
+    best = lambda fill: max(("text", "base"), key=lambda n: _ratio(p[n], p[fill]))      # the text that reads on a fill
+    series = [[named[c.upper()], best(named[c.upper()])] for c in spec["series"] if _ratio(p[best(named[c.upper()])], c) >= 3.0]
+    five = lambda ss: [ss[i % len(ss)] for i in range(5)]        # scenes read up to five series entries: repeat, never add
+    series = five(series)
+    hl = "flamingo" if _ratio(p[best("flamingo")], p["flamingo"]) >= 3.0 else "peach"
+
+    def coloured(fill):                       # a strong ground (or a citrus step): one text colour does everything on it
+        t = best(fill)
+        return {"fill": fill, "dark": t == "base", "card": fill, "card_line": [t, 0.34],
+                "roles": {"ink": t, "dim": t, "muted": t, "line": t, "accent": t, "on_accent": fill, "accent2": t, "chrome": "crust"},
+                "series": five([[t, fill]] + [s for s in series if s[0] != fill]), "highlight": {"fill": t, "text": fill, "handle": fill, "handle_border": t},
+                "shadow_alpha": 0.28}
+    dark = "mauve"
+    under = [p[dark], _mix(p[dark], p["base"], 0.06)]        # the dark ground, and its brightest glow
+    acc_d = next(n for n in ("flamingo", "rosewater", "base") if all(_ratio(p[n], u) >= 3.0 for u in under))
+    grounds = {"mantle": {"fill": "mantle", "card": "base", "card_line": "surface0"},
+               "base": {"fill": "base", "card": "base", "card_line": "surface0"},
+               "blue": coloured("blue"),
+               "ink": {"fill": dark, "dark": True, "card": dark, "card_line": ["base", 0.26],
+                       "roles": {"ink": "base", "dim": "crust", "muted": "surface0", "line": "surface2", "accent": acc_d,
+                                 "on_accent": best(acc_d), "accent2": "crust", "chrome": "crust"},
+                       "series": five([[acc_d, best(acc_d)], ["base", dark]] + [s for s in series if _ratio(p[s[0]], p[dark]) >= 1.5 and s[0] not in (acc_d, dark)]),
+                       "highlight": {"fill": acc_d, "text": best(acc_d), "handle": best(acc_d), "handle_border": acc_d}, "shadow_alpha": 0.3}}
+    cycle = ["c%d" % k for k in range(1, len(spec.get("cycle", [])) + 1)]
+    for c in cycle:
+        grounds[c] = coloured(c)
+    glows, parts = {}, {}
+    for gname, b in grounds.items():
+        src = look_ambient["glows"].get(gname) or look_ambient["glows"]["blue"]
+        if gname in ("mantle", "base"):
+            cols = [("crust", 0.5), ("surface0", 0.35), ("crust", 0.4)]
+            parts[gname] = [["overlay0", 0.3], ["surface2", 0.45], ["flamingo", 0.22]]
+        else:
+            t = b["roles"]["ink"]
+            cols = [(t, 0.06), ("base" if t == "text" else "text", 0.05), (t, 0.04)]
+            parts[gname] = [[t, 0.22], [t, 0.14]]
+        glows[gname] = [dict(gl, color=c, alpha=a) for gl, (c, a) in zip(src, cols)]
+    return {"palette": p, "backgrounds": grounds, "series": series, "cycle": cycle,
+            "roles": {"ink": "text", "dim": "subtext0", "muted": "overlay2", "line": "surface1", "accent": "peach",
+                      "on_accent": best("peach"), "accent2": "lavender", "good": "green", "bad": "red", "warn": "yellow", "chrome": "crust"},
+            "highlight": {"fill": hl, "text": best(hl), "handle": best(hl), "handle_border": hl},
+            "paper": {"paper": "base", "paper_ink": "text", "paper_dim": "subtext0", "paper_line": "surface0", "paper_chrome": "crust"},
+            "shadow": {"color": "text"}, "ambient": {"glows": glows, "particles": {"colors": parts}}}
+
+
+def load_tokens(path=None, look=None, palette=None):
     """The look: fonts, the palette and its roles, backgrounds, motion timing (tokens.json next to scripts/). `look`
     lays tokens.looks.<look> over the base (Catppuccin Latte); paper renames no palette colour, so a scene that names one
     resolves in either look. Scenes read colours through theme(), never from the palette directly. tok["look"] names it."""
@@ -179,6 +282,14 @@ def load_tokens(path=None, look=None):
     if look != "latte":
         tok = _merge(tok, looks[look])
     tok["look"] = look
+    if palette:                               # colour only: laid over the look's colours, never its fonts or effects
+        if palette not in PALETTES:
+            raise ValueError("no palette %r: the palettes are %s" % (palette, ", ".join(PALETTES)))
+        over = palette_tokens(tok["palettes"][palette], tok["ambient"])
+        tok["backgrounds"] = {}                 # the palette's grounds replace the look's (names may differ: citrus steps)
+        tok["ambient"]["glows"], tok["ambient"]["particles"]["colors"] = {}, {}
+        tok = _merge(tok, over)
+    tok["palette_name"] = palette
     return tok
 
 

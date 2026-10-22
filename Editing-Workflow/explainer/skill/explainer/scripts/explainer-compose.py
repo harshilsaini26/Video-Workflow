@@ -255,7 +255,7 @@ def main():
     out = a.out
     os.makedirs(out, exist_ok=True)
     try:
-        tok = E.load_tokens(look=S.get("look"))       # latte by default; paper, the editorial look
+        tok = E.load_tokens(look=S.get("look"), palette=S.get("palette"))   # latte or paper; a palette recolours either
     except ValueError as e:
         fail(str(e))
     E.use_look(tok)                                   # hero() and aside(): the faces the big words are set in
@@ -320,7 +320,7 @@ def main():
     scenes = S.get("scenes") or fail("the storyboard has no scenes")
     seen, timed, builds = set(), [], {}
     bg = None
-    for sc in scenes:
+    for k_, sc in enumerate(scenes):
         sid = sc.get("id")
         if not sid or not re.match(r"^[A-Za-z][A-Za-z0-9_]*$", str(sid)):
             fail("%r: an id starts with a letter and holds only letters, digits and _ (the page derives <id>-... ids from it)" % (sid,))
@@ -333,6 +333,8 @@ def main():
         if not mod:
             fail("%s: unknown scene type %r (one of: %s)" % (sid, sc.get("type"), ", ".join(sorted(REGISTRY))))
         bg = sc.get("bg", bg or next(iter(tok["backgrounds"])))
+        if tok.get("cycle"):                 # a palette that steps its ground scene by scene (bold-citrus), in order
+            bg = tok["cycle"][k_ % len(tok["cycle"])]
         if bg not in tok["backgrounds"]:
             fail("%s: unknown bg %r (one of: %s)" % (sid, bg, ", ".join(tok["backgrounds"])))
         if sc.get("transition") is not None and sc["transition"] not in X.KINDS:
