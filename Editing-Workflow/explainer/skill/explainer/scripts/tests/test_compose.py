@@ -2,6 +2,7 @@
 import copy, os, re, unittest, wave
 from .helpers import load, needs_kit, read, run, run_kit, scratch, write
 import explainer_lib as E
+import transitions as X
 
 TOK = E.load_tokens()
 STEP, T0 = 0.4, 0.5
@@ -176,7 +177,7 @@ class Compose(unittest.TestCase):
             b["scenes"][1]["bg"] = "base"
             b["scenes"][1]["transition"] = "push"     # a named transition other than wipe keeps the cross-fade
         html, _, _ = self.ok(edit)
-        self.assertEqual(len(re.findall(r'class="bg"', html)), 2)
+        self.assertEqual(len(re.findall(r'class="bg"', html)), 3)      # and the close's, back onto the hook's ground
         fades = re.findall(r"tl\.to\('#bg(\d+)', \{ opacity: 1, duration: ([\d.]+)[^;]*\}, ([\d.]+)\);", html)
         self.assertEqual(len(fades), 1)
         self.assertEqual(fades[0][0], "1")
@@ -219,9 +220,9 @@ class Compose(unittest.TestCase):
             elif tw.startswith("tl.to(") and re.search(r"\{ opacity: 0[,} ]", tw):   # to 0, not to 0.4
                 exits += 1
                 self.assertIn("ease: '%s'" % m["exit_ease"], tw)
-                self.assertLessEqual(float(re.search(r"duration: ([\d.]+)", tw).group(1)), m["exit"])
+                self.assertLessEqual(float(re.search(r"duration: ([\d.]+)", tw).group(1)), m["exit"] if exits <= 2 else X.CLOSE)
         self.assertGreaterEqual(entrances, 3)
-        self.assertGreaterEqual(exits, 2)   # the last scene holds to the end: no exit
+        self.assertEqual(exits, 3)          # the last scene leaves too: the close, over the last 0.4 s
         self.assertNotRegex(html, r"stagger: [\d.]")
         for amount in re.findall(r"stagger: \{ amount: ([\d.]+)", html):
             self.assertLessEqual(float(amount), m["stagger_total_max"])

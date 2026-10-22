@@ -78,8 +78,8 @@ class OnTheGround(unittest.TestCase):
     def test_texture_only_on_base(self):
         html, out = self.page("paper", ["blue", "base", "ink"])
         bgs = re.findall(r'<div class="bg" id="bg\d+" style="([^"]*)"', html)
-        self.assertEqual(len(bgs), 3)
-        self.assertEqual(["paper.png" in s for s in bgs], [False, True, False])
+        self.assertEqual(len(bgs), 4)                                  # the last is the close's, back onto the hook's blue
+        self.assertEqual(["paper.png" in s for s in bgs], [False, True, False, False])
         self.assertTrue(os.path.exists(os.path.join(out, "assets", "paper.png")))
 
     def test_latte_has_none(self):

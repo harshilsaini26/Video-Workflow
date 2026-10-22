@@ -396,7 +396,7 @@ def main():
     moments = {"duration": D, "look": tok["look"], "scenes": [], "spans": [], "items": []}   # every change on screen, for pace-check.py (gate E4)
     kinds, prev = [], None    # how each scene comes in (transitions.py): the storyboard's choice or the composer's
     for k, (sc, _, sbg, _, _, _) in enumerate(timed):
-        kinds.append(X.pick(k, prev, sbg, sc.get("transition")))
+        kinds.append(X.pick(k, prev, sbg, sc.get("transition"), tok["look"]))
         prev = sbg
     for k, (sc, mod, sbg, t_in, t_out, end) in enumerate(timed):
         sid = sc["id"]
@@ -449,6 +449,11 @@ def main():
             spray, spray_js = X.burst(k, t_in, [f for f, _ in E.theme(tok, sbg)["series"]])
             tx_html.append(spray)
             lines += spray_js
+        elif kinds[k] == "brush":
+            th_ = E.theme(tok, timed[k - 1][2] if k else sbg)   # the outgoing ground's ink: the bands show over it
+            bands, band_js = X.brush(k, t_in, [th_["accent"], th_["ink"]])
+            tx_html.append(bands)
+            lines += band_js
         word = E.anchor_text(sc["in"], words)
         anchor = ' data-unanchored="1"' if word == "-" else ' data-anchor="%s"' % html.escape(word, quote=True)
         hosts.append('    <div class="card-host clip" id="host-%s" data-start="%.3f" data-duration="%.3f" data-track-index="%d"%s\n'
@@ -462,8 +467,10 @@ def main():
             js.append(camera(sid, k, t_in, t_out, tok, cam_from(mod, scale, tok)))
         if t_out < D - 1e-6:
             gone = X.exit(kinds[k + 1] if k + 1 < len(kinds) else "fade", sid, t_out)
-            lines = lines + gone
-            js.extend(gone)
+        else:                            # the last scene leaves too, onto the hook's ground (the loop seams into the hook)
+            gone = X.close(sid, D)
+        lines = lines + gone
+        js.extend(gone)
         moments["spans"] += [[round(a_, 3), round(b_, 3)] for a_, b_ in filter(None, map(line_span, lines))]
 
     hero = E.hero()
@@ -478,9 +485,14 @@ def main():
         if not bgs or bgs[-1][0] != sbg:
             if bgs and kinds[k] == "wipe":     # the new background opens as a circle
                 bg_js += X.wipe_bg("bg%d" % len(bgs), t_in)
+            elif bgs and kinds[k] == "brush":  # the new background swaps under the bands' full cover
+                bg_js.append("tl.set('#bg%d', { opacity: 1 }, %.3f);" % (len(bgs), t_in))
             elif bgs:
                 bg_js.append("tl.to('#bg%d', { opacity: 1, duration: %.3f, ease: 'power1.inOut' }, %.3f);" % (len(bgs), E.BG_FADE, t_in))
             bgs.append((sbg, t_in))
+    if bgs[-1][0] != bgs[0][0]:                  # the close ends on the hook's ground
+        bg_js += X.wipe_bg("bg%d" % len(bgs), D - X.CLOSE, X.CLOSE)
+        bgs.append((bgs[0][0], D - X.CLOSE))
     layer_of, cuts = [], {}
     for k, (sc, _, sbg, t_in, _, _) in enumerate(timed):     # the layer each scene is on, and the cuts inside each layer
         i = max(j for j, (_, t0) in enumerate(bgs) if t0 <= t_in + 1e-6)
