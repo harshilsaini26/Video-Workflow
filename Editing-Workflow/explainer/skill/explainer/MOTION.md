@@ -73,6 +73,9 @@ Distilled from three free, open sources, read as references (none of their code 
    where it is going as **empty slots** (outlines, their words hidden), never as faint text, then fills each on its word.
 6. **Deterministic, on the timeline.** No `Math.random` or `Date.now`, no `repeat` or `yoyo`, no `infinite` CSS
    animation: every render of the page is the same frame for frame (the custom-scene lint refuses them).
+7. **One read at a time; fast actions, slow meanings.** Two items of one scene land at least 0.6 s apart unless they
+   are one stagger (E4 lists them as "two reads at once"); a number stays on screen at least 1.0 s before its scene
+   leaves; the last read of the reel lands at least 1.5 s before the end (both E4 FAIL, `pace-check.py`).
 
 ## 3. Cuts
 

@@ -19,6 +19,7 @@ number with no source, more than 0.3 s with no scene (at the start, between scen
 overlapping by more than 0.3 s, a voice over the 90 s ceiling, or a hook item that lands after 0.8 s (SOP S8).
 """
 import argparse, html, json, math, os, random, re, shutil, sys, wave
+from html.parser import HTMLParser
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -39,6 +40,34 @@ FONTS = os.path.join(HERE, "..", "assets", "fonts")
 FONT_FILES = ("DMSans-500.woff2", "DMSans-700.woff2", "JetBrainsMono-500.woff2", "Archivo-wdth.woff2", "InstrumentSerif-Italic.woff2")
 CAP_SIZE = E.CAPTION_SIZE
 BRAND_TOP, BRAND_H = 281, 40           # the handle and the series part: inside the safe area, above the scene area
+
+
+NUMBER_TYPES = {"stat", "count-up", "price-sticker", "number"}   # a number needs time on screen (pace-check's read floor)
+VOID = {"br", "img", "input", "hr", "meta", "link", "source", "wbr", "path", "circle", "rect", "line", "polyline", "use", "stop"}
+
+
+class Reads(HTMLParser):
+    """[(t, text)]: every element with a data-at, and the words inside it."""
+    def __init__(self, markup):
+        super().__init__()
+        self.out, self.open = [], []          # open: [tag, index into out or None]
+        self.feed(markup)
+
+    def handle_starttag(self, tag, attrs):
+        at = dict(attrs).get("data-at")
+        if at is not None:
+            self.out.append([float(at), ""])
+        if tag not in VOID:
+            self.open.append([tag, len(self.out) - 1 if at is not None else None])
+
+    def handle_endtag(self, tag):
+        while self.open and self.open.pop()[0] != tag:
+            pass
+
+    def handle_data(self, data):
+        for _, k in self.open:
+            if k is not None:
+                self.out[k][1] += data
 
 
 def fail(msg):
@@ -363,7 +392,7 @@ def main():
     head = ['<link rel="preload" href="fonts/%s" as="font" type="font/woff2" crossorigin />' % f
             for f in sorted(os.listdir(os.path.join(out, "fonts")))] if os.path.isdir(os.path.join(out, "fonts")) else []
     css, hosts, js, tx_html, item_times = {}, [], [], [], []
-    moments = {"duration": D, "look": tok["look"], "scenes": [], "spans": []}   # every change on screen, for pace-check.py (gate E4)
+    moments = {"duration": D, "look": tok["look"], "scenes": [], "spans": [], "items": []}   # every change on screen, for pace-check.py (gate E4)
     kinds, prev = [], None    # how each scene comes in (transitions.py): the storyboard's choice or the composer's
     for k, (sc, _, sbg, _, _, _) in enumerate(timed):
         kinds.append(X.pick(k, prev, sbg, sc.get("transition")))
@@ -410,6 +439,10 @@ def main():
                  % (sid, max(mine), E.HOOK_BY, "the voice's first word starts at %.2f s: trim its leading silence" % words[0]["start"]
                     if late else "anchor the hook's pieces to word 0 or 1"))
         item_times += mine
+        reads = Reads(inner + hl_html).out or [(t_in, html.unescape(re.sub(r"<[^>]+>", " ", inner)))]   # no timed items: the scene is one read
+        for t_, text_ in reads:                          # items landing together are one stagger, one read
+            moments["items"].append({"scene": sid, "t": round(t_, 3), "text": " ".join(text_.split())[:80],
+                                     "group": "%s@%.3f" % (sid, t_), "number": mod.TYPE in NUMBER_TYPES})
         lines = X.enter(kinds[k], sid, t_in) + lines
         if kinds[k] == "burst":
             spray, spray_js = X.burst(k, t_in, [f for f, _ in E.theme(tok, sbg)["series"]])

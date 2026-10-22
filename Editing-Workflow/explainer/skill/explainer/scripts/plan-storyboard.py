@@ -27,6 +27,7 @@ from scenes import logo_card
 
 BEAT = 2.5
 HOOK_BY, LEAD = 0.8, 0.2          # explainer_lib's: the hook's items land by 0.8 s, an entrance 0.2 s before its word
+TAIL, LAST_READ = 0.5, 1.5        # the page runs TAIL past the voice; the last read lands LAST_READ before the end (E4)
 BGS = ["mantle", "base"]          # the two light Latte surfaces (tokens.json), alternating at each section break
 HOOK_BG, PAYOFF_BG, BEAT_BG = "ink", "blue", "blue"
 ONE_GROUND = "base"                     # the paper look: every scene on the paper
@@ -133,19 +134,21 @@ def hook_anchors(sc, words, limit):
         for j, piece in enumerate(seq):
             piece["at"] = "word:%d" % early[int(round(j * (len(early) - 1) / float(max(1, len(seq) - 1))))]
         return sc
+    return clamp_at(sc, early[-1])
 
-    def walk(o):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if k == "at" and isinstance(v, str) and v.startswith("word:") and int(v[5:]) > early[-1]:
-                    o[k] = "word:%d" % early[-1]
-                else:
-                    walk(v)
-        elif isinstance(o, list):
-            for v in o:
-                walk(v)
-    walk(sc)
-    return sc
+
+def clamp_at(o, last):
+    """Every "at" (word:N) anywhere in o later than word `last` moves to it."""
+    if isinstance(o, dict):
+        for k, v in o.items():
+            if k == "at" and isinstance(v, str) and v.startswith("word:") and int(v[5:]) > last:
+                o[k] = "word:%d" % last
+            else:
+                clamp_at(v, last)
+    elif isinstance(o, list):
+        for v in o:
+            clamp_at(v, last)
+    return o
 
 
 def from_viz(viz, idx, words):
@@ -319,6 +322,10 @@ def main():
         sys.exit("no scenes: no transcript words carry the script's line ids")
     scenes[0]["in"] = "word:0"
     hook_anchors(scenes[0], words, HOOK_BY + LEAD)
+    limit = words[-1]["end"] + TAIL - LAST_READ + LEAD        # the last read needs LAST_READ s on screen (E4)
+    late = max([i for i, w in enumerate(words) if w["start"] <= limit] or [0])
+    for sc in scenes[1:]:
+        clamp_at(sc, max(late, int(sc["in"][5:])))
     for x, y in zip(scenes, scenes[1:]):
         x["out"] = y["in"]
     scenes[-1]["out"] = "end"

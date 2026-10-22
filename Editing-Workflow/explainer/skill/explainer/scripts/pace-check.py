@@ -14,6 +14,11 @@ stretch with no change longer than --max seconds fails, naming the scene on scre
 A scene is one picture: held over --hold seconds (8) it fails, over --hold-warn (6) it is listed, however much changes
 inside it (the RAG reel held one diagram 27 s while a highlight walked down it). A scene that travels (its camera moves
 to each new item, `travels` in moments.json) may hold longer: every item is a new framing.
+
+The read floor (one read at a time, and time for the last): a number (stat, count-up, price-sticker, number) on screen
+under --number-read seconds (1.0) before its scene's out fails; the last item landing under --last-read seconds (1.5)
+before the end fails; two items of one scene landing under --gap seconds (0.6) apart, outside one stagger group, are
+listed as two reads at once.
 """
 import argparse, json, os, sys
 
@@ -26,6 +31,9 @@ def main():
     ap.add_argument("--warn", type=float, default=2.0)
     ap.add_argument("--hold", type=float, default=8.0)
     ap.add_argument("--hold-warn", type=float, default=6.0)
+    ap.add_argument("--number-read", type=float, default=1.0)
+    ap.add_argument("--last-read", type=float, default=1.5)
+    ap.add_argument("--gap", type=float, default=0.6)
     a = ap.parse_args()
     path = a.moments or os.path.join(os.path.dirname(os.path.abspath(a.index)), "moments.json")
     if not os.path.exists(path):
@@ -66,6 +74,19 @@ def main():
     for s, e in bad:
         print("E4 FAIL: nothing changes from %.2f to %.2f s (%.1f s, in scene %s); at most %.1f s: add an item, a "
               "reveal or a new scene on a word inside it" % (s, e, e - s, scene_at(s), a.max))
+    items, outs = sorted(M.get("items", []), key=lambda i: i["t"]), {sc["id"]: float(sc["out"]) for sc in scenes}
+    for i in items:
+        left = outs.get(i["scene"], D) - i["t"]
+        if i.get("number") and left < a.number_read - 1e-6:
+            held.append("E4 FAIL: %s: the number %r lands at %.2f s, %.1f s before its scene's out; a number needs %.1f s "
+                        "on screen: anchor it earlier, or end the scene later" % (i["scene"], i["text"], i["t"], left, a.number_read))
+    if items and D - items[-1]["t"] < a.last_read - 1e-6:
+        held.append("E4 FAIL: the last read (%s, %r) lands at %.2f s, %.1f s before the end; give it %.1f s to land"
+                    % (items[-1]["scene"], items[-1]["text"], items[-1]["t"], D - items[-1]["t"], a.last_read))
+    for x, y in zip(items, items[1:]):
+        if x["scene"] == y["scene"] and x["group"] != y["group"] and y["t"] - x["t"] < a.gap - 1e-6:
+            print("WARN two reads at once in %s: %r at %.2f s and %r at %.2f s (%.1f s apart, at least %.1f s): one read "
+                  "at a time, or one stagger" % (x["scene"], x["text"], x["t"], y["text"], y["t"], y["t"] - x["t"], a.gap))
     for line in held:
         print(line)
     if bad or held:

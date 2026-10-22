@@ -91,7 +91,7 @@ class Plan(unittest.TestCase):
         self.assertEqual([said(m["at"]) for m in chat["messages"]], ["passages", "answer"])
         jd = next(s for s in sb["scenes"] if s["type"] == "jiggle-delete")
         self.assertEqual([("at" in t) for t in jd["tiles"]], [False, True, False])     # only the tile that goes away
-        self.assertEqual(said(jd["tiles"][1]["at"]), "risk.")
+        self.assertEqual(said(jd["tiles"][1]["at"]), "capital")         # "risk." ends the voice: the last read moves up (E4)
         script["lines"][2]["viz"] = {"type": "gravity-drop", "items": [{"text": "Cash", "at": "year"}, "saved"]}
         _, sb2, _ = self.plan(script)
         gd2 = next(s for s in sb2["scenes"] if s["type"] == "gravity-drop")
@@ -120,8 +120,10 @@ class Plan(unittest.TestCase):
         _, sb, words = self.plan()
         stack = next(s for s in sb["scenes"] if s["type"] == "stack")
         idx = [int(it["at"].split(":")[1]) for it in stack["items"]]
-        self.assertEqual((words[idx[0]]["text"], words[idx[2]]["text"]), ("cost", "risk."))
-        self.assertEqual(idx[1], (idx[0] + idx[2]) // 2)                 # "Valuation" is never said: halfway between its neighbours
+        # "risk." ends the voice, so the last read moves up to "capital" (E4: 1.5 s to land); "Valuation" is never said:
+        # it was spread halfway between "cost" and "risk.", and moves up with it
+        self.assertEqual((words[idx[0]]["text"], words[idx[2]]["text"]), ("cost", "capital"))
+        self.assertEqual(idx[1], idx[2])
         self.assertTrue(all(words[i]["line"] == "l5" for i in idx))
 
     def test_rules_without_a_hint(self):
