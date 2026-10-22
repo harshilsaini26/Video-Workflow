@@ -27,6 +27,7 @@ import explainer_lib as E
 import sound
 import transitions as X
 import headline as HL
+import paper
 import thread as TH
 from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 
@@ -486,8 +487,12 @@ def main():
         if k and layer_of[-1] == i:
             cuts.setdefault(i, []).append(t_in)
         layer_of.append(i)
-    bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s;opacity:%d">%s%s</div>\n'
-                      % (i, E.theme(tok, b)["bg"], 0 if i else 1, glows(i, b, tok, cuts.get(i, []), bg_js), particles(i, b, tok, D, bg_js))
+    textured = tok["look"] == "paper" and any(b == "base" for b, _ in bgs)   # the paper look's base ground is paper
+    if textured:
+        os.makedirs(os.path.join(out, "assets"), exist_ok=True)
+        shutil.copy(paper.SHIPPED if os.path.exists(paper.SHIPPED) else paper.texture(paper.SHIPPED), os.path.join(out, "assets", "paper.png"))
+    bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s%s;opacity:%d">%s%s</div>\n'
+                      % (i, E.theme(tok, b)["bg"], " url(assets/paper.png) 0 0 / 1080px 1920px" if textured and b == "base" else "", 0 if i else 1, glows(i, b, tok, cuts.get(i, []), bg_js), particles(i, b, tok, D, bg_js))
                       for i, (b, _) in enumerate(bgs))
 
     def bg_at(t):
