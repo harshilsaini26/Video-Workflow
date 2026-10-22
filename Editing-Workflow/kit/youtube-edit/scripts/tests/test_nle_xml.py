@@ -46,6 +46,13 @@ class Writer(unittest.TestCase):
         import nle_xml as X
         self.assertEqual(X.to_pathurl("/a b/c#d%e/é.mov"), "file:///a%20b/c%23d%25e/%C3%A9.mov")
         self.assertEqual(X.to_pathurl("C:\\x\\y z.mov"), "file:///C:/x/y%20z.mov")
+        self.assertEqual(X.to_pathurl("\\\\server\\share\\a b.mov"), "file://server/share/a%20b.mov")     # UNC
+
+    def test_a_relative_path_on_windows_keeps_its_drive(self):
+        import nle_xml as X
+        from unittest import mock
+        with mock.patch.object(X.os.path, "abspath", lambda p: "C:\\Users\\me\\" + p):
+            self.assertEqual(X.to_pathurl("media\\v.wav"), "file:///C:/Users/me/media/v.wav")
 
     def test_one_file_element_per_path(self):
         import nle_xml as X

@@ -63,6 +63,14 @@ def main():
     ap.add_argument("--brief", default="")
     ap.add_argument("--keyword", default="")
     a = ap.parse_args()
+    try:
+        check(a)
+    except (OSError, ValueError, AttributeError) as e:
+        print("POST ERROR: cannot read %s (%s)" % (getattr(e, "filename", None) or a.script or a.post, e))
+        sys.exit(2)
+
+
+def check(a):
     with open(a.post, encoding="utf-8") as f:
         text = f.read().strip()
     lines = [l.strip() for l in text.splitlines() if l.strip()]
@@ -91,7 +99,7 @@ def main():
             if rx.search(l):
                 fails.append("bait that gives nothing back (%r): ask for something with a reason" % l[:60])
         for word in COMMENT_WORD.findall(l):
-            if word != a.keyword:
+            if word.lower() != a.keyword.lower():
                 fails.append("bait that gives nothing back (comment %s): a comment keyword must get the viewer something%s"
                              % (word, (" (the reel's keyword is %s)" % a.keyword) if a.keyword else ""))
     words_only = [l for l in lines if not re.fullmatch(r"(#[A-Za-z_]\w*\s*)+", l)]

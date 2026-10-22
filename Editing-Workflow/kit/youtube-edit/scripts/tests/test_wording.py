@@ -96,6 +96,29 @@ class Rules(unittest.TestCase):
         self.assertFalse(any("loop" in m for m in r["warn"] + r["fail"]))
 
 
+class Minors(unittest.TestCase):
+    def test_a_joiner_inside_indic_text_is_not_invisible(self):
+        import wording as W
+        r = W.check_lines(lines("5 \u0915\u094d\u200d\u0937 tips", "\u0928\u093e\u200c\u092e here"))
+        self.assertFalse(any("invisible" in m for m in r["fail"]), r["fail"])
+        r = W.check_lines(lines("5 tips\u200dhere", "Middle"))                 # between Latin letters it is still hidden
+        self.assertTrue(any("invisible" in m for m in r["fail"]))
+
+    def test_teens_and_tens_are_numbers(self):
+        import wording as W
+        for word in ("seventy", "thirteen", "nineteen", "sixty", "ninety"):
+            r = W.check_lines(lines("Why %s percent of people quit" % word, "Middle"))
+            self.assertFalse(any("no number" in m for m in r["warn"]), word)
+
+    def test_a_missing_or_bad_script_is_named(self):
+        d = scratch(self)
+        for path in (os.path.join(d, "nope.json"), write(os.path.join(d, "bad.json"), "{not json")):
+            r = run("wording.py", "--script", path)
+            self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+            self.assertNotIn("Traceback", r.stderr)
+            self.assertIn(os.path.basename(path), r.stdout + r.stderr)
+
+
 class Cli(unittest.TestCase):
     def test_script_mode(self):
         d = scratch(self)

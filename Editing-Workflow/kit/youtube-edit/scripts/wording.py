@@ -19,8 +19,10 @@ import argparse, json, os, re, sys, unicodedata
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOOK_S, LINE_WORDS, LINE_S, RATE = 3.0, 18, 7.5, 2.4
-NUMBER_WORDS = set("one two three four five six seven eight nine ten eleven twelve twenty thirty forty fifty hundred thousand "
-                   "million billion half double twice".split())
+NUMBER_WORDS = set("one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen "
+                   "eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million billion "
+                   "half double twice".split())
+JOINERS = u"\u200c\u200d"   # zero-width (non-)joiners shape Indic and Arabic letters: invisible only between other letters
 STOP = set("the a an and or but of to in on for with at by from is are was were be it its this that these those you your we our "
            "i my me they them their he she his her not no so as if then than just now how what why who when where here there "
            "can will do does did have has had get got all any some more most one".split())
@@ -29,6 +31,18 @@ DASH = re.compile(u"—|–|--")
 with open(os.path.join(HERE, "wording.json"), encoding="utf-8") as _f:
     LISTS = json.load(_f)
 COMPILED = {k: [(p["id"], re.compile(p["pattern"], re.I), p["why"]) for p in LISTS[k]] for k in ("fail", "hook_fail", "warn")}
+
+
+def _hidden(text):
+    """A format character the eye cannot see, other than a joiner shaping two non-Latin letters (Devanagari conjuncts)."""
+    for i, c in enumerate(text):
+        if unicodedata.category(c) != "Cf":
+            continue
+        a, b = text[i - 1:i], text[i + 1:i + 2]
+        if c in JOINERS and a and b and all(ord(x) > 0x24F and unicodedata.category(x)[0] in "LM" for x in (a, b)):
+            continue
+        return True
+    return False
 
 
 def _words(text):
@@ -52,7 +66,7 @@ def check_lines(lines, hook_index=0, rate=RATE):
         say = ln.get("say") if ln.get("say") is not None else text
         tag = "line %s:" % lid
         both = text + "\n" + say
-        if any(unicodedata.category(c) == "Cf" for c in both):
+        if _hidden(both):
             out["fail"].append("%s invisible characters (zero-width or format marks): retype the line" % tag)
         for pid, rx, why in COMPILED["fail"]:
             if rx.search(both):
@@ -111,12 +125,16 @@ def main():
     ap.add_argument("--kept")
     ap.add_argument("--rate", type=float, default=RATE)
     a = ap.parse_args()
-    if a.script:
-        lines = _from_script(a.script)
-    elif a.transcript and a.kept:
-        lines = _from_transcript(a.transcript, a.kept)
-    else:
-        ap.error("give --script, or --transcript with --kept")
+    try:
+        if a.script:
+            lines = _from_script(a.script)
+        elif a.transcript and a.kept:
+            lines = _from_transcript(a.transcript, a.kept)
+        else:
+            ap.error("give --script, or --transcript with --kept")
+    except (OSError, ValueError, AttributeError) as e:
+        print("WORDING ERROR: cannot read %s (%s)" % (getattr(e, "filename", None) or a.script or a.transcript, e))
+        sys.exit(2)
     r = check_lines(lines, rate=a.rate)
     for k in ("fail", "warn", "note"):
         for m in r[k]:

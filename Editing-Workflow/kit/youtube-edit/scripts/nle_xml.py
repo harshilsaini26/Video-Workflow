@@ -22,10 +22,12 @@ NTSC = {29.97: (30, 30000 / 1001.0), 59.94: (60, 60000 / 1001.0), 23.976: (24, 2
 def to_pathurl(path):
     """file:///... with every unsafe character percent-encoded (UTF-8); a Windows path keeps its drive letter."""
     p = str(path)
+    if not (re.match(r"^[A-Za-z]:[\\/]", p) or p.startswith("\\\\")):
+        p = os.path.abspath(p)                   # on Windows this gives C:\\..., handled below
+    if p.startswith("\\\\"):                       # UNC: \\server\share\x -> file://server/share/x
+        return "file://" + urllib.parse.quote(p[2:].replace("\\", "/"), safe="/:")
     if re.match(r"^[A-Za-z]:[\\/]", p):
         p = "/" + p.replace("\\", "/")
-    else:
-        p = os.path.abspath(p)
     return "file://" + urllib.parse.quote(p, safe="/:")
 
 

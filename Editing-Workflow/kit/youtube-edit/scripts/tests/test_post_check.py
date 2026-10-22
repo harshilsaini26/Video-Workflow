@@ -80,6 +80,22 @@ class Post(unittest.TestCase):
             r = check(self, GOOD.replace("One cable now carries 240 watts. Here is what that means for your drawer.", first))
             self.assertEqual(r.returncode, 0, (first, r.stdout))
 
+    def test_the_keyword_ignores_case(self):
+        r = check(self, GOOD.replace("Save this for the next time you buy a cable.", "Comment PLAN and I will send you the list."),
+                  "--keyword", "plan")
+        self.assertNotIn("bait", r.stdout)
+
+    def test_a_missing_post_or_bad_script_is_named(self):
+        d = scratch(self)
+        r = run("post-check.py", "--post", os.path.join(d, "nope.md"))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertIn("nope.md", r.stdout + r.stderr)
+        r = run("post-check.py", "--post", write(os.path.join(d, "POST.md"), GOOD), "--script", write(os.path.join(d, "s.json"), "{bad"))
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertIn("s.json", r.stdout + r.stderr)
+
     def test_warnings_do_not_fail(self):
         r = check(self, GOOD.replace("#usbc #techtips #cables #gadgets", "#usbc") + "\n\nFollow for more and share it \U0001F525\U0001F525\U0001F525\U0001F525")
         self.assertEqual(r.returncode, 0, r.stdout)
