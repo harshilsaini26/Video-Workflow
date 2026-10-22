@@ -83,14 +83,14 @@ def render(scene, ctx, box):
                     % (sid, k, sid, k, head, ctx.esc(scene[s]["title"]), "".join(rows_html)))
     js.append(ctx.enter("#%s-h0, #%s-h1" % (sid, sid), ctx.t_in, {"y": -24}, stagger=0.12))
     js.append(ctx.enter("#%s-vs" % sid, ctx.t_in + 0.2, {"scale": 0.4}))
-    vs = '<div class="cp-vs" id="%s-vs" style="background:%s;color:%s">VS</div>' % (sid, acc, c["on_accent"])
+    vs = '<div class="cp-vs" id="%s-vs" style="background:%s;color:%s">VS</div>' % (sid, c["fill"], c["on_fill"])
     win = ""
     w = scene.get("winner")
     if w:
         t = ctx.at(w["at"])
         k = SIDES.index(w["side"])
-        win = '<div class="cp-win" id="%s-w" style="background:%s;color:%s">&#10003;</div>' % (sid, acc, c["on_accent"])
-        js.append("tl.to('#%s-h%d', %s, %.3f);" % (sid, k, js_obj({"backgroundColor": acc, "color": c["on_accent"],
+        win = '<div class="cp-win" id="%s-w" style="background:%s;color:%s">&#10003;</div>' % (sid, c["fill"], c["on_fill"])
+        js.append("tl.to('#%s-h%d', %s, %.3f);" % (sid, k, js_obj({"backgroundColor": c["fill"], "color": c["on_fill"],
                                                                    "duration": 0.3, "ease": mo["enter_ease"]}), t))
         js.append("tl.to('#%s-c%d', %s, %.3f);" % (sid, 1 - k, js_obj({"opacity": 0.45, "duration": 0.4, "ease": mo["enter_ease"]}), t))
         js.append(ctx.enter("#%s-w" % sid, t + 0.1, {"scale": 0.3}))

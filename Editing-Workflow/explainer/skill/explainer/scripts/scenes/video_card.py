@@ -120,7 +120,7 @@ def render(scene, ctx, box):
     meta = '<div class="vc-m" style="color:%s">%s</div>' % (pc["dim"], ctx.esc(scene["meta"])) if scene.get("meta") else ""
     info = ('<div class="vc-info"><div class="vc-t" style="color:%s">%s</div><div class="vc-row" style="height:%dpx">'
             '<span class="vc-av" style="background:%s;color:%s">%s</span><div><div class="vc-ch" style="color:%s">%s</div>%s</div></div></div>'
-            % (pc["ink"], ctx.esc(scene["title"]), _row_h(scene), pc["accent"], pc["on_accent"], letter, pc["ink"],
+            % (pc["ink"], ctx.esc(scene["title"]), _row_h(scene), pc["fill"], pc["on_fill"], letter, pc["ink"],
                ctx.esc(scene["channel"]), meta))
     # no fixed height: the card is as tall as its content, so the title wraps at whatever width it is given
     html = ('<div class="vc" id="%s-card" style="%s"><div class="vc-th" style="background:%s"><div class="vc-pic" id="%s-pic">%s</div>'

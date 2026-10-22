@@ -57,6 +57,31 @@ class Palettes(unittest.TestCase):
         self.assertNotEqual(low(c["accent"]), "#e07a5f")
         self.assertGreaterEqual(TT.ratio(c["accent"], c["bg"]), 3.0)
 
+    def test_terracotta_buttons_are_the_exact_hex(self):
+        c = E.theme(tok("terracotta"), "base")
+        self.assertEqual((low(c["fill"]), low(c["on_fill"])), ("#e07a5f", "#3d405b"))
+        d = scratch(self)
+        b = copy.deepcopy(BOARD)
+        b["palette"] = "terracotta"
+        b["scenes"][2] = {"type": "comment-cta", "id": "cta", "bg": "base", "in": "word:18", "out": "end", "keyword": {"text": "CABLE", "at": "word:19"},
+                          "gets": {"text": "The list", "at": "word:21"}}
+        write(os.path.join(d, "transcript.json"), {"words": words30()})
+        silent_wav(os.path.join(d, "voice.wav"), VOICE)
+        r = run("explainer-compose.py", "--spec", write(os.path.join(d, "storyboard.json"), b), "--out", os.path.join(d, "public"))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        html = read(os.path.join(d, "public", "index.html"))
+        self.assertRegex(html, r'(?i)class="n-badge" style="background:#E07A5F;color:#3D405B"')       # the number badge
+        self.assertRegex(html, r"(?i)background:#E07A5F;color:#3D405B[^\"]*\"[^>]*>CABLE")               # the keyword chip
+
+    def test_every_filled_shape_reads(self):
+        for name in GIVEN:
+            for g in E.load_tokens(palette=name)["backgrounds"]:
+                c = E.theme(tok(name), g)
+                self.assertGreaterEqual(TT.ratio(c["on_fill"], c["fill"]), 3.0, (name, g))
+                self.assertNotEqual(low(c["fill"]), low(c["bg"]), (name, g))
+        c = E.theme(E.load_tokens(), "base")                  # a look without a palette: the fill is its accent
+        self.assertEqual((c["fill"], c["on_fill"]), (c["accent"], c["on_accent"]))
+
     def test_monochrome_has_no_colour(self):
         for v in tok("monochrome")["palette"].values():
             r, g, b = (int(v[i:i + 2], 16) for i in (1, 3, 5))
@@ -106,6 +131,23 @@ class Carried(unittest.TestCase):
         r = run("explainer-compose.py", "--spec", write(os.path.join(d, "storyboard.json"), b), "--out", os.path.join(d, "public"))
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("terracotta", r.stdout)
+
+    def test_palettes_lists_the_five_and_suggests_one(self):
+        r = run("palettes.py")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        for name in GIVEN:
+            self.assertIn(name, r.stdout)
+        self.assertIn("Warm, grounded, unhurried", r.stdout)
+        for topic, first in (("an artisan bakery's sourdough", "terracotta"), ("onboarding for a SaaS dashboard", "nordic-frost"),
+                             ("a music festival line-up", "electric-pop"), ("a luxury fashion drop", "monochrome"),
+                             ("a quick kids snack recipe", "bold-citrus")):
+            r = run("palettes.py", "--for", topic)
+            self.assertEqual(r.stdout.split()[0], first, (topic, r.stdout))
+
+    def test_the_planner_takes_a_palette_flag(self):
+        from . import test_plan as TP
+        _, sb, _ = TP.Plan("test_rules_without_a_hint").plan(dict(copy.deepcopy(TP.SCRIPT), palette="nordic-frost"), "--palette", "monochrome")
+        self.assertEqual(sb["palette"], "monochrome")                    # the creator's choice wins over the script's
 
     def test_the_planner_carries_the_palette(self):
         from . import test_plan as TP

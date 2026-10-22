@@ -130,7 +130,7 @@ def render(scene, ctx, box):
         js.append(ctx.enter("#%s-n%d" % (sid, k), t, {"opacity": SLOT, "scale": 0.85}))
         js.append(ctx.fill("#%s-n%d" % (sid, k), t))
     centre = ('<div class="hb-centre" id="%s-c" style="left:%.1fpx;top:%.1fpx;background:%s;color:%s;box-shadow:0 0 0 14px %s">%s</div>'
-              % (sid, cx - DISC / 2.0, cy - DISC / 2.0, c["accent"], c["on_accent"], c["accent_soft"], ctx.esc(scene["center"])))
+              % (sid, cx - DISC / 2.0, cy - DISC / 2.0, c["fill"], c["on_fill"], c["accent_soft"], ctx.esc(scene["center"])))
     js.append(ctx.enter("#%s-c" % sid, ctx.t_in, {"scale": 0.5}))
     ctx.idle("#%s-c" % sid, ctx.t_in + 0.6, ctx.t_out, {"scale": 1.04}, every=1.2)    # the one alive thing while it holds
     html = ('<div class="hb" style="height:%dpx"><svg width="%d" height="%d" viewBox="0 0 %d %d">%s</svg>%s%s</div>'

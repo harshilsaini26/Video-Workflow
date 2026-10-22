@@ -149,6 +149,8 @@ def theme(tokens, bg):
     c["track"] = rgba(c["ink"], 0.16 if dark else 0.08)
     sh = tokens["shadow"]
     c["shadow"] = sh["card"] % rgba(p[sh["color"]] if not dark else p["text"], b.get("shadow_alpha", sh["alpha"]))
+    c.setdefault("fill", c["accent"])          # a shape that carries words (a button, a badge, a sticker): a palette
+    c.setdefault("on_fill", c["on_accent"])    # may keep its exact accent here when that is too light for accent words
     c["series"] = [(p[f], p[o]) for f, o in b.get("series", tokens["series"])]
     c["highlight"] = {k: p[v] for k, v in b.get("highlight", tokens["highlight"]).items()}
     c.update({k: p[v] for k, v in tokens["paper"].items()})
@@ -233,7 +235,8 @@ def palette_tokens(spec, look_ambient):
     def coloured(fill):                       # a strong ground (or a citrus step): one text colour does everything on it
         t = best(fill)
         return {"fill": fill, "dark": t == "base", "card": fill, "card_line": [t, 0.34],
-                "roles": {"ink": t, "dim": t, "muted": t, "line": t, "accent": t, "on_accent": fill, "accent2": t, "chrome": "crust"},
+                "roles": {"ink": t, "dim": t, "muted": t, "line": t, "accent": t, "on_accent": fill, "accent2": t, "chrome": "crust",
+                          "fill": t, "on_fill": fill},
                 "series": five([[t, fill]] + [s for s in series if s[0] != fill]), "highlight": {"fill": t, "text": fill, "handle": fill, "handle_border": t},
                 "shadow_alpha": 0.28}
     dark = "mauve"
@@ -244,7 +247,7 @@ def palette_tokens(spec, look_ambient):
                "blue": coloured("blue"),
                "ink": {"fill": dark, "dark": True, "card": dark, "card_line": ["base", 0.26],
                        "roles": {"ink": "base", "dim": "crust", "muted": "surface0", "line": "surface2", "accent": acc_d,
-                                 "on_accent": best(acc_d), "accent2": "crust", "chrome": "crust"},
+                                 "on_accent": best(acc_d), "accent2": "crust", "chrome": "crust", "fill": acc_d, "on_fill": best(acc_d)},
                        "series": five([[acc_d, best(acc_d)], ["base", dark]] + [s for s in series if _ratio(p[s[0]], p[dark]) >= 1.5 and s[0] not in (acc_d, dark)]),
                        "highlight": {"fill": acc_d, "text": best(acc_d), "handle": best(acc_d), "handle_border": acc_d}, "shadow_alpha": 0.3}}
     cycle = ["c%d" % k for k in range(1, len(spec.get("cycle", [])) + 1)]
@@ -263,7 +266,8 @@ def palette_tokens(spec, look_ambient):
         glows[gname] = [dict(gl, color=c, alpha=a) for gl, (c, a) in zip(src, cols)]
     return {"palette": p, "backgrounds": grounds, "series": series, "cycle": cycle,
             "roles": {"ink": "text", "dim": "subtext0", "muted": "overlay2", "line": "surface1", "accent": "peach",
-                      "on_accent": best("peach"), "accent2": "lavender", "good": "green", "bad": "red", "warn": "yellow", "chrome": "crust"},
+                      "on_accent": best("peach"), "accent2": "lavender", "good": "green", "bad": "red", "warn": "yellow", "chrome": "crust",
+                      "fill": hl, "on_fill": best(hl)},
             "highlight": {"fill": hl, "text": best(hl), "handle": best(hl), "handle_border": hl},
             "paper": {"paper": "base", "paper_ink": "text", "paper_dim": "subtext0", "paper_line": "surface0", "paper_chrome": "crust"},
             "shadow": {"color": "text"}, "ambient": {"glows": glows, "particles": {"colors": parts}}}

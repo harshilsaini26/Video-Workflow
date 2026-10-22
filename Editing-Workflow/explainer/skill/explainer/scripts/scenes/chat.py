@@ -151,7 +151,7 @@ def render(scene, ctx, box):
     name = scene.get("name", "Assistant")
     av = ctx.icon(scene["icon"]) if scene.get("icon") else ctx.esc(name.strip()[:1].upper())
     head = ('<div class="chat-bar" style="background:%s"><div class="chat-av" style="background:%s;color:%s">%s</div>'
-            '<div class="chat-name" style="color:%s">%s</div></div>' % (p["chrome"], p["accent"], p["on_accent"], av, p["ink"], ctx.esc(name)))
+            '<div class="chat-name" style="color:%s">%s</div></div>' % (p["chrome"], p["fill"], p["on_fill"], av, p["ink"], ctx.esc(name)))
     rs, _ = rows(scene, width)
     view_h, scrolls = view(scene, width)
     times, parts, js, events = [], [], [], []
@@ -164,7 +164,7 @@ def render(scene, ctx, box):
         top, bub_h, row_h = rs[i]
         if i % 2 == 0:     # the question: sent whole, from the user's corner
             parts.append('<div class="chat-row chat-u" id="%s-r%d"><div class="chat-bub" id="%s-b%d"%s style="background:%s;color:%s">%s</div></div>'
-                         % (sid, i, sid, i, attrs, p["accent"], p["on_accent"], ctx.esc(m["text"])))
+                         % (sid, i, sid, i, attrs, p["fill"], p["on_fill"], ctx.esc(m["text"])))
             js.append(ctx.enter("#%s-b%d" % (sid, i), t, {"y": 24, "scale": 0.94}))
             events.append((t, top + bub_h))
             continue
@@ -210,7 +210,7 @@ def render(scene, ctx, box):
                     js.append("tl.to('#%s-r%d', %s, %.3f);" % (sid, j, js_obj({"opacity": 0, "duration": 0.3, "ease": mo["exit_ease"]}), t))
     field = ('<div class="chat-in"><div class="chat-field" style="background:%s;color:%s"><span>%s</span>'
              '<i class="chat-send" style="background:%s;color:%s">%s</i></div></div>'
-             % (p["chrome"], p["dim"], ctx.esc(scene.get("placeholder", "Ask anything")), p["accent"], p["on_accent"], ctx.icon("send")))
+             % (p["chrome"], p["dim"], ctx.esc(scene.get("placeholder", "Ask anything")), p["fill"], p["on_fill"], ctx.icon("send")))
     html = ('<div class="chat" id="%s-win" style="%s">%s<div class="chat-view"%s><div class="chat-stack" id="%s-stack">%s</div></div>%s</div>'
             % (sid, ctx.paper_card(), head, ' style="height:%dpx"' % view_h if scrolls else "", sid, "".join(parts), field))
     return html, js

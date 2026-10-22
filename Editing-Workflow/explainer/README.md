@@ -37,6 +37,7 @@ explainer/
 │       ├── stills.py               the Checkpoint B stills, settled, plus the hook at 0.3, 0.7 and 1.0 s, and a fresh sheet
 │       ├── review.py               the Animator's review sheets: a strip per cut, a timing sheet per scene, 1:1 crops
 │       ├── paper.py                the paper look's seeded texture (assets/paper.png)
+│       ├── palettes.py             the five colour palettes, listed for the creator to choose (best fit for a topic first)
 │       ├── preflight.py            prepares a machine once (Windows included) and writes PREFLIGHT.md
 │       ├── skill-version.py        pins the skill's files at the brief; a changed skill stops the next stage
 │       ├── new-version.py          a clean folder for each version of a reel (v2, v3...)
@@ -46,7 +47,7 @@ explainer/
 │       ├── explainer_lib.py        shared: word anchors, the scene area, the looks, text measured with real glyph widths
 │       ├── scenes/                 one module per scene type (48, custom included), found without a list
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
-│       └── tests/                  513 tests (python3 -m unittest discover -s tests -t .)
+│       └── tests/                  517 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
     explainer-writer.md · explainer-voice.md · explainer-director.md · explainer-animator.md
 ```
@@ -236,7 +237,7 @@ flowchart TD
 | end to end | script-check → fake voice → alignment → compose → beat-check → `hyperframes check` → a 60 fps render → the kit's `verify-render.py --res 1080x1920` | 1 (needs FFmpeg, the kit, HyperFrames and a local GSAP), plus 1 with real Kokoro and Parakeet |
 
 **How it was verified** (2026-10-14 to 2026-10-18, on Linux with HyperFrames 0.8.157 to 0.8.171, and Chromium):
-- the whole suite: 513 tests, all passing; 3 skipped where Kokoro or a long render is not available (2026-10-22, after the craft pass from ClaudeAnimationBase; 2026-10-21, after the editor hand-off; before that, 2026-10-18, after the
+- the whole suite: 517 tests, all passing; 3 skipped where Kokoro or a long render is not available (2026-10-22, after the craft pass from ClaudeAnimationBase; 2026-10-21, after the editor hand-off; before that, 2026-10-18, after the
   editorial pass: the paper look, the headline layer, the thread and nine new scenes);
 - a 33 s paper-look demo (USB-C, with stand-in images) passed E1 to E5 before rendering, then E6 and
   `verify-render.py` on the render;

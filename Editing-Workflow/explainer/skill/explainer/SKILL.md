@@ -81,8 +81,10 @@ they never saw, SOP S1). Skip what the creator already said:
    of the creator's in the file, or none in the file (add it in the app).
 8. **The look:** `paper` (the editorial look: warm paper, near-black ink, one orange-red accent, a wide headline face,
    product images and photos; the default for a product or tech topic) or `latte` (soft Catppuccin grounds that change
-   with the story), and optionally a **palette** (colour only, on either look; PLAYBOOK §E6.10): `terracotta`,
-   `monochrome`, `electric-pop`, `nordic-frost` or `bold-citrus`, offered by the topic's "best for". And **any images** the reel should show (product cut-outs, photos), each photo with its credit:
+   with the story), and **the palette: the creator chooses** (colour only, on either look; PLAYBOOK §E6.10). Show them
+   the five, best fit first: `python3 "$ES/scripts/palettes.py" --for "<the topic>"` (`terracotta`, `monochrome`,
+   `electric-pop`, `nordic-frost`, `bold-citrus`, each with its colours, mood, rule and "best for"), recommend the
+   first, and let them pick one or none (the look's own colours). Write it into script.json as `"palette"`. And **any images** the reel should show (product cut-outs, photos), each photo with its credit:
    the reel shows only what the creator supplies or what is free to use.
 
 Create `$W`, copy `$ES/templates/{STATUS,NOTES}.md`, fill the header and **Brief** (profile `explainer`,

@@ -128,7 +128,7 @@ def render(scene, ctx, box):
             '<span class="cc-post" id="%s-post" style="color:%s">Post</span></div>'
             '<div class="cc-g" id="%s-g"%s style="color:%s">%s</div>'
             % (sid, c["dim"], ctx.esc(_kicker(scene)),
-               sid, k_attrs, chip_size(kw, box[2]), c["accent"], c["on_accent"], c["shadow"], ctx.esc(kw),
+               sid, k_attrs, chip_size(kw, box[2]), c["fill"], c["on_fill"], c["shadow"], ctx.esc(kw),
                sid, ctx.paper_card(),
                p["accent_soft"], p["accent"], USER_SVG,
                sid, p["dim"], ctx.esc(_placeholder(scene)),

@@ -128,7 +128,7 @@ def render(scene, ctx, box):
         tag = ""
         if b.get("tag"):
             tag = '<div class="doc-tagrow"><div class="doc-tag" id="%s-t%d" style="background:%s;color:%s">%s</div></div>' % (
-                sid, i, p["accent"], p["on_accent"], ctx.esc(b["tag"]))
+                sid, i, p["fill"], p["on_fill"], ctx.esc(b["tag"]))
         parts.append('<div class="doc-b">%s<div class="doc-p" style="color:%s"><span class="doc-mark" id="%s-m%d"%s '
                      'style="background-image:linear-gradient(%s, %s)">%s</span></div></div>'
                      % (tag, p["ink"], sid, i, attrs, hl, hl, ctx.esc(b["text"])))

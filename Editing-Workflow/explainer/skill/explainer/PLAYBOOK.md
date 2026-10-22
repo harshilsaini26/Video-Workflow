@@ -277,7 +277,10 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
     | `bold-citrus` | #F94144 #F3722C #F8961E #F9C74F #90BE6D | fun, appetizing | each scene's ground is the next colour, in order; text #2A1D0E | food, fitness, kids, quick service |
 
     Every palette passes the theme's contrast rules on every ground and gate E5 on every scene case; a colour too light
-    to read as text keeps its hue and is taken deeper for words only (`tokens.json` palettes; `explainer_lib.palette_tokens`).
+    to read as text keeps its hue and is taken deeper for words only, while shapes that carry words (buttons, badges,
+    stickers, keyword chips: the `fill` role) keep the exact hex, as Terracotta's #E07A5F buttons with #3D405B on them
+    (`tokens.json` palettes; `explainer_lib.palette_tokens`). The creator picks: `palettes.py --for "<topic>"` lists the
+    five, best fit first; `plan-storyboard.py --palette <name>` overrides the script's.
 
 ## §E7 Sources and claims
 

@@ -105,7 +105,7 @@ def render(scene, ctx, box):
     js = wave.setup() + [ctx.enter("#%s-track" % sid, ctx.t_in, {"y": 24}), ctx.enter("#%s-plot" % sid, ctx.t_in + 0.1, {"y": 24})]
     paint = lambda k, a, b, t, ease: ("tl.fromTo('#%s-o%d', { backgroundColor: '%s', color: '%s' }, { backgroundColor: '%s', color: '%s', duration: 0.3, "
                                       "ease: '%s', immediateRender: false }, %.3f);" % (sid, k, a[0], a[1], b[0], b[1], ease, t))
-    off, on = (clear, p["dim"]), (p["accent"], p["on_accent"])
+    off, on = (clear, p["dim"]), (p["fill"], p["on_fill"])
     for i, (o, (t, _)) in enumerate(zip(ops, times)):
         js.append(wave.to(o["wave"], t))
         js.append(paint(i, off, on, t, m["enter_ease"]))

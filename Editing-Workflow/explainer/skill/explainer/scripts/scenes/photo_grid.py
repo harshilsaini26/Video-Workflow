@@ -189,7 +189,7 @@ def render(scene, ctx, box):
         if i == 0 and scene.get("notes"):
             notes_html, notes_js = _annotate.render(scene["notes"], ctx, w, h, sid)
             js += notes_js
-        tag = ('<div class="pgr-tag" id="%s-g%d" style="background:%s;color:%s">%s</div>' % (sid, i, p["accent"], p["on_accent"], ctx.esc(ph["tag"]))
+        tag = ('<div class="pgr-tag" id="%s-g%d" style="background:%s;color:%s">%s</div>' % (sid, i, p["fill"], p["on_fill"], ctx.esc(ph["tag"]))
                if ph.get("tag") else "")
         parts.append('<div class="pgr-p" id="%s-p%d"%s style="left:%dpx;top:%dpx;width:%dpx;height:%dpx">'
                      '<div class="pgr-d" id="%s-d%d" style="box-shadow:%s"><img class="pgr-i" id="%s-i%d" src="%s" alt="" />%s%s'

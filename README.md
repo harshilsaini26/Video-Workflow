@@ -194,7 +194,7 @@ From each installed skill's `scripts` folder:
 |---|---|---|
 | kit | `cd .claude/skills/youtube-edit/scripts && python3 -m unittest tests` | 108 tests, OK |
 | Reels | `cd .claude/skills/reels/scripts && python3 -m unittest tests` | 74 tests, OK (1 skips without OpenCV) |
-| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 513 tests, OK (a few skip without Kokoro, Chrome or the local vendor folder) |
+| Explainer | `cd .claude/skills/explainer/scripts && python3 -m unittest discover -s tests -t .` | 517 tests, OK (a few skip without Kokoro, Chrome or the local vendor folder) |
 
 ### 3.6 One command for everything: `wf.py`
 

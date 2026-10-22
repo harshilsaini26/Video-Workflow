@@ -170,7 +170,7 @@ def render(scene, ctx, box):
         t, on = t + BLINK, not on
     js.append("tl.set('#%s-caret', { opacity: 0 }, %.3f);" % (sid, t_type))
     js.append("tl.to('#%s-ph', %s, %.3f);" % (sid, js_obj({"opacity": 0, "duration": 0.12, "ease": mo["exit_ease"]}), t_type))
-    js.append("tl.to('#%s-send', %s, %.3f);" % (sid, js_obj({"backgroundColor": c["accent"], "duration": 0.25, "ease": mo["enter_ease"]}), t_type))
+    js.append("tl.to('#%s-send', %s, %.3f);" % (sid, js_obj({"backgroundColor": c["fill"], "duration": 0.25, "ease": mo["enter_ease"]}), t_type))
     prev = None
     for i, ch in enumerate(chars):
         if ch is None:
@@ -191,7 +191,7 @@ def render(scene, ctx, box):
     send_attrs = s_attrs if t_send is not None else ""
     row = ('<div class="pb-row"><div class="pb-btn" style="box-shadow:inset 0 0 0 3px %s">%s</div>'
            '<div class="pb-btn" id="%s-send"%s style="background:%s">%s<i class="pb-ring" id="%s-ring" style="border-color:%s"></i></div></div>'
-           % (c["line"], PLUS % c["dim"], sid, send_attrs, c["line"], ARROW % c["on_accent"], sid, c["accent"]))
+           % (c["line"], PLUS % c["dim"], sid, send_attrs, c["line"], ARROW % c["on_fill"], sid, c["fill"]))
     if t_send is not None:
         if t_send < t_done + 0.1:
             ctx.fail("send at %.2f s comes before the prompt has typed in (%.2f s)" % (t_send, t_done))

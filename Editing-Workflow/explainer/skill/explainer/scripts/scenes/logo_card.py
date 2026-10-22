@@ -103,7 +103,7 @@ def render(scene, ctx, box):
         mark = '<img src="%s" alt="" />' % ctx.esc(rel)
         title = scene["name"]
     badge = ('<div class="lc-badge" id="%s-b" style="background:%s;color:%s">%s</div>'
-             % (sid, c["accent"], c["on_accent"], ctx.esc(scene["badge"])) if scene.get("badge") is not None else "")
+             % (sid, c["fill"], c["on_fill"], ctx.esc(scene["badge"])) if scene.get("badge") is not None else "")
     sub = '<div class="lc-sub" id="%s-s" style="color:%s">%s</div>' % (sid, c["dim"], ctx.esc(scene["sub"])) \
         if scene.get("sub") else '<div class="lc-sub"></div>'
     html = ('<div class="lc"><div class="lc-card" id="%s-card" style="%s"><div class="lc-mark">%s</div>%s</div>'

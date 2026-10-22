@@ -286,6 +286,7 @@ def main():
     ap.add_argument("--script", required=True)
     ap.add_argument("--transcript", required=True)
     ap.add_argument("--look", help="latte or paper (default: the script's look, else latte)")
+    ap.add_argument("--palette", help="one of the five palettes (palettes.py lists them; default: the script's, else the look's own)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--report")
     ap.add_argument("--vendor", default=os.path.join(HERE, "..", "assets", "vendor"))
@@ -349,8 +350,8 @@ def main():
              "voice": "voice.wav", "transcript": "transcript.json", "captions": {"emphasis": emphasis}, "scenes": scenes}
     if look != "latte":
         board["look"] = look
-    if S.get("palette"):
-        board["palette"] = S["palette"]      # colour only (tokens.palettes), laid over the look
+    if a.palette or S.get("palette"):
+        board["palette"] = a.palette or S["palette"]      # colour only (tokens.palettes), laid over the look; the creator's choice wins
     if tail > TAIL:
         board["tail"] = tail                 # seconds the page runs past the voice (default TAIL)
     if S.get("thread"):

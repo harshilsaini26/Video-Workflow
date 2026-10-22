@@ -90,7 +90,7 @@ def render(notes, ctx, w, h, sid):
         js.append("tl.fromTo('#%s-n%dl', %s, %s, %.3f);" % (sid, i, js_obj({"scaleX": 0}), js_obj({"scaleX": 1, "duration": 0.2,
                                                                                                 "ease": "power2.out", "immediateRender": False}), t + 0.3))
         parts.append('<div class="an-t" id="%s-n%dt"%s style="left:%dpx;top:%dpx;background:%s;color:%s">%s</div>'
-                     % (sid, i, attrs, t_left, py - LABEL_H / 2.0, c["accent"], c["on_accent"], ctx.esc(n["label"])))
+                     % (sid, i, attrs, t_left, py - LABEL_H / 2.0, c["fill"], c["on_fill"], ctx.esc(n["label"])))
         js.append("tl.fromTo('#%s-n%dt', %s, %s, %.3f);" % (sid, i, js_obj({"opacity": 0, "x": 12 if side == "left" else -12}),
                                                           js_obj({"opacity": 1, "x": 0, "duration": 0.3, "ease": "power3.out",
                                                                   "immediateRender": False}), t + 0.45))

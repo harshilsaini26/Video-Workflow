@@ -33,7 +33,7 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    badge = '<div class="n-badge" style="background:%s;color:%s">%s</div>' % (ctx.c["accent"], ctx.c["on_accent"], ctx.esc(scene["n"]))
+    badge = '<div class="n-badge" style="background:%s;color:%s">%s</div>' % (ctx.c["fill"], ctx.c["on_fill"], ctx.esc(scene["n"]))
     js = [ctx.enter("#%s .n-badge" % ctx.id, ctx.t_in, {"scale": 0.6})]
     name = ""
     if scene.get("name"):

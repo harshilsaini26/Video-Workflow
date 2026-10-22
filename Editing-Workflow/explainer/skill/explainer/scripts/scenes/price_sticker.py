@@ -95,8 +95,8 @@ def render(scene, ctx, box):
     far, near = "0 64px 72px %s" % shade, "0 14px 22px %s" % shade
     html.append('<div class="ps-wrap" style="width:%dpx;height:%dpx%s"><div class="ps-st" id="%s-st"%s style="width:%dpx;height:%dpx;background:%s;'
                 'box-shadow:%s"><span class="ps-price" id="%s-pr" style="color:%s">%s</span></div></div>'
-                % (bw, bh, ";margin-top:-%dpx" % OVER if scene.get("src") else "", sid, attrs, w, h, c["accent"], near, sid,
-                   c["on_accent"], ctx.esc(scene["price"])))
+                % (bw, bh, ";margin-top:-%dpx" % OVER if scene.get("src") else "", sid, attrs, w, h, c["fill"], near, sid,
+                   c["on_fill"], ctx.esc(scene["price"])))
     # turned from the start; on its word it drops from 1.5x onto the page, the shadow closing in as it lands
     js.append("tl.set('#%s-st', %s, 0);" % (sid, js_obj({"rotation": TILT})))
     js.append("tl.fromTo('#%s-st', %s, %s, %.3f);" % (sid, js_obj({"opacity": 0, "scale": 1.5, "boxShadow": far}),

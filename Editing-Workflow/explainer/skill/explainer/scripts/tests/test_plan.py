@@ -30,14 +30,14 @@ def transcript(script):
 
 
 class Plan(unittest.TestCase):
-    def plan(self, script=SCRIPT):
+    def plan(self, script=SCRIPT, *extra):
         d = scratch(self)
         write(os.path.join(d, "script.json"), script)
         tr = transcript(script)
         write(os.path.join(d, "transcript.json"), tr)
         silent_wav(os.path.join(d, "voice.wav"), tr["words"][-1]["end"] + 0.2)
         r = run("plan-storyboard.py", "--script", os.path.join(d, "script.json"), "--transcript", os.path.join(d, "transcript.json"),
-                "--out", os.path.join(d, "storyboard.json"), "--report", os.path.join(d, "PLAN.md"), "--vendor", stub_vendor(d))
+                "--out", os.path.join(d, "storyboard.json"), "--report", os.path.join(d, "PLAN.md"), "--vendor", stub_vendor(d), *extra)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         return d, load(os.path.join(d, "storyboard.json")), tr["words"]
 

@@ -110,7 +110,7 @@ def render(scene, ctx, box):
         parts.append('<div class="br-badges">%s</div>' % "".join(
             '<span class="br-badge" style="background:%s;color:%s">%s</span>' % (c["accent_soft"], c["ink"], ctx.esc(b)) for b in scene["badges"]))
     if scene.get("button"):
-        parts.append('<div class="br-btn" style="background:%s;color:%s">%s</div>' % (c["accent"], c["on_accent"], ctx.esc(scene["button"])))
+        parts.append('<div class="br-btn" style="background:%s;color:%s">%s</div>' % (c["fill"], c["on_fill"], ctx.esc(scene["button"])))
     html = ('<div class="br-win" id="%s-win" style="background:%s;box-shadow:inset 0 0 0 2px %s, %s"><div class="br-bar" style="background:%s">%s%s</div>'
             '<div class="br-page">%s</div></div>' % (sid, page_bg, c["card_line"], ctx.c["shadow"], bar_bg, dots, url, "".join(parts)))
     n = 1 + bool(scene.get("subtitle")) + len(scene.get("badges", [])) + bool(scene.get("button"))
