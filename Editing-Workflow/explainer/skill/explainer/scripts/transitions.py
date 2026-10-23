@@ -13,6 +13,8 @@ velocity-matched (MOTION.md): the exit accelerates into the cut and the entrance
   wipe   the new background opens as a circle from the scene area; used at a background change
   burst  a spray of coloured squares from the centre; the new scene grows from 0.7 (for a hook or a reveal)
   cut    nothing moves: the old scene is gone on the frame the new one starts
+  leak   a wide soft streak of light (the accent and the second accent, screen-blended) sweeps across over the cut; never
+         picked on its own: name it for a jolt of energy or a reveal
   brush  five ragged ink bands sweep across and cover the frame on the cut, then sweep off (the paper look's wipe at a
          new ground; after ClaudeAnimationBase's brush wipe, MIT)
 
@@ -24,7 +26,7 @@ import math, random
 import explainer_lib as E
 from scenes import js_obj
 
-KINDS = ("fade", "push", "zoom", "wipe", "burst", "cut", "brush")
+KINDS = ("fade", "push", "zoom", "wipe", "burst", "cut", "brush", "leak")
 ENTER, EXIT = 0.5, E.EXIT        # exits stay within tokens.motion.exit
 IN_EASE, OUT_EASE = "expo.out", "power3.in"   # the exit accelerates into the cut, the entrance decelerates out of it
 WIPE, BURST = 0.55, 0.9
@@ -34,6 +36,7 @@ PARTICLES = 28
 BRUSH, UNCOVER, TILT = 0.35, 0.3, -0.1        # the cover (s), the uncover (s), the bands' tilt (radians)
 STAGGER = (0, .14, .06, .18, .1)               # of the cover time: no two bands move as twins
 CLOSE = E.CLOSE
+LEAK, LEAK_W = 0.9, 1100       # the streak's sweep (s, centred on the cut) and its width (px)
 
 
 def pick(index, prev_bg, bg, explicit, look=None):
@@ -62,6 +65,8 @@ def enter(kind, sid, t):
         return [_from(sel, {"scale": 0.75, "filter": "blur(8px)"}, {"scale": 1, "filter": "blur(0px)"}, t)]
     if kind in ("wipe", "brush"):
         return [_from(sel, {"scale": 0.94}, {"scale": 1}, t)]
+    if kind == "leak":
+        return [_from(sel, {"scale": 0.92, "filter": "blur(8px)"}, {"scale": 1, "filter": "blur(0px)"}, t)]
     if kind == "burst":
         return [_from(sel, {"scale": 0.7}, {"scale": 1}, t)]
     return []
@@ -74,7 +79,7 @@ def exit(kind, sid, cut):
     if kind == "cut":
         return ["tl.set('%s', { opacity: 0 }, %.3f);" % (sel, cut)]
     move = {"push": {"y": -260, "filter": "blur(12px)"}, "zoom": {"scale": 1.2, "filter": "blur(10px)"},
-            "burst": {"scale": 1.3, "filter": "blur(10px)"}}.get(kind, {"y": -24})
+            "burst": {"scale": 1.3, "filter": "blur(10px)"}, "leak": {"scale": 1.08, "filter": "blur(10px)"}}.get(kind, {"y": -24})
     return ["tl.to('%s', %s, %.3f);" % (sel, js_obj(dict({"opacity": 0}, **dict(move, duration=EXIT, ease=OUT_EASE))), max(0.0, cut - EXIT))]
 
 
@@ -126,3 +131,17 @@ def brush(k, t, colors):
 def close(sid, end):
     """The last scene's exit, over the last CLOSE seconds and over exactly at `end`."""
     return ["tl.to('#%s', %s, %.3f);" % (sid, js_obj({"opacity": 0, "y": -24, "duration": CLOSE, "ease": OUT_EASE}), end - CLOSE)]
+
+
+def leak(k, t, colors):
+    """A soft streak of light that sweeps across the frame over the cut at `t`: (html, [js]). Two palette colours."""
+    a, b = (E.rgba(c, 0.85) for c in colors[:2])
+    html = ('<div class="tx-leak" id="txl%d" style="position:absolute;left:%dpx;top:-30%%;width:%dpx;height:160%%;'
+            'background:linear-gradient(90deg, transparent, %s 35%%, %s 65%%, transparent);filter:blur(70px);mix-blend-mode:screen;'
+            'opacity:0"></div>' % (k, (1080 - LEAK_W) // 2, LEAK_W, a, b))
+    span = 1080 + LEAK_W
+    js = ["tl.fromTo('#txl%d', %s, %s, %.3f);" % (k, js_obj({"x": -span, "rotation": -18, "opacity": 1}),
+                                                  js_obj({"x": span, "duration": LEAK, "ease": "power1.inOut", "immediateRender": False}),
+                                                  t - LEAK / 2.0),
+          "tl.set('#txl%d', { opacity: 0 }, %.3f);" % (k, t + LEAK / 2.0)]
+    return html, js

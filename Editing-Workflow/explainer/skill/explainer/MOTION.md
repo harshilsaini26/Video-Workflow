@@ -102,6 +102,11 @@ short blur carries the speed (HyperFrames' cut catalogue). **The old scene is go
 - **brush** (the paper look's wipe): five ragged bands in the outgoing ground's accent and ink sweep across, cover
   the frame on the cut, then sweep off in 0.3 s (`expo.out`); the new ground swaps under them;
 - **the close:** the last scene leaves over the last 0.4 s, onto the hook's ground.
+- **leak:** a wide, soft streak of light (the accent and the second accent, screen-blended) sweeps across the frame
+  over the cut in 0.9 s; the old scene blurs out under it. Named only, for energy or a reveal.
+
+**3D scenes** (`bars-3d`, `cube`, `cards-3d`) are CSS 3D, flat-shaded (top lighter, side darker), seek-safe: heights and
+turns are tweens on the timeline, and their words sit flat over the 3D so gate E5 can read them.
 
 **Choose a transition for a reason**, not in turn: a new place (a new ground, a new subject) gets a wipe or a brush;
 the same idea continuing gets a fade or no more than the camera's push; a jolt (a reversal, "but") gets a whip. The

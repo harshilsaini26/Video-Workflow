@@ -457,6 +457,11 @@ def main():
             spray, spray_js = X.burst(k, t_in, [f for f, _ in E.theme(tok, sbg)["series"]])
             tx_html.append(spray)
             lines += spray_js
+        elif kinds[k] == "leak":
+            th_ = E.theme(tok, timed[k - 1][2] if k else sbg)
+            streak, streak_js = X.leak(k, t_in, [th_["accent"], th_["accent2"]])
+            tx_html.append(streak)
+            lines += streak_js
         elif kinds[k] == "brush":
             th_ = E.theme(tok, timed[k - 1][2] if k else sbg)   # the outgoing ground's ink: the bands show over it
             bands, band_js = X.brush(k, t_in, [th_["accent"], th_["ink"]])

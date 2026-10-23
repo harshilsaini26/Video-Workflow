@@ -86,6 +86,15 @@ class Docs(unittest.TestCase):
             self.assertIn(name, skill, name)
         self.assertIn('"palette"', director)
 
+    def test_every_scene_and_transition_is_in_the_playbook(self):
+        from scenes import REGISTRY
+        import transitions as X
+        pb = read(PLAYBOOK)
+        for t in sorted(set(REGISTRY) - {"custom"}):
+            self.assertIn("`%s`" % t, pb, t)
+        for k in X.KINDS:
+            self.assertIn("`%s`" % k, pb, k)
+
     def test_playbook_references_resolve(self):
         heads = set(re.findall(r"^#+ (§E\d+)\b", read(PLAYBOOK), re.M))
         self.assertEqual(heads, {"§E%d" % i for i in range(9)})

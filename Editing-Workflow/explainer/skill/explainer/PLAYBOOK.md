@@ -146,6 +146,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | say what is not there ("no case, no battery") | `crossed-list` | `prefix` (mono, over each row, 12 characters at most), `items[{text, at, strike}]` (2 to 5, hero face; `strike` draws a line through and greys the row) |
    | say what it costs | `price-sticker` | `price` (8 characters at most), `label` (mono, 28 at most), `src` (a product image, any aspect), `at` (needs a source) |
    | draw one thing, with an aside | `line-art` | `icon` (Lucide) or `svg` (the creator's stroke-only SVG; a filled shape fails), `caption` (serif aside, 14 words at most), `at`, `strike` (crosses the caption out) |
+   | compare sizes in 3D (deals, models, market share) | `bars-3d` | `bars[{label, value, at, text?, hi?}]` (2 to 4; labels 10 characters at most), `floor` (a caption under it, 24 at most); needs a source |
+   | "every piece connects", "solve it step by step" | `cube` | `at`, `labels` (9 cells, 3 characters each; default A1 to C3), `turns[{dir: left/right/up/down, at}]`, `twist[{dir: left/right, at}]` (the top layer), `highlight{cell, at}` |
+   | count steps or options in 3D | `cards-3d` | `cards[{text, sub?, at}]` (1 to 4; `text` a mark of 3 characters at most, never a figure; `sub` 16 at most) |
    | the call to action: comment a word | `comment-cta` | `keyword{text, at}`, `gets{text, at}` |
    | what people say | `comment-drop` | `comments[{name, text, likes, time, at}]` (2 to 4) |
    | typing into an AI | `prompt-bar` | `prompt{text, at}`, `send{at}`, `reply{text, at}` |
@@ -258,7 +261,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    look a new ground comes in with the **brush** (five ragged bands cover the frame on the cut and sweep off). Every
    scene leaves, the last one too: **the close** takes it off over the last 0.4 s onto the hook's ground, so the loop
    seams into the hook. Choose a transition for a reason (MOTION.md §3): a new place, a wipe or brush; the same idea,
-   a fade; a jolt, a whip.
+   a fade; a jolt, a whip. **`leak`** (a soft streak of light in the accent colours sweeping across over the cut) is
+   never chosen on its own: name it for a burst of energy or a reveal.
 8. **Fill the frame:** the composer lays each library scene out narrower and scales it up (to 1.8x; a title to
    150 px, a number to 1.3x) to fill the scene area; `moments.json` records each scene's box and scale. Two scenes in
    a row with the same layout get a WARN: change the picture, or merge them into one build.

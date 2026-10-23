@@ -209,6 +209,7 @@ def sel_js(sel):
 def js_obj(d):
     parts = []
     for k, v in d.items():
+        k = k if re.match(r"^[A-Za-z_$][\w$]*$", k) else "'%s'" % k      # a CSS variable ('--h') needs its quotes
         if isinstance(v, dict):
             parts.append("%s: %s" % (k, js_obj(v)))
         elif isinstance(v, bool):
