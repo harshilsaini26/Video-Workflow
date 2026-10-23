@@ -149,6 +149,10 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | compare sizes in 3D (deals, models, market share) | `bars-3d` | `bars[{label, value, at, text?, hi?}]` (2 to 4; labels 10 characters at most), `floor` (a caption under it, 24 at most); needs a source |
    | "every piece connects", "solve it step by step" | `cube` | `at`, `labels` (9 cells, 3 characters each; default A1 to C3), `turns[{dir: left/right/up/down, at}]`, `twist[{dir: left/right, at}]` (the top layer), `highlight{cell, at}` |
    | count steps or options in 3D | `cards-3d` | `cards[{text, sub?, at}]` (1 to 4; `text` a mark of 3 characters at most, never a figure; `sub` 16 at most) |
+   | "what's inside", the deal book, the prep | `briefcase` | `at` (it lands), `open` (the lid swings up and papers rise), `papers` (1 to 5), `label` (a caption under it, 24 at most) |
+   | parts of a whole that stack (debt and equity, a price's make-up) | `beaker` | `layers[{label, value, at, text?}]` (1 to 4, bottom up; values are shares of the glass, 100 at most); needs a source |
+   | parts of a whole that share (who pays, market share) | `donut` | `slices[{label, value, at, text?}]` (2 to 5), `center` (the total, 9 characters at most, in the hole); needs a source |
+   | one key metric as an object (EPS, ROI, WACC) | `coin` | `text` (4 characters at most, never a figure), `dir` (up or down: an arrow on the face), `sub` (a line under it, 22 at most), `at` (it spins in) |
    | the call to action: comment a word | `comment-cta` | `keyword{text, at}`, `gets{text, at}` |
    | what people say | `comment-drop` | `comments[{name, text, likes, time, at}]` (2 to 4) |
    | typing into an AI | `prompt-bar` | `prompt{text, at}`, `send{at}`, `reply{text, at}` |

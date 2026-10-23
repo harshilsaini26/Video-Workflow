@@ -105,7 +105,8 @@ short blur carries the speed (HyperFrames' cut catalogue). **The old scene is go
 - **leak:** a wide, soft streak of light (the accent and the second accent, screen-blended) sweeps across the frame
   over the cut in 0.9 s; the old scene blurs out under it. Named only, for energy or a reveal.
 
-**3D scenes** (`bars-3d`, `cube`, `cards-3d`) are CSS 3D, flat-shaded (top lighter, side darker), seek-safe: heights and
+**3D scenes** (`bars-3d`, `cube`, `cards-3d`, `briefcase`, `beaker`, `donut`, `coin`) are CSS 3D (the beaker and the donut
+are 2.5D: an elliptical rim and a ring stacked into depth), flat-shaded (top lighter, side darker), seek-safe: heights and
 turns are tweens on the timeline, and their words sit flat over the 3D so gate E5 can read them.
 
 **Choose a transition for a reason**, not in turn: a new place (a new ground, a new subject) gets a wipe or a brush;
