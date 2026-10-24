@@ -158,7 +158,7 @@ def theme(tokens, bg):
     return c
 
 
-LOOKS = ("latte", "paper")   # latte, the default (Catppuccin Latte); paper, the editorial look (tokens.looks.paper)
+LOOKS = ("latte", "paper", "dark")   # latte, the default (Catppuccin Latte); paper, the editorial look; dark, near-black (tokens.looks)
 
 
 def _merge(base, over):

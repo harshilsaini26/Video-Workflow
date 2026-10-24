@@ -53,7 +53,7 @@ def main():
         print("E5 FAIL: " + line)
     if lines:
         sys.exit(1)
-    print("E5 PASS: %d scenes clean (overlap, cover, spill, safe area, size%s)" % (len(smp), "" if a.no_hf else ", contrast, clipping"))
+    print("E5 PASS: %d scenes clean at %d moments (overlap, cover, spill, safe area, size%s)" % (len({s["id"] for s in smp}), len(smp), "" if a.no_hf else ", contrast, clipping"))
 
 
 if __name__ == "__main__":

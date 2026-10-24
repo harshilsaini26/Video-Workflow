@@ -154,6 +154,10 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | parts of a whole that share (who pays, market share) | `donut` | `slices[{label, value, at, text?}]` (2 to 5), `center` (the total, 9 characters at most, in the hole); needs a source |
    | one key metric as an object (EPS, ROI, WACC) | `coin` | `text` (4 characters at most, never a figure), `dir` (up or down: an arrow on the face), `sub` (a line under it, 22 at most), `at` (it spins in) |
    | two sides weighed (cost against value, risk against return) | `balance` | `left`, `right` (each {`label` 12 at most, `at`}: a weight drops into its pan), `tip` ({`to`: left or right, `at`}: that side goes down; without it the scale stays level), `note` ({`text` 24 at most, `at`}: a line above the beam) |
+   | how a model learns: a loss curve and its slope, side by side | `plot` | `panels` (1 to 6, each {`from`, `min`}, -1 to 1: where the point starts, where the curve bottoms), `x`, `y` (axis letters, 3 at most), `tangent` (the tangents show), `descend` (the points slide down to the minimum, the tangents turning flat) |
+   | a neural network: what goes in, what lights up, what comes back | `network` | `layers` (2 to 5, 1 to 10 nodes each), `labels` (one per output node, 3 at most), `input` ({`digit` 0 to 9, `at`}: a pixel digit), `forward` (lights layer by layer), `answer` ({`node`, `at`}: ringed), `backward` (the error sweeps from the output back) |
+   | gradient descent: a ball rolls to the bottom of the loss | `surface` | `descend` ({`at`, `steps` 1 to 10}: one true gradient step each), `start` ([x, y] inside the rim), `lr` (0.05 to 0.45), `label` (16 at most) |
+   | one picture that keeps changing instead of a cut per idea (the 3Blue1Brown style) | `stage` | `objects` (1 to 6, each {`id`, `scene`: any library scene, `box`: [x, y, width] from the scene area's top left, `in`, `out`}), `moves` ({`obj`, `at`, `box`}: the object moves and resizes there); §E6.12 |
    | the call to action: comment a word | `comment-cta` | `keyword{text, at}`, `gets{text, at}` |
    | what people say | `comment-drop` | `comments[{name, text, likes, time, at}]` (2 to 4) |
    | typing into an AI | `prompt-bar` | `prompt{text, at}`, `send{at}`, `reply{text, at}` |
@@ -275,7 +279,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 9. **The hook is kinetic type from data** (`kinetic`, §E4.1): a big accent token, stacked words, a claim struck
    through and a punch, each on its word. No code to write, so a reel costs no tokens beyond its script. Custom scenes
    (§E6.5) are opt-in, only when the creator asks for a moment the library cannot make.
-10. **Palettes (colour only, on either look):** `"palette": "<name>"` in script.json or the storyboard recolours the
+10. **Palettes (colour only, on any look):** `"palette": "<name>"` in script.json or the storyboard recolours the
     reel and keeps the look's fonts, texture and boil. Pick by the subject; leave it out for the look's own colours.
 
     | Palette | Colours | Mood | Rule | Best for |
@@ -291,6 +295,21 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
     stickers, keyword chips: the `fill` role) keep the exact hex, as Terracotta's #E07A5F buttons with #3D405B on them
     (`tokens.json` palettes; `explainer_lib.palette_tokens`). The creator picks: `palettes.py --for "<topic>"` lists the
     five, best fit first; `plan-storyboard.py --palette <name>` overrides the script's.
+11. **The dark look, no captions, a rewind (the 3Blue1Brown-style reference):** `"look": "dark"` puts every ground
+    near-black or deep (`mantle` #0B0E13), the words near-white, and manim's colours on them (accent #58C4DD, the second
+    accent #F4D345, bad #FC6255, good #83C167); a UI mock-up still sits on light paper. It suits math and how-it-works
+    topics, with `formula`, `plot`, `network` and `surface`. `"captions": "off"` in the storyboard leaves the words to
+    the voice and the formulas (the scene area stays where it is); `"close": "rewind"` ends the reel with the last scene
+    streaking back, blurred, under a rewind mark, before the hook's ground comes in.
+12. **The stage (one picture that keeps changing):** where the reference keeps the same network on screen while the
+    formula above it changes and it shrinks aside for the loss curves, use one `stage` scene instead of a cut per idea.
+    Its objects are library scenes in boxes ([x, y, width] in px from the scene area's top left: 950 wide, 760 tall,
+    and below y 615 only x 85 to 865); each is laid out at its own width and scaled to its box. An object comes in on
+    its `in` (its own entrances run from there) and leaves on its `out`; a move re-boxes it on a word (one 0.9 s tween).
+    E3 refuses a box outside the area, or one that would draw the object's words under 28 px (a network without labels
+    has none and may shrink to a corner); a number inside an object still needs the stage's `source`. Gate E5 looks at
+    the settled picture before every beat, not only the last. Swap a formula by giving the old one an `out` and the new
+    one the same box and that word as its `in`.
 
 ## §E7 Sources and claims
 

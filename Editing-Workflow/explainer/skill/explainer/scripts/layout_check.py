@@ -69,11 +69,12 @@ def find_chrome():
 
 def samples(moments):
     """One moment per scene: just before its exit starts, when everything in it has arrived (the last scene's exit is
-    the close, E.CLOSE)."""
+    the close, E.CLOSE); a stage also just before each of its beats, when the picture before it has settled."""
     out = []
     for s in moments["scenes"]:
         gone = E.CLOSE if s["out"] >= moments["duration"] - 1e-6 else E.EXIT
         t = s["out"] - gone - 0.05 if s["out"] - s["in"] > 2 * gone else (s["in"] + s["out"]) / 2.0
+        out += [{"id": s["id"], "t": round(b - 0.05, 3)} for b in s.get("beats", []) if b - s["in"] > 0.6 and b < t]   # a stage: each picture
         out.append({"id": s["id"], "t": round(t, 3)})
     return out
 

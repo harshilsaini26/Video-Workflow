@@ -102,6 +102,12 @@ def shows_number(node, key=None, decor=()):
     return False
 
 
+def claims(mod, sc):
+    """True when the scene shows a number or a claim: its module says so, its text has one, or a scene it holds does."""
+    return (getattr(mod, "NEEDS_SOURCE", False) or shows_number(sc, decor=set(getattr(mod, "DECOR_KEYS", ())))
+            or any(claims(REGISTRY[s_["type"]], s_) for s_ in getattr(mod, "subscenes", lambda _: [])(sc) if s_.get("type") in REGISTRY))
+
+
 def line_span(line):
     """(start, end) of the change one of the composer's own timeline lines makes, or None (a comment, a katex call)."""
     m = re.match(r"countUp\('[^']*', [^,]+, [^,]+, ([\d.]+), ([\d.]+),", line)
@@ -285,6 +291,10 @@ def main():
     tail = S.get("tail", E.TAIL)
     if not isinstance(tail, (int, float)) or isinstance(tail, bool) or not E.TAIL <= tail <= 3.0:
         fail("tail is the seconds the page runs past the voice, %.1f to 3 (got %r)" % (E.TAIL, tail))
+    if S.get("captions") is not None and S["captions"] != "off" and not isinstance(S["captions"], dict):
+        fail('captions is "off" or {emphasis} (got %r)' % (S["captions"],))
+    if S.get("close", "fade") not in ("fade", "rewind"):
+        fail('close is "fade" or "rewind" (got %r)' % (S["close"],))
     D = round(voice_len + tail, 3)          # the last read needs time to land (E4): the planner may ask for more
     if voice_len > E.MAX_VOICE + 1e-6:
         fail("the voice is %.1f s, over the 90 s ceiling: trim the script (script-check.py --voice lists the lines to cut)"
@@ -347,7 +357,7 @@ def main():
             fail("%s: unknown bg %r (one of: %s)" % (sid, bg, ", ".join(tok["backgrounds"])))
         if sc.get("transition") is not None and sc["transition"] not in X.KINDS:
             fail("%s: unknown transition %r (one of: %s)" % (sid, sc["transition"], ", ".join(X.KINDS)))
-        if (getattr(mod, "NEEDS_SOURCE", False) or shows_number(sc, decor=set(getattr(mod, "DECOR_KEYS", ())))) and not sc.get("source"):
+        if claims(mod, sc) and not sc.get("source"):
             fail("%s: the %s scene shows a number or a claim and needs a source (a key in SOURCES.md)" % (sid, sc["type"]))
         if sc.get("source") and source_keys is not None and sc["source"] not in source_keys:
             fail("%s: source %r is not in script.json's sources (%s)" % (sid, sc["source"], ", ".join(sorted(source_keys)) or "none"))
@@ -448,11 +458,15 @@ def main():
         if mod.TYPE == "custom":   # it animates itself between in and out
             moments["spans"].append([round(t_in, 3), round(t_out, 3)])
         css[mod.TYPE] = mod.CSS
+        for m_ in getattr(mod, "modules", lambda _: [])(sc):     # the scenes a stage holds bring their own CSS
+            css[m_.TYPE] = m_.CSS
         starts = [s_ for s_, _ in filter(None, map(line_span, lines))]
         if mod.TYPE != "custom" and starts and min(starts) - t_in > 0.8:   # the scene's own first change, not its transition
             print("WARN %s: nothing shows for %.1f s after the scene starts; put something on its first word (PLAYBOOK §E4.9)"
                   % (sid, min(starts) - t_in))
         mine = [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner + hl_html)]
+        if getattr(mod, "travels", None) and mod.TYPE == "stage":   # a stage changes on every beat: gate E5 looks before each
+            moments["scenes"][-1]["beats"] = sorted({round(x, 3) for x in mine})
         if k == 0 and mine and max(mine) > E.HOOK_BY + 1e-6:
             late = words[0]["start"] - E.LEAD > E.HOOK_BY if words else False
             fail("%s: the hook is not whole on screen by 1.0 s: an item lands at %.2f s (every hook item by %.1f s); %s (SOP S8)"
@@ -492,14 +506,19 @@ def main():
         if t_out < D - 1e-6:
             gone = X.exit(kinds[k + 1] if k + 1 < len(kinds) else "fade", sid, t_out)
         else:                            # the last scene leaves too, onto the hook's ground (the loop seams into the hook)
-            gone = X.close(sid, D)
+            gone = X.close(sid, D, S.get("close", "fade"))
+            if S.get("close") == "rewind":
+                html_, rw_js = X.rewind_mark(D, E.theme(tok, sbg)["ink"])
+                tx_html.append(html_)
+                gone = gone + rw_js
         lines = lines + gone
         js.extend(gone)
         moments["spans"] += [[round(a_, 3), round(b_, 3)] for a_, b_ in filter(None, map(line_span, lines))]
 
     hero = E.hero()
     if hero["family"] != "DM Sans":       # the look's hero face on every scene's big words (latte keeps DM Sans 700)
-        sel = sorted({m_.HERO_CSS for _, m_, _, _, _, _ in timed if getattr(m_, "HERO_CSS", None)})
+        mods = [m_ for sc_, m0, _, _, _, _ in timed for m_ in [m0] + getattr(m0, "modules", lambda _: [])(sc_)]
+        sel = sorted({m_.HERO_CSS for m_ in mods if getattr(m_, "HERO_CSS", None)})
         if sel:
             css["~hero"] = "  %s { font-family:'%s'; font-stretch:%s; font-weight:%d; }\n" % (", ".join(sel), hero["family"], hero["stretch"], hero["weight"])
 
@@ -564,9 +583,9 @@ def main():
         css["~boil"] = '  html:not([data-boil="off"]) .boil { filter:url(#boil); }\n'
 
     # ---- captions -------------------------------------------------------------------------------------------------
-    C = S.get("captions", {}) or {}
+    C = S.get("captions", {}) if isinstance(S.get("captions"), dict) else {}
     em = {L.norm(x) for x in C.get("emphasis", [])}
-    chunks = L.chunk_words([w for w in words if w["start"] < D], 4, 24)
+    chunks = [] if S.get("captions") == "off" else L.chunk_words([w for w in words if w["start"] < D], 4, 24)
     giant = [(t_in, t_out) for sc, m_, _, t_in, t_out, _ in timed if m_.TYPE == "giant-captions"]
     # while giant captions run, the words are the picture: the band steps aside, never the same words twice
     chunks = [ch for ch in chunks if not any(a - 1e-3 <= ch["start"] < b - 1e-3 for a, b in giant)]

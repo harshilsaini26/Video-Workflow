@@ -80,8 +80,8 @@ they never saw, SOP S1). Skip what the creator already said:
 7. **Music:** the generated pad under the voice (the default: never silent, nothing to license), a free licensed track
    of the creator's in the file, or none in the file (add it in the app).
 8. **The look:** `paper` (the editorial look: warm paper, near-black ink, one orange-red accent, a wide headline face,
-   product images and photos; the default for a product or tech topic) or `latte` (soft Catppuccin grounds that change
-   with the story), and **the palette: the creator chooses** (colour only, on either look; PLAYBOOK §E6.10). Show them
+   product images and photos; the default for a product or tech topic), `latte` (soft Catppuccin grounds that change
+   with the story) or `dark` (near-black, manim's colours: math and how-it-works; PLAYBOOK §E6.11), and **the palette: the creator chooses** (colour only, on any look; PLAYBOOK §E6.10). Show them
    the five, best fit first: `python3 "$ES/scripts/palettes.py" --for "<the topic>"` (`terracotta`, `monochrome`,
    `electric-pop`, `nordic-frost`, `bold-citrus`, each with its colours, mood, rule and "best for"), recommend the
    first, and let them pick one or none (the look's own colours). Write it into script.json as `"palette"`. And **any images** the reel should show (product cut-outs, photos), each photo with its credit:

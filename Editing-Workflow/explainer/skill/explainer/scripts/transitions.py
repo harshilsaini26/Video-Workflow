@@ -128,10 +128,22 @@ def brush(k, t, colors):
     return svg, js
 
 
-def close(sid, end):
+def close(sid, end, kind="fade"):
     """The last scene's exit, over the first half of the last CLOSE seconds: gone before the ground changes in the second
-    half (the composer's wipe), so no words are ever read over a ground that is changing."""
-    return ["tl.to('#%s', %s, %.3f);" % (sid, js_obj({"opacity": 0, "y": -24, "duration": CLOSE / 2, "ease": OUT_EASE}), end - CLOSE)]
+    half (the composer's wipe), so no words are ever read over a ground that is changing. A "rewind" close streaks it
+    back, blurred, under the rewind mark (rewind_mark)."""
+    move = {"x": 160, "filter": "blur(14px)"} if kind == "rewind" else {"y": -24}
+    return ["tl.to('#%s', %s, %.3f);" % (sid, js_obj(dict({"opacity": 0}, **move, duration=CLOSE / 2, ease=OUT_EASE)), end - CLOSE)]
+
+
+def rewind_mark(end, color):
+    """The rewind mark (two left triangles) in the middle of the scene area over the close: (html, [js])."""
+    tri = '<i style="display:inline-block;width:0;height:0;border-top:44px solid transparent;border-bottom:44px solid transparent;border-right:66px solid %s"></i>' % color
+    html = '<div class="rw" id="rw" style="position:absolute;left:0;top:%dpx;width:1080px;text-align:center;opacity:0">%s%s</div>' % (
+        (E.SCENE["top"] + E.SCENE["bottom"]) // 2 - 44, tri, tri)
+    return html, ["tl.fromTo('#rw', %s, %s, %.3f);" % (js_obj({"opacity": 0, "scale": 0.8}), js_obj(
+                      {"opacity": 1, "scale": 1, "duration": 0.12, "ease": "power3.out", "immediateRender": False}), end - CLOSE),
+                  "tl.to('#rw', %s, %.3f);" % (js_obj({"opacity": 0, "duration": 0.1, "ease": OUT_EASE}), end - 0.1)]
 
 
 def leak(k, t, colors):

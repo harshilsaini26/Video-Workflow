@@ -71,7 +71,7 @@ class Looks(unittest.TestCase):
         self.assertEqual(paper["motion"], dict(TOK["motion"], boil=True))     # what a look does not name stays (paper boils)
 
     def test_latte_is_the_default(self):
-        self.assertEqual(E.LOOKS, ("latte", "paper"))
+        self.assertEqual(E.LOOKS, ("latte", "paper", "dark"))
         self.assertEqual(E.load_tokens()["look"], "latte")
         self.assertEqual(E.load_tokens(look="latte")["palette"], TOK["palette"])
 
