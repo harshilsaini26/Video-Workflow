@@ -71,6 +71,12 @@ def inside_scene(left, top, width, height):
         return False
     return top + height <= L.RIGHT_COL_TOP or (left >= L.NARROW["left"] and left + width <= L.NARROW["right"])
 CAPTION_BAND = (1130, 1235)
+
+
+def without_captions():
+    """A reel with no captions: the scene area takes their band too (down to its bottom). The composer calls this once,
+    before laying out anything; moments.json records the area for the gates."""
+    SCENE["bottom"] = CAPTION_BAND[1]
 CAPTION_SIZE = 44  # two lines of 44 px fill the band; the scenes keep the centre
 LEAD = 0.2          # an entrance starts this long before its word (beat-check's 0.15 to 0.25 s window)
 MAX_OVERLAP = 0.02  # scenes hand over on one cut: no overlap beyond rounding (SOP S9)

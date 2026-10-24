@@ -7,7 +7,8 @@ box (the network shrinks into a corner while the loss curves come in beside it).
      {"id": "net", "scene": {"type": "network", "layers": [4, 6, 6, 10], "forward": "word:6"}, "box": [175, 200, 600]}],
    "moves": [{"obj": "net", "at": "word:10", "box": [0, 0, 300]}]}
 
-A box is [x, y, width] in px from the scene area's top left (950 wide, 760 tall; below y 615 only the narrow column,
+A box is [x, y, width] in px from the scene area's top left (950 wide, 760 tall or 890 without captions; below y 615
+only the narrow column,
 x 85 to 865); the object is laid out at its own width (at least its min_width) and scaled to the box. Every box, where
 it starts and wherever it moves, stays in the area with the object's words at 28 px or more (a scene with no words, a
 network without labels, may shrink freely). `in` and `out` (optional) are the object's words; a move is one tween of
@@ -22,7 +23,6 @@ DECOR_KEYS = ("objects", "moves")           # each object's own claims are check
 MOVE = 0.9
 MAX_OBJECTS = 12
 AREA_W = E.SCENE["right"] - E.SCENE["left"]
-AREA_H = E.SCENE["bottom"] - E.SCENE["top"]
 CSS = """
   .st { position:relative; width:100%; }
   .st-obj { position:absolute; transform-origin:0 0; }

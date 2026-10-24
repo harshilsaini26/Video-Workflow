@@ -157,6 +157,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | how a model learns: a loss curve and its slope, side by side | `plot` | `panels` (1 to 6, each {`from`, `min`}, -1 to 1: where the point starts, where the curve bottoms), `x`, `y` (axis letters, 3 at most), `tangent` (the tangents show), `descend` (the points slide down to the minimum, the tangents turning flat) |
    | a neural network: what goes in, what lights up, what comes back | `network` | `layers` (2 to 5, 1 to 10 nodes each), `labels` (one per output node, 3 at most), `input` ({`digit` 0 to 9, `at`}: a pixel digit), `forward` (lights layer by layer), `answer` ({`node`, `at`}: ringed), `backward` (the error sweeps from the output back) |
    | gradient descent: a ball rolls to the bottom of the loss | `surface` | `descend` ({`at`, `steps` 1 to 10}: one true gradient step each), `start` ([x, y] inside the rim), `lr` (0.05 to 0.45), `label` (16 at most) |
+   | what a model answered against what was right: the error, then the loss | `outputs` | `labels` (2 to 10, 3 characters at most), `guess` (one per label, 0 to 1: blue bars), `at` (the bars grow), `target` ({`row`, `at`}: the right answer outlined), `error` (each row's gap to the truth, a red bar under it), `loss` (a red square, its area the summed squared gaps) |
    | one picture that keeps changing instead of a cut per idea (the 3Blue1Brown style) | `stage` | `objects` (1 to 12, each {`id`, `scene`: any library scene, `box`: [x, y, width] from the scene area's top left, `in`, `out`}), `moves` ({`obj`, `at`, `box`}: the object moves and resizes there); §E6.12 |
    | the call to action: comment a word | `comment-cta` | `keyword{text, at}`, `gets{text, at}` |
    | what people say | `comment-drop` | `comments[{name, text, likes, time, at}]` (2 to 4) |
@@ -298,13 +299,14 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 11. **The dark look, no captions, a rewind (the 3Blue1Brown-style reference):** `"look": "dark"` puts every ground
     near-black or deep (`mantle` #0B0E13), the words near-white, and manim's colours on them (accent #58C4DD, the second
     accent #F4D345, bad #FC6255, good #83C167); a UI mock-up still sits on light paper. It suits math and how-it-works
-    topics, with `formula`, `plot`, `network` and `surface`. `"captions": "off"` in the storyboard leaves the words to
-    the voice and the formulas (the scene area stays where it is); `"close": "rewind"` ends the reel with the last scene
+    topics, with `formula`, `outputs`, `plot`, `network` and `surface`. `"captions": "off"` in the storyboard leaves the
+    words to the voice and the formulas, and the scenes take the caption band too (the area runs to y 1235: they centre
+    lower and may grow); `"close": "rewind"` ends the reel with the last scene
     streaking back, blurred, under a rewind mark, before the hook's ground comes in.
 12. **The stage (one picture that keeps changing):** where the reference keeps the same network on screen while the
     formula above it changes and it shrinks aside for the loss curves, use one `stage` scene instead of a cut per idea.
     Its objects are library scenes in boxes ([x, y, width] in px from the scene area's top left: 950 wide, 760 tall,
-    and below y 615 only x 85 to 865); each is laid out at its own width and scaled to its box. An object comes in on
+    890 without captions, and below y 615 only x 85 to 865); each is laid out at its own width and scaled to its box. An object comes in on
     its `in` (its own entrances run from there) and leaves on its `out`; a move re-boxes it on a word (one 0.9 s tween).
     E3 refuses a box outside the area, or one that would draw the object's words under 28 px (a network without labels
     has none and may shrink to a corner); a number inside an object still needs the stage's `source`. Gate E5 looks at

@@ -44,7 +44,6 @@ def pill_w(label):
 
 SHRINK_WIDTH = True    # its width is the ring's geometry, not a word: the composer may shrink it (labels stay over 28 px)
 COL = E.L.NARROW["right"] - E.L.NARROW["left"]       # 780: a hub reaches below y 960, so it lives in the narrow column
-AREA = E.SCENE["bottom"] - E.SCENE["top"]            # 760
 
 
 def _fits(cs):
@@ -77,8 +76,8 @@ def _ring(scene):
             r += 2
         width = 2 * max(abs(x) + w / 2.0 for x, y, w, h in cs)
         height = 2 * max(abs(y) + h / 2.0 for x, y, w, h in cs) + 2 * PAD
-        fill = min(COL / width, AREA / height)       # how far the composer can scale it up in the narrow column
-        fits = width <= COL and height <= AREA       # a ring that fits unscaled beats one that only fits shrunk
+        fill = min(COL / width, (E.SCENE["bottom"] - E.SCENE["top"]) / height)       # how far the composer can scale it up in the narrow column
+        fits = width <= COL and height <= E.SCENE["bottom"] - E.SCENE["top"]       # a ring that fits unscaled beats one that only fits shrunk
         if best is None or (fits, fill) > (best[0], best[1] + 1e-6):
             best = (fits, fill, r, cs)
     return best[2], best[3]

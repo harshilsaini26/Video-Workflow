@@ -39,4 +39,11 @@ CASES = {
             {"id": "pl", "scene": {"type": "plot", "descend": at(6), "panels": [{"from": 0.9, "min": 0.1}, {"from": -0.7, "min": 0.3}]},
              "box": [225, 230, 640], "in": at(5)}]}),
     ],
+    "outputs": [
+        ("short", {"labels": ["YES", "NO"], "guess": [0.3, 0.7], "at": at(2)}),
+        ("mid", {"labels": [str(d) for d in range(10)], "guess": [0.1, 0.05, 0.2, 0.15, 0.1, 0.1, 0.15, 0.1, 0.6, 0.25], "at": at(2),
+                 "target": {"row": 3, "at": at(3)}, "error": at(4)}),
+        ("long", {"labels": [str(d) for d in range(10)], "guess": [0.1, 0.05, 0.2, 0.15, 0.1, 0.1, 0.15, 0.1, 0.6, 0.25], "at": at(2),
+                  "target": {"row": 3, "at": at(3)}, "error": at(4), "loss": at(5)}),
+    ],
 }

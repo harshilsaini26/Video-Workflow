@@ -61,6 +61,25 @@ class Board(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("captions is \"off\" or {emphasis}", r.stdout + r.stderr)
 
+    def test_without_captions_the_scenes_take_the_caption_band_too(self):
+        # the band the captions would fill (down to y 1235) is the picture's: scenes centre lower and may grow into it,
+        # and gate E5 checks against that larger area (moments.json carries it)
+        import json, layout_check as LC
+        b = copy.deepcopy(BOARD)
+        b["captions"] = "off"
+        d = scratch(self)
+        write(os.path.join(d, "transcript.json"), {"words": words30()})
+        silent_wav(os.path.join(d, "voice.wav"), VOICE)
+        r = run("explainer-compose.py", "--spec", write(os.path.join(d, "storyboard.json"), b), "--out", os.path.join(d, "public"))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        with open(os.path.join(d, "public", "moments.json"), encoding="utf-8") as f:
+            m = json.load(f)
+        self.assertEqual(m["area"]["bottom"], E.CAPTION_BAND[1])
+        self.assertEqual(LC.area(m)["bottom"], E.CAPTION_BAND[1])
+        top, h = m["scenes"][0]["box"][1], m["scenes"][0]["box"][3]
+        self.assertGreater(top + h / 2.0, (E.SCENE["top"] + E.SCENE["bottom"]) / 2.0 + 40)   # centred lower than with captions
+        self.assertEqual(LC.area({"scenes": []})["bottom"], E.SCENE["bottom"])                # with captions: as before
+
     def test_a_reel_can_close_with_a_rewind(self):
         # the last scene streaks back as a rewind mark (two left triangles) shows, then the hook's ground comes in
         b = copy.deepcopy(BOARD)

@@ -34,7 +34,6 @@ from scenes import REGISTRY, Ctx, SceneError, js_obj, js_str
 L = E.L
 WIDE = (L.SAFE["left"], L.SAFE["right"] - L.SAFE["left"])          # 65, 950
 NARROW = (L.NARROW["left"], L.NARROW["right"] - L.NARROW["left"])  # 150, 780
-CENTRE = (E.SCENE["top"] + E.SCENE["bottom"]) // 2                 # 725: every scene centres here (E.centre_top)
 GAP_MAX = 0.3
 GSAP_CDN = "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
 FONTS = os.path.join(HERE, "..", "assets", "fonts")
@@ -295,6 +294,8 @@ def main():
         fail('captions is "off" or {emphasis} (got %r)' % (S["captions"],))
     if S.get("close", "fade") not in ("fade", "rewind"):
         fail('close is "fade" or "rewind" (got %r)' % (S["close"],))
+    if S.get("captions") == "off":
+        E.without_captions()
     D = round(voice_len + tail, 3)          # the last read needs time to land (E4): the planner may ask for more
     if voice_len > E.MAX_VOICE + 1e-6:
         fail("the voice is %.1f s, over the 90 s ceiling: trim the script (script-check.py --voice lists the lines to cut)"
@@ -422,7 +423,7 @@ def main():
     head = ['<link rel="preload" href="fonts/%s" as="font" type="font/woff2" crossorigin />' % f
             for f in sorted(os.listdir(os.path.join(out, "fonts")))] if os.path.isdir(os.path.join(out, "fonts")) else []
     css, hosts, js, tx_html, item_times = {}, [], [], [], []
-    moments = {"duration": D, "look": tok["look"], "scenes": [], "spans": [], "items": []}   # every change on screen, for pace-check.py (gate E4)
+    moments = {"duration": D, "look": tok["look"], "scenes": [], "spans": [], "items": [], "area": dict(E.SCENE)}   # every change on screen, for pace-check.py (gate E4)
     kinds, prev = [], None    # how each scene comes in (transitions.py): the storyboard's choice or the composer's
     for k, (sc, _, sbg, _, _, _) in enumerate(timed):
         kinds.append(X.pick(k, prev, sbg, sc.get("transition"), tok["look"]))

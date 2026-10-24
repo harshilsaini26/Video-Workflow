@@ -15,7 +15,10 @@ GOOD = {
 GOOD["network"] = {"type": "network", "layers": [4, 6, 6, 10], "labels": [str(d) for d in range(10)],
                    "input": {"digit": 3, "at": W(5)}, "forward": W(7), "answer": {"node": 8, "at": W(10)}, "backward": W(13)}
 GOOD["surface"] = {"type": "surface", "label": "LOSS", "start": [-0.6, 0.55], "descend": {"at": W(8), "steps": 6}}
-ANCHORED = {"plot": 2, "network": 4, "surface": 1}
+GOOD["outputs"] = {"type": "outputs", "labels": [str(d) for d in range(10)],
+                   "guess": [0.1, 0.05, 0.2, 0.15, 0.1, 0.1, 0.15, 0.1, 0.6, 0.25], "at": W(5),
+                   "target": {"row": 3, "at": W(7)}, "error": W(9), "loss": W(12)}
+ANCHORED = {"plot": 2, "network": 4, "surface": 1, "outputs": 4}
 
 
 class Shared(E3.Case):
@@ -38,7 +41,8 @@ class Shared(E3.Case):
     def test_heights_keep_their_aspect_and_fit_the_area(self):
         for t, sc in GOOD.items():
             m = REGISTRY[t]
-            self.assertLessEqual(abs(m.height(sc, 950) * 780 - m.height(sc, 780) * 950), 2 * 950, t)
+            if hasattr(m, "ASPECT"):          # a drawing keeps its shape; a list of rows (outputs) keeps its height
+                self.assertLessEqual(abs(m.height(sc, 950) * 780 - m.height(sc, 780) * 950), 2 * 950, t)
             self.assertLessEqual(m.height(sc, m.min_width(sc)), 712, t)
 
 
@@ -137,6 +141,34 @@ class Surface(E3.Case):
         z = [float(v) for v in re.findall(r'class="sf-trail" data-z="([\d.]+)"', html)]
         self.assertEqual(len(z), 6)
         self.assertEqual(z, sorted(z, reverse=True))                              # every step lower than the last
+
+
+
+class Outputs(E3.Case):
+    def test_bad_data_is_refused(self):
+        self.fails(dict(GOOD["outputs"], guess=[0.1, 0.2]), "one guess per label")
+        self.fails(dict(GOOD["outputs"], guess=[1.5] * 10), "0 to 1")
+        self.fails(dict(GOOD["outputs"], target={"row": 10, "at": W(7)}), "target row")
+        self.fails(dict(GOOD["outputs"], labels=["a"]), "2 to 10 labels")
+
+    def test_a_guess_bar_per_row_in_proportion(self):
+        html = self.ok(GOOD["outputs"])
+        widths = [float(x) for x in re.findall(r'class="op-guess" id="sc-g\d+" style="width:([\d.]+)%', html)]
+        self.assertEqual(widths, [round(g * 100, 2) for g in GOOD["outputs"]["guess"]])
+        for d in range(10):
+            self.assertRegex(html, r'class="op-label"[^>]*>%d<' % d)
+
+    def test_the_target_then_the_errors_then_the_loss(self):
+        html = self.ok(GOOD["outputs"])
+        g = GOOD["outputs"]["guess"]
+        err = [float(x) for x in re.findall(r'class="op-err" id="sc-e\d+" style="width:([\d.]+)%', html)]
+        self.assertEqual(err, [round(abs((1.0 if i == 3 else 0.0) - v) * 100, 2) for i, v in enumerate(g)])   # the gap to the truth
+        t = lambda sel: float(re.search(r"tl\.fromTo\('%s', [^;]*, ([\d.]+)\);" % re.escape(sel), html).group(1))
+        self.assertAlmostEqual(t("#sc-target"), E3.lead(7), places=2)
+        self.assertAlmostEqual(t("#sc-e0"), E3.lead(9), places=2)
+        self.assertAlmostEqual(t("#sc-loss"), E3.lead(12), places=2)
+        side = float(re.search(r'id="sc-loss" data-loss="([\d.]+)"', html).group(1))
+        self.assertAlmostEqual(side, sum(((1.0 if i == 3 else 0.0) - v) ** 2 for i, v in enumerate(g)), places=3)
 
 
 if __name__ == "__main__":

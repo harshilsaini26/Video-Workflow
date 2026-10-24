@@ -11,6 +11,7 @@ Reads moments.json next to the page (the composer writes it). Exit 1 with "E5 FA
 import argparse, json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import explainer_lib as E
 import layout_check as LC
 
 WORDS = {"overlap": "%s", "covered": "is %s", "crosses": "%s", "spill": "%s", "outside": "%s", "small": "%s", "missing": "%s",
@@ -28,6 +29,7 @@ def main():
         sys.exit(2)
     with open(os.path.join(pub, "moments.json"), encoding="utf-8") as f:
         moments = json.load(f)
+    E.SCENE.update(moments.get("area") or {})           # the area it was composed for (no captions: their band too)
     smp = LC.samples(moments)
     try:
         issues = LC.probe(a.index, smp, LC.handovers(moments))

@@ -31,7 +31,6 @@ ENTER, EXIT = 0.5, E.EXIT        # exits stay within tokens.motion.exit
 IN_EASE, OUT_EASE = "expo.out", "power3.in"   # the exit accelerates into the cut, the entrance decelerates out of it
 WIPE, BURST = 0.55, 0.9
 WIPE_FROM, WIPE_TO = "circle(0% at 50% 60%)", "circle(150% at 50% 60%)"
-CENTRE = (540, (E.SCENE["top"] + E.SCENE["bottom"]) // 2)   # the scene area's centre
 PARTICLES = 28
 BRUSH, UNCOVER, TILT = 0.35, 0.3, -0.1        # the cover (s), the uncover (s), the bands' tilt (radians)
 STAGGER = (0, .14, .06, .18, .1)               # of the cover time: no two bands move as twins
@@ -99,7 +98,7 @@ def burst(k, t, colors):
     for i in range(PARTICLES):
         size = rng.randint(14, 46)
         html.append('<i class="tx-p" id="tx%d-%d" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:%s"></i>'
-                    % (k, i, CENTRE[0] - size // 2, CENTRE[1] - size // 2, size, size, colors[i % len(colors)]))
+                    % (k, i, 540 - size // 2, (E.SCENE["top"] + E.SCENE["bottom"]) // 2 - size // 2, size, size, colors[i % len(colors)]))
         js.append("tl.fromTo('#tx%d-%d', %s, %s, %.3f);" % (
             k, i, js_obj({"x": 0, "y": 0, "rotation": 0, "opacity": 1}),
             js_obj({"x": rng.randint(-620, 620), "y": rng.randint(-900, 900), "rotation": rng.randint(-240, 240), "opacity": 0,

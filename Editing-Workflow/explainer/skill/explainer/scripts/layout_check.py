@@ -19,9 +19,11 @@ KEEP = ("content_overlap", "text_box_overflow", "clipped_text", "contrast_aa_fai
 HANDOVER = 0.6       # after a scene starts, the old one may still be leaving through it (the cut and its blur)
 
 
-def area():
+def area(moments=None):
+    """The scene area the page was composed for: moments.json carries it (a reel without captions takes their band)."""
     L = E.L
-    return {"left": E.SCENE["left"], "top": E.SCENE["top"], "right": E.SCENE["right"], "bottom": E.SCENE["bottom"],
+    sa = dict(E.SCENE, **((moments or {}).get("area") or {}))
+    return {"left": sa["left"], "top": sa["top"], "right": sa["right"], "bottom": sa["bottom"],
             "picture_bottom": E.PICTURE_BOTTOM, "col_top": L.RIGHT_COL_TOP, "narrow_left": L.NARROW["left"],
             "narrow_right": L.NARROW["right"]}
 
