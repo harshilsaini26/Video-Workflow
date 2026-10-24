@@ -12,7 +12,7 @@ values are the mock-up's furniture (DECOR_KEYS), not claims.
 """
 import math
 import explainer_lib as E
-from scenes import js_obj, line_px, need, stagger_for, widest
+from scenes import js_obj, line_px, need, stagger_for, widest, is_num
 from scenes import _vg
 
 TYPE = "grade-slider"
@@ -52,9 +52,6 @@ def _label(s):
     return s.get("label") or KINDS.get(s.get("kind"), "")
 
 
-def _num(v):
-    return isinstance(v, (int, float)) and not isinstance(v, bool)
-
 
 def validate(scene):
     errs = need(scene, ["sliders"])
@@ -68,9 +65,9 @@ def validate(scene):
         if s.get("kind") not in KINDS:
             errs.append("slider %d: kind is one of %s (got %r)" % (i, ", ".join(KINDS), s.get("kind")))
         for k in ("from", "to"):
-            if not _num(s.get(k)) or not -100 <= s[k] <= 100:
+            if not is_num(s.get(k)) or not -100 <= s[k] <= 100:
                 errs.append("slider %d: %s is a number from -100 to 100 (got %r)" % (i, k, s.get(k)))
-        if _num(s.get("from")) and _num(s.get("to")) and s["from"] == s["to"]:
+        if is_num(s.get("from")) and is_num(s.get("to")) and s["from"] == s["to"]:
             errs.append("slider %d: from and to are the same, so nothing moves" % i)
         if s.get("at") is None:
             errs.append("slider %d has no at" % i)

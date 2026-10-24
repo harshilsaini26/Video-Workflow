@@ -234,7 +234,7 @@ class Compose(unittest.TestCase):
             elif tw.startswith("tl.to(") and re.search(r"\{ opacity: 0[,} ]", tw):   # to 0, not to 0.4
                 exits += 1
                 self.assertIn("ease: '%s'" % m["exit_ease"], tw)
-                self.assertLessEqual(float(re.search(r"duration: ([\d.]+)", tw).group(1)), m["exit"] if exits <= 2 else X.CLOSE)
+                self.assertLessEqual(float(re.search(r"duration: ([\d.]+)", tw).group(1)), E.EXIT if exits <= 2 else X.CLOSE)
         self.assertGreaterEqual(entrances, 3)
         self.assertEqual(exits, 3)          # the last scene leaves too: the close, over the last 0.4 s
         self.assertNotRegex(html, r"stagger: [\d.]")

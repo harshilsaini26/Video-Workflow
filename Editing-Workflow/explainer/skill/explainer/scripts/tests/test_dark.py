@@ -80,6 +80,15 @@ class Board(unittest.TestCase):
         self.assertGreater(top + h / 2.0, (E.SCENE["top"] + E.SCENE["bottom"]) / 2.0 + 40)   # centred lower than with captions
         self.assertEqual(LC.area({"scenes": []})["bottom"], E.SCENE["bottom"])                # with captions: as before
 
+    def test_the_planner_carries_the_creators_captions_and_ending(self):
+        # chosen in the brief and written into script.json, like the palette, so a re-plan keeps them
+        from . import test_plan as TP
+        _, sb, _ = TP.Plan("test_rules_without_a_hint").plan(dict(copy.deepcopy(TP.SCRIPT), captions="off", close="rewind"))
+        self.assertEqual((sb["captions"], sb["close"]), ("off", "rewind"))
+        _, sb, _ = TP.Plan("test_rules_without_a_hint").plan(copy.deepcopy(TP.SCRIPT))
+        self.assertIsInstance(sb["captions"], dict)
+        self.assertNotIn("close", sb)
+
     def test_a_reel_can_close_with_a_rewind(self):
         # the last scene streaks back as a rewind mark (two left triangles) shows, then the hook's ground comes in
         b = copy.deepcopy(BOARD)

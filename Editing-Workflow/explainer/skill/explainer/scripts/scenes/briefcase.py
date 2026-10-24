@@ -7,7 +7,6 @@ interview prep, "what bankers carry").
 the case is six faces, the lid a panel hinged on the back edge whose swing is a rotation tweened on the timeline, the
 papers rise inside the case (the front face hides them until they clear the rim). Seek-safe.
 """
-import math
 import explainer_lib as E
 from scenes import need
 
@@ -40,12 +39,6 @@ def validate(scene):
     return errs
 
 
-def height(scene, width):
-    return int(math.ceil(width * ASPECT))
-
-
-def min_width(scene):
-    return 600
 
 
 def _face(w, h, transform, colour, shade=1.0, extra=""):

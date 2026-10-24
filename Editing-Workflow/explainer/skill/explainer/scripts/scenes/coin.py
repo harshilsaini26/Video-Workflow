@@ -46,12 +46,6 @@ def validate(scene):
     return errs
 
 
-def height(scene, width):
-    return int(math.ceil(width * ASPECT))
-
-
-def min_width(scene):
-    return 600
 
 
 def render(scene, ctx, box):

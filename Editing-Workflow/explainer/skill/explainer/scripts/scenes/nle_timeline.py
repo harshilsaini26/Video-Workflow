@@ -16,7 +16,7 @@ then scales the timeline to fit). Every piece is placed for the width the scene 
 """
 import math
 import explainer_lib as E
-from scenes import js_obj, need
+from scenes import js_obj, need, is_num
 
 TYPE = "nle-timeline"
 BAKED = True
@@ -59,9 +59,6 @@ def tc(s):
     s = int(round(s))
     return "%d:%02d" % (s // 60, s % 60)
 
-
-def _num(v):
-    return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
 def names(scene):
@@ -145,7 +142,7 @@ def validate(scene):
         for j, c in enumerate(clips):
             if not isinstance(c, dict) or not str(c.get("label") or "").strip():
                 errs.append("track %d clip %d has no label" % (i, j))
-            elif not _num(c.get("length")) or c["length"] <= 0:
+            elif not is_num(c.get("length")) or c["length"] <= 0:
                 errs.append("track %d clip %d needs a length in seconds" % (i, j))
         if t.get("name") is not None and len(str(t["name"])) > 3:
             errs.append("track %d: name is at most 3 characters (V1, A2)" % i)
@@ -155,9 +152,9 @@ def validate(scene):
     if len(cuts) > MAX_CUTS:
         errs.append("at most %d cuts (got %d)" % (MAX_CUTS, len(cuts)))
     for i, c in enumerate(cuts):
-        if not isinstance(c, dict) or c.get("at") is None or not _num(c.get("time")):
+        if not isinstance(c, dict) or c.get("at") is None or not is_num(c.get("time")):
             errs.append("cut %d needs time (seconds on the timeline) and at" % i)
-        elif c.get("length") is not None and (not _num(c["length"]) or c["length"] < 0):
+        elif c.get("length") is not None and (not is_num(c["length"]) or c["length"] < 0):
             errs.append("cut %d: length is the seconds it removes (0 or more)" % i)
         elif not isinstance(c.get("track", 0), int) or not 0 <= c.get("track", 0) < len(tracks):
             errs.append("cut %d: track %r is not one of the %d tracks" % (i, c.get("track"), len(tracks)))

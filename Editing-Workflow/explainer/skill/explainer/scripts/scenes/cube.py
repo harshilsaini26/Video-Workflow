@@ -8,7 +8,6 @@ up, down); each twist turns its top layer a quarter (left or right), as a Rubik'
 labelled cell. CSS 3D: every cubie is six faces, the turns and twists are rotations tweened on the timeline (seek-safe).
 For "solve it piece by piece", "every cell connects", "it all has to line up".
 """
-import math
 import explainer_lib as E
 from scenes import need
 
@@ -58,12 +57,6 @@ def validate(scene):
     return errs
 
 
-def height(scene, width):
-    return int(math.ceil(width * ASPECT))
-
-
-def min_width(scene):
-    return 600
 
 
 def render(scene, ctx, box):

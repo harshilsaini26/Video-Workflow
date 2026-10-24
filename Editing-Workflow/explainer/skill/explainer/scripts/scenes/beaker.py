@@ -8,7 +8,6 @@ equity; what a price is made of).
 instead of "<value>%". A cylinder drawn in 2.5D (an elliptical rim and surface on each layer); each layer grows from its
 own floor with a tween on the timeline (seek-safe); the labels sit flat to the right, never on the glass.
 """
-import math
 import explainer_lib as E
 from scenes import need
 
@@ -54,12 +53,6 @@ def validate(scene):
     return errs
 
 
-def height(scene, width):
-    return int(math.ceil(width * ASPECT))
-
-
-def min_width(scene):
-    return 600
 
 
 def render(scene, ctx, box):

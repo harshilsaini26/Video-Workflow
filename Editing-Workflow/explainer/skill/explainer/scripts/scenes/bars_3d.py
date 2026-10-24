@@ -61,9 +61,6 @@ def validate(scene):
     return errs
 
 
-def height(scene, width):
-    return int(math.ceil(width * ASPECT))
-
 
 def _need(scene, size):
     """The width at which neighbouring labels at `size` px stand clear of each other (bars sit 0.43 W apart in all)."""

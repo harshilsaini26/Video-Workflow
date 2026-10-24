@@ -18,6 +18,27 @@ import layout_check as LC
 HOOK = (0.3, 0.7, 1.0)
 
 
+def plan(moments, out):
+    """(shots, rows): the hook at HOOK, then every scene once it has settled; a stage also just before each of its beats
+    (gate E5's moments, LC.samples), so the creator sees every picture it shows."""
+    shots, rows = [], []
+    for t in HOOK:
+        name = "hook-%.2f.png" % t
+        shots.append({"t": t, "file": os.path.join(out, name)})
+        rows.append((name, t, moments["scenes"][0]["id"], "the hook at %.1f s" % t))
+    order = {s["id"]: (k, s) for k, s in enumerate(moments["scenes"], 1)}
+    smp = LC.samples(moments)
+    for i, m in enumerate(smp):
+        k, s = order[m["id"]]
+        last = i + 1 == len(smp) or smp[i + 1]["id"] != m["id"]
+        n = sum(1 for x in smp[:i] if x["id"] == m["id"])
+        name = "%02d-%s.png" % (k, s["id"]) if last else "%02d-%s-%d.png" % (k, s["id"], n + 1)
+        shots.append({"t": m["t"], "file": os.path.join(out, name)})
+        rows.append((name, m["t"], s["id"], ("settled (%s, %.2f to %.2f s)" % (s.get("type", "?"), s["in"], s["out"])) if last
+                     else "before its next beat (%s)" % s.get("type", "?")))
+    return shots, rows
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--index", required=True)
@@ -40,15 +61,7 @@ def main():
         for n in os.listdir(a.out):
             os.remove(os.path.join(a.out, n))
     os.makedirs(a.out, exist_ok=True)
-    shots, rows = [], []
-    for t in HOOK:
-        name = "hook-%.2f.png" % t
-        shots.append({"t": t, "file": os.path.join(a.out, name)})
-        rows.append((name, t, moments["scenes"][0]["id"], "the hook at %.1f s" % t))
-    for k, (s, smp) in enumerate(zip(moments["scenes"], LC.samples(moments)), 1):
-        name = "%02d-%s.png" % (k, s["id"])
-        shots.append({"t": smp["t"], "file": os.path.join(a.out, name)})
-        rows.append((name, smp["t"], s["id"], "settled (%s, %.2f to %.2f s)" % (s.get("type", "?"), s["in"], s["out"])))
+    shots, rows = plan(moments, a.out)
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
         json.dump({"index": os.path.abspath(a.index), "shots": shots, "puppeteer_dir": pdir, "chrome": chrome}, f)
         job = f.name

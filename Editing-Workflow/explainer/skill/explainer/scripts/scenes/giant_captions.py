@@ -9,6 +9,7 @@ or when the next word would make it too wide to stay large. Keywords take the ac
 """
 import re
 import explainer_lib as E
+from explainer_lib import norm
 from scenes import js_obj
 
 TYPE = "giant-captions"
@@ -27,9 +28,6 @@ CSS = """
   .gc-w { display:inline-block; opacity:0; }
 """ % H
 
-
-def norm(w):
-    return re.sub(r"[^a-z0-9]", "", str(w).lower())
 
 
 def validate(scene):

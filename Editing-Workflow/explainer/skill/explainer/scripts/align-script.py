@@ -16,17 +16,13 @@ import argparse, difflib, json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from explainer_lib import apply_lexicon, load_lexicon
+from explainer_lib import apply_lexicon, load_lexicon, norm
 
 MIN_RATIO = 0.98
 MAX_GAP = 1.2
 FUZZY = 0.8   # "whack" for "wack": a near-miss single word still counts as heard
 
-_NON = re.compile(r"[^0-9a-z]+")
 
-
-def norm(text):
-    return _NON.sub("", str(text).lower())
 
 
 def _split(n_items, n_slots):

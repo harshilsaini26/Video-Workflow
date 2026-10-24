@@ -11,7 +11,7 @@ The window's name, its placeholder and a cited file's name are furniture (DECOR_
 and needs the scene's source.
 """
 import explainer_lib as E
-from scenes import js_obj, need, widest
+from scenes import js_obj, need, widest, word_index
 
 TYPE = "chat"
 DECOR_KEYS = ("name", "placeholder", "cite")
@@ -60,10 +60,6 @@ CSS = """
        PAD_X, IN_PAD, IN_H, IN_H // 2, P_SIZE, SEND, SEND)
 
 
-def _word(ref):
-    s = str(ref)
-    return int(s[5:]) if s.startswith("word:") and s[5:].isdigit() else None
-
 
 def validate(scene):
     errs = need(scene, ["messages"])
@@ -89,13 +85,13 @@ def validate(scene):
                 errs.append("message %d: only an answer cites a source" % i)
             elif not isinstance(c, dict) or not str(c.get("text", "")).strip() or c.get("at") is None:
                 errs.append("message %d: cite needs text (the source's name) and at" % i)
-    words = [(_word(m.get("at")), i) for i, m in enumerate(msgs) if isinstance(m, dict)]
+    words = [(word_index(m.get("at")), i) for i, m in enumerate(msgs) if isinstance(m, dict)]
     for (a, i), (b, j) in zip(words, words[1:]):
         if a is not None and b is not None and b < a:
             errs.append("message %d (word:%d) comes before message %d (word:%d): an answer comes after its question" % (j, b, i, a))
     for i, m in enumerate(msgs):
         c = m.get("cite") if isinstance(m, dict) else None
-        if isinstance(c, dict) and _word(c.get("at")) is not None and _word(m.get("at")) is not None and _word(c["at"]) < _word(m["at"]):
+        if isinstance(c, dict) and word_index(c.get("at")) is not None and word_index(m.get("at")) is not None and word_index(c["at"]) < word_index(m["at"]):
             errs.append("message %d: its cite (%s) lands before the answer (%s)" % (i, c["at"], m["at"]))
     return errs
 

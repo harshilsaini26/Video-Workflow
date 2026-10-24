@@ -51,12 +51,6 @@ def validate(scene):
     return errs
 
 
-def height(scene, width):
-    return int(math.ceil(width * ASPECT))
-
-
-def min_width(scene):
-    return 600
 
 
 def _pan(sid, side, x, y, P, S, metal, weight, chip, chip_on, label, attrs, ctx):

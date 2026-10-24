@@ -11,6 +11,7 @@ Each module has
   travels(scene)                optional, True when its camera moves to each new item (E4 lets it hold longer)
   SHRINK_WIDTH                  optional, True when its width is geometry, not a word (the composer may shrink it to fit)
   validate(scene) -> [str]      data-shape errors
+  ASPECT                        optional, a drawing's height over its width: height() and min_width() (600) by default
   height(scene, width) -> int   the box height at that width, from the module's own CSS constants
   min_width(scene) -> int       the widest text that cannot wrap, plus padding
   render(scene, ctx, box) -> (html, [js])
@@ -259,6 +260,17 @@ def need(scene, keys):
     return ["missing %r" % k for k in keys if scene.get(k) in (None, "", [])]
 
 
+def is_num(v):
+    """A real number (True and False are not)."""
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def word_index(ref):
+    """The word number of a "word:N" anchor, or None for any other anchor."""
+    s = str(ref)
+    return int(s[5:]) if s.startswith("word:") and s[5:].isdigit() else None
+
+
 def discover(folder, package="scenes"):
     """{TYPE: module} for every scenes module in `folder`: each <name>.py (not _private) that sets TYPE. A new scene is a
     new file; nothing else to edit. Files without a TYPE (helpers, notes) are left alone."""
@@ -276,6 +288,9 @@ def discover(folder, package="scenes"):
         if isinstance(getattr(mod, "TYPE", None), str):
             if mod.TYPE in found:
                 raise ImportError("two scene modules say TYPE %r: %s and %s" % (mod.TYPE, found[mod.TYPE].__name__, mod.__name__))
+            if hasattr(mod, "ASPECT"):        # a drawing that keeps its shape: its height and narrowest width follow
+                mod.height = getattr(mod, "height", lambda scene, width, a=mod.ASPECT: int(math.ceil(width * a)))
+                mod.min_width = getattr(mod, "min_width", lambda scene: 600)
             found[mod.TYPE] = mod
     return found
 

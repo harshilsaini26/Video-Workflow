@@ -6,7 +6,6 @@
 CSS 3D: a face and two shaded edges per card, the row turned toward the viewer; each card falls in on its word with a
 small spin (a tween on the timeline, seek-safe), then the row floats.
 """
-import math
 import explainer_lib as E
 from scenes import need
 
@@ -54,12 +53,6 @@ def validate(scene):
     return errs
 
 
-def height(scene, width):
-    return int(math.ceil(width * ASPECT))
-
-
-def min_width(scene):
-    return 600
 
 
 def render(scene, ctx, box):

@@ -21,7 +21,7 @@ is given (BAKED; never scaled, so the chips stay 28 px):
 """
 import math
 import explainer_lib as E
-from scenes import SceneError, js_obj, need
+from scenes import SceneError, js_obj, need, word_index
 from scenes import _annotate
 
 TYPE = "photo-grid"
@@ -122,7 +122,7 @@ def validate(scene):
         if p.get("tag") is not None and (not isinstance(p["tag"], str) or not p["tag"].strip() or len(p["tag"]) > MAX_TAG):
             errs.append("photo %d (%s): tag is a word or two (%d characters at most)" % (i, src, MAX_TAG))
         if p.get("at") is not None:
-            n = _word(p["at"])
+            n = word_index(p["at"])
             if last is not None and n is not None and n < last:
                 errs.append("photos land in order: photo %d's at (%s) is before the photo ahead of it" % (i, p["at"]))
             last = n if n is not None else last
@@ -130,10 +130,6 @@ def validate(scene):
         errs += _annotate.validate(scene["notes"])
     return errs
 
-
-def _word(ref):
-    s = str(ref)
-    return int(s[5:]) if s.startswith("word:") and s[5:].isdigit() else None
 
 
 def height(scene, width):

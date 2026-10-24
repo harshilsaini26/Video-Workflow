@@ -14,6 +14,7 @@ up. It lives in the scene's box, outside the camera, so it holds still top-left 
 """
 import re
 import explainer_lib as E
+from explainer_lib import norm
 
 SIZES = list(range(120, 63, -4))   # the headline's size: the largest at which it takes at most three lines
 MAX_LINES = 3
@@ -37,9 +38,6 @@ CSS = """
   .hl-aside { font-size:%dpx; height:%dpx; line-height:%dpx; margin-top:%dpx; white-space:nowrap; opacity:0; }
 """ % (KICKER, KICK_H, KICK_H, KICK_GAP, SUB_H, SUB_H, SUB_GAP, ASIDE, ASIDE_H, ASIDE_H, ASIDE_GAP)
 
-
-def norm(w):
-    return re.sub(r"[^a-z0-9]", "", str(w).lower())
 
 
 def shown(h):

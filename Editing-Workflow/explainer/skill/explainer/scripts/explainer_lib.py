@@ -134,6 +134,11 @@ def rgba(hexcol, alpha):
     return "rgba(%d,%d,%d,%s)" % (int(hexcol[1:3], 16), int(hexcol[3:5], 16), int(hexcol[5:7], 16), ("%.3f" % alpha).rstrip("0").rstrip("."))
 
 
+def norm(w):
+    """A word as compared: lower case, letters and digits only."""
+    return re.sub(r"[^a-z0-9]", "", str(w).lower())
+
+
 def theme(tokens, bg):
     """The colours a scene on background `bg` uses, by role (tokens.json: palette, backgrounds, roles, series):
     bg, card, card_line, ink, dim, muted, line, accent, on_accent, accent2, good, bad, warn, accent_soft, track,

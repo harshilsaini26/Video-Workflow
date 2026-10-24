@@ -24,6 +24,7 @@ import argparse, json, os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from scenes import logo_card
+from explainer_lib import norm
 
 BEAT = 2.5
 HOOK_BY, LEAD = 0.8, 0.2          # explainer_lib's: the hook's items land by 0.8 s, an entrance 0.2 s before its word
@@ -44,9 +45,6 @@ TYPE_LISTS = {"qa-stack": {"items": "text"}, "gravity-drop": {"items": "text"}, 
               "doc": {"blocks": None}, "nle-timeline": {"cuts": None}}
 MONEY = re.compile(r"([$€£₹])\s?(\d[\d,]*(?:\.\d+)?)|(\d[\d,]*(?:\.\d+)?)\s?%")
 
-
-def norm(w):
-    return re.sub(r"[^a-z0-9]", "", str(w).lower())
 
 
 def key_word(text):
@@ -352,6 +350,10 @@ def main():
         board["look"] = look
     if a.palette or S.get("palette"):
         board["palette"] = a.palette or S["palette"]      # colour only (tokens.palettes), laid over the look; the creator's choice wins
+    if S.get("captions") == "off":
+        board["captions"] = "off"            # the creator's choice in the brief: no word captions (PLAYBOOK §E6.11)
+    if S.get("close"):
+        board["close"] = S["close"]          # the ending the creator chose: fade (the default) or rewind
     if tail > TAIL:
         board["tail"] = tail                 # seconds the page runs past the voice (default TAIL)
     if S.get("thread"):

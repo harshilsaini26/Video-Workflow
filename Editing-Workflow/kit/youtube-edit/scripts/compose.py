@@ -679,10 +679,6 @@ def host(bid, t_in, t_out, track, inner, anchor=""):
             '      style="left:0;top:0;width:1920px;height:1080px;visibility:hidden;opacity:1;">\n      <div class="card">%s</div>\n    </div>\n'
             % (bid, bid, t_in, t_out - t_in, track, a, inner))
 
-def words_html(text):   # words kept in data-text; spans are built at load (seek-safe)
-    return text
-
-
 def item_attrs(it):
     """List/bullet items carry their own entry time and spoken anchor so beat-check.py can prove each one.
     it = [text, t] (the anchor is the text) or [text, t, "anchor phrase"] ("-" = not spoken)."""

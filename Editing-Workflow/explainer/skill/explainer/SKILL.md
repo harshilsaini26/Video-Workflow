@@ -86,6 +86,9 @@ they never saw, SOP S1). Skip what the creator already said:
    `electric-pop`, `nordic-frost`, `bold-citrus`, each with its colours, mood, rule and "best for"), recommend the
    first, and let them pick one or none (the look's own colours). Write it into script.json as `"palette"`. And **any images** the reel should show (product cut-outs, photos), each photo with its credit:
    the reel shows only what the creator supplies or what is free to use.
+9. **Captions and the ending:** word captions on (the default) or off (a math or how-it-works reel where the formulas
+   carry the words; the scenes then take the caption band), and the ending: a fade back into the hook (the default) or
+   a rewind (PLAYBOOK §E6.11). Write them into script.json as `"captions": "off"` and `"close": "rewind"` (the planner carries them, like the palette).
 
 Create `$W`, copy `$ES/templates/{STATUS,NOTES}.md`, fill the header and **Brief** (profile `explainer`,
 version v1, the **Voice** row), pin the skill (`"$ES/scripts/skill-version.py" --pin "$W/STATUS.md"`), log "project
@@ -188,7 +191,7 @@ choice into the Brief.
 ## 5. Checkpoint B: the reel as stills
 
 `snaps/stills/` from `"$ES/scripts/stills.py"` (S10): one full-size still of every scene **once it has settled** (all of
-it arrived; never mid-entrance), the hook at 0.3, 0.7 and 1.0 s, and `sheet.png`, made fresh each time so no still from
+it arrived; never mid-entrance), a `stage` also just before each of its beats (every picture it shows), the hook at 0.3, 0.7 and 1.0 s, and `sheet.png`, made fresh each time so no still from
 an earlier build is shown; `snaps/guides/sheet.png` (the safe zone drawn on); `snaps/SCENES.md` (what is on screen
 when, with each scene's words and source); the review sheets in `snaps/review/` from `"$ES/scripts/review.py"` (a
 strip for every cut, a timing sheet per scene, a crop per hero), which the Animator has looked at; and `voice.wav` for
