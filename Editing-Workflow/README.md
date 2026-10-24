@@ -1130,7 +1130,7 @@ rules.
 ### How the Reels profile is built
 
 The kit only builds 16:9 at 30 fps and its files stay as they came, so the Reels profile has its own tested scripts
-in [`reels/skill/reels/scripts/`](reels/README.md#5-the-scripts-and-how-they-were-verified):
+in [`reels/skill/reels/scripts/`](reels/README.md#6-the-scripts-and-how-they-were-verified):
 
 | Stage | Reels |
 |---|---|
