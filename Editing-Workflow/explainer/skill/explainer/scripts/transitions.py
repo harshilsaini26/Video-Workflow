@@ -17,6 +17,10 @@ velocity-matched (MOTION.md): the exit accelerates into the cut and the entrance
          picked on its own: name it for a jolt of energy or a reveal
   brush  five ragged ink bands sweep across and cover the frame on the cut, then sweep off (the paper look's wipe at a
          new ground; after ClaudeAnimationBase's brush wipe, MIT)
+  dive   Kurzgesagt's scale crossing as a cut: the outgoing ground's accent opens from the middle of the scene area on a
+         log zoom (each frame grows by the same factor) until it fills the frame on the cut, then shrinks away while the
+         next scene pulls out to its size on a log zoom out; never picked on its own (after huashu-art-motion's
+         y1_kurzgesagt transition B and CAM.zlerp, MIT)
 
 The last scene leaves too (close()): over the first half of the last CLOSE seconds; the hook's ground wipes in over the
 second half, ending exactly at the end, so the loop seams back into the hook.
@@ -26,7 +30,7 @@ import math, random
 import explainer_lib as E
 from scenes import js_obj
 
-KINDS = ("fade", "push", "zoom", "wipe", "burst", "cut", "brush", "leak")
+KINDS = ("fade", "push", "zoom", "wipe", "burst", "cut", "brush", "leak", "dive")
 ENTER, EXIT = 0.5, E.EXIT        # exits take E.EXIT, the composer's one exit time
 IN_EASE, OUT_EASE = "expo.out", "power3.in"   # the exit accelerates into the cut, the entrance decelerates out of it
 WIPE, BURST = 0.55, 0.9
@@ -36,6 +40,13 @@ BRUSH, UNCOVER, TILT = 0.35, 0.3, -0.1        # the cover (s), the uncover (s), 
 STAGGER = (0, .14, .06, .18, .1)               # of the cover time: no two bands move as twins
 CLOSE = E.CLOSE
 LEAK, LEAK_W = 0.9, 1100       # the streak's sweep (s, centred on the cut) and its width (px)
+DIVE_IN, DIVE_OUT, DIVE_FROM, DIVE_R0 = 0.45, 0.6, 1.6, 24   # the crossing in and out (s), the next scene's start scale, the disc's start
+ZOOM_JS = ("window.zoomIn = function (Z) { return function (t) { var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; "
+           "return (Math.pow(Z, e) - 1) / (Z - 1); }; }; "
+           "window.zoomOut = function (Z) { return function (t) { var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; "
+           "return (Z - Math.pow(Z, 1 - e)) / (Z - 1); }; };")
+"""Log zoom eases (CAM.zlerp): a tween from 1 to Z (or Z to 1) on zoomIn(Z) (zoomOut(Z)) grows (shrinks) by the same factor
+every frame, on a cubic in-out, so a crossing of scales reads as one steady flight, never slow then sudden."""
 
 
 def pick(index, prev_bg, bg, explicit, look=None):
@@ -68,6 +79,9 @@ def enter(kind, sid, t):
         return [_from(sel, {"scale": 0.92, "filter": "blur(8px)"}, {"scale": 1, "filter": "blur(0px)"}, t)]
     if kind == "burst":
         return [_from(sel, {"scale": 0.7}, {"scale": 1}, t)]
+    if kind == "dive":
+        return ["tl.fromTo('%s', %s, { scale: 1, filter: 'blur(0px)', duration: %s, ease: zoomOut(%s), immediateRender: false }, %.3f);"
+                % (sel, js_obj({"scale": DIVE_FROM, "filter": "blur(6px)"}), DIVE_OUT, DIVE_FROM, t)]
     return []
 
 
@@ -77,7 +91,7 @@ def exit(kind, sid, cut):
     sel = "#" + sid
     if kind == "cut":
         return ["tl.set('%s', { opacity: 0 }, %.3f);" % (sel, cut)]
-    move = {"push": {"y": -260, "filter": "blur(12px)"}, "zoom": {"scale": 1.2, "filter": "blur(10px)"},
+    move = {"push": {"y": -260, "filter": "blur(12px)"}, "zoom": {"scale": 1.2, "filter": "blur(10px)"}, "dive": {"scale": 1.25, "filter": "blur(10px)"},
             "burst": {"scale": 1.3, "filter": "blur(10px)"}, "leak": {"scale": 1.08, "filter": "blur(10px)"}}.get(kind, {"y": -24})
     return ["tl.to('%s', %s, %.3f);" % (sel, js_obj(dict({"opacity": 0}, **dict(move, duration=EXIT, ease=OUT_EASE))), max(0.0, cut - EXIT))]
 
@@ -156,4 +170,22 @@ def leak(k, t, colors):
                                                   js_obj({"x": span, "duration": LEAK, "ease": "power1.inOut", "immediateRender": False}),
                                                   t - LEAK / 2.0),
           "tl.set('#txl%d', { opacity: 0 }, %.3f);" % (k, t + LEAK / 2.0)]
+    return html, js
+
+
+def dive(k, t, color, at=(540, (E.SCENE["top"] + E.SCENE["bottom"]) // 2)):
+    """The crossing's disc over the cut at `t`: (html, [js]). It opens from `at` on a log zoom until it covers the
+    farthest corner on the cut, then shrinks back to nothing over DIVE_OUT while the next scene pulls out under it."""
+    x, y = at
+    R = int(math.ceil(max(math.hypot(x - cx, y - cy) for cx in (0, 1080) for cy in (0, 1920)))) + 2
+    Z = round(R / float(DIVE_R0), 1)
+    circ = lambda r: "circle(%dpx at %dpx %dpx)" % (r, x, y)
+    html = ('<div class="tx-dive" id="txd%d" style="position:absolute;left:0;top:0;width:1080px;height:1920px;background:%s;'
+            'clip-path:%s;opacity:0"></div>' % (k, color, circ(0)))
+    t0 = max(0.0, t - DIVE_IN)
+    js = ["tl.set('#txd%d', { opacity: 1 }, %.3f);" % (k, t0),
+          "tl.fromTo('#txd%d', { clipPath: '%s' }, { clipPath: '%s', duration: %s, ease: zoomIn(%s), immediateRender: false }, %.3f);"
+          % (k, circ(DIVE_R0), circ(R), round(t - t0, 2), Z, t0),
+          "tl.to('#txd%d', { clipPath: '%s', duration: %s, ease: 'power2.in' }, %.3f);" % (k, circ(0), DIVE_OUT, t),
+          "tl.set('#txd%d', { opacity: 0 }, %.3f);" % (k, t + DIVE_OUT)]
     return html, js

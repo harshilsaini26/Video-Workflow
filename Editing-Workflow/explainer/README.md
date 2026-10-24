@@ -31,7 +31,7 @@ explainer/
 │       ├── align-script.py         gate E2: what Parakeet heard → the shown words with times (transcript.json)
 │       ├── plan-storyboard.py      the draft storyboard from the script's picture hints and the aligned words
 │       ├── explainer-compose.py    gate E3: storyboard.json → a 1080x1920, 60 fps HyperFrames page and its sound bed
-│       ├── transitions.py          how each scene comes in (fade, push, zoom-through, wipe, burst, cut, brush, leak) and the close (fade or rewind)
+│       ├── transitions.py          how each scene comes in (fade, push, zoom-through, wipe, burst, cut, brush, leak, dive) and the close (fade or rewind)
 │       ├── sound.py                the sound bed: a generated pad or your music, ducked, with sound effects
 │       ├── pace-check.py           gate E4 (pacing): no still stretch over 3 s, no picture held over 8 s, one read at a time
 │       ├── layout-check.py         gate E5 (a clean picture): every scene, cut and stage beat in Chromium
@@ -50,7 +50,7 @@ explainer/
 │       ├── skill-version.py        pins the skill's files at the brief; a changed skill stops the next stage
 │       ├── new-version.py          a clean folder for each version of a reel (v2, v3...)
 │       ├── explainer_lib.py        shared: word anchors, the scene area, the looks, text measured with real glyph widths
-│       ├── scenes/                 one module per scene: 60 library scenes, the custom scene and the stage, found without a list
+│       ├── scenes/                 one module per scene: 63 library scenes, the custom scene and the stage, found without a list
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium) and the scene cases
 │       └── tests/                  600 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
@@ -244,7 +244,7 @@ Run a stage's gates yourself with `python3 Editing-Workflow/wf.py gates videos/<
 
 ## 6. What it can draw
 
-Sixty library scenes, a sandboxed custom scene for anything else, and a stage that holds the others. Every scene
+Sixty-three library scenes, a sandboxed custom scene for anything else, and a stage that holds the others. Every scene
 builds on the voice's words, holds alive while it is on screen, and leaves cleanly. The PLAYBOOK lists every scene with
 its fields.
 
@@ -257,6 +257,7 @@ its fields.
 | 3D (CSS and SVG, a fixed view) | `bars-3d`, `cube`, `cards-3d`, `briefcase` (opens), `beaker` (fills in layers), `donut`, `coin` (flips in), `balance` (tips) |
 | Math | `formula` (KaTeX, a colour per symbol), `plot` (a loss curve whose tangent slides to the minimum), `network` (a handwritten digit in, a forward pass, the answer ringed, the error swept back), `surface` (a loss bowl a ball descends one gradient step at a time), `outputs` (guesses against the right answer, each error and the loss as a square) |
 | The stage | `stage`: one continuous picture; any library scenes as objects in boxes that come in, leave, move and resize on their words (the network shrinks aside while the curves come in, the formula above it changes); E5 checks it at every beat |
+| Film grammars | `morph` (3Blue1Brown: one set of pieces becomes the next form, grid, column, row, ring, bars or one merged circle, point for point on manim's `smooth` ease, the wait still), `orbit` (Kurzgesagt: a flat thing with no outline, up to 4 nodes with pills, signals along the links, and a `dive` that crosses scales into one node on a log zoom and pulls out of the next level), `clippings` (Vox: torn clippings, your photo as a taped print, black label strips typed at 13 characters a second, index cards, red string with pins, a highlighter under the quoted line, a one-stroke red circle, an underline, all moving on twos); PLAYBOOK §E6.13, after huashu-art-motion (MIT) |
 | Real things | `logo-card` (Simple Icons), page screenshots that zoom to one line (`snap-page.py`), `product-hero` (a cut-out with notes drawn on), `photo-grid`, `line-art`, all credited |
 | Words | `giant-captions` (the voice's own words, huge in the middle), the headline layer, word captions |
 | Anything else | `custom`: sandboxed HTML and GSAP (three.js allowed), under MOTION.md's lint (no banned eases, loops or randomness) and the same gates |
@@ -279,7 +280,7 @@ on any look; each keeps every contrast rule (3:1 or better on its ground, checke
 exact colours. `palettes.py` lists them with the best fit for your topic first.
 
 **Motion and sound.** Transitions are picked by what changes: a new place gets a wipe or a brush, the same idea a
-fade, and there are push, zoom-through, burst, cut and a light leak. The last scene closes into the hook's ground so
+fade, and there are push, zoom-through, burst, cut, a light leak and a **dive** (the outgoing accent opens on a log zoom, fills the frame on the cut, and the next scene pulls out of it). The last scene closes into the hook's ground so
 the reel loops, or **rewinds**: it streaks back under a rewind mark. A slow camera drift and particles keep every frame
 alive; eases never overshoot, nothing is random, and every frame is the same on every render. Under the voice: a soft
 generated pad (or your track), ducked, a whoosh per moving transition, a pop as each item lands, a chime on the payoff.
@@ -293,7 +294,7 @@ generated pad (or your track), ducked, a whoosh per moving transition, a pop as 
 | `align-script.py` | gate E2: heard words aligned to spoken words (tolerant of spelling, the lexicon's respellings and digits heard for number words), shown words timed across their spoken span | `test_align.py` |
 | `plan-storyboard.py` | the draft storyboard: picture hints into scenes, every item on its word; carries the look, palette, captions and close | `test_plan.py` |
 | `explainer-compose.py` | gate E3: every scene placed by its measured height and scaled up to fill the area, transitions, glows, captions or none, the close, the sound bed, `moments.json` for the checkers | `test_compose.py`, `test_craft.py`, `test_foundations.py`, `test_living.py`, `test_dark.py` |
-| `scenes/*.py` | the 60 library scenes, the custom scene's contract and the stage | `test_scenes_*.py`, `test_custom.py`, `test_stage.py`, `test_kinetic.py`, `test_giant.py`, `test_assets.py`, `test_images.py` |
+| `scenes/*.py` | the 63 library scenes, the custom scene's contract and the stage | `test_scenes_*.py`, `test_custom.py`, `test_stage.py`, `test_kinetic.py`, `test_giant.py`, `test_assets.py`, `test_images.py`, `test_styles.py` (the three grammars and the dive) |
 | heights | each scene's predicted height against Chromium, three text lengths × two column widths × every scene type | `test_heights.py`: every row 0 to 4 px over, never under |
 | `pace-check.py` | gate E4's pacing and read floor, from `moments.json` | `test_pace.py`, `test_pace_manifest.py` |
 | `layout-check.py`, `layout-probe.mjs` | gate E5 in Chromium: every scene settled, every cut 1/30 s apart, every stage beat; formulas glyph by glyph | `test_layout.py`: every scene type at three lengths of text, clean |

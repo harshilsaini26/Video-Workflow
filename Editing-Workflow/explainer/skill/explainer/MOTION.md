@@ -19,6 +19,10 @@ Distilled from three free, open sources, read as references (none of their code 
   language, the cut catalogue, typography and the portrait layout rules.
 - [remotion-dev/remotion](https://github.com/remotion-dev/remotion), the prompt-to-motion-graphics skills: springs and
   expo-out arrivals, "never constrain content to a small centred box".
+- [alchaincyf/huashu-art-motion](https://github.com/alchaincyf/huashu-art-motion) (MIT), its animation-grammar cards and
+  their measured numbers: 3Blue1Brown's Transform and `smooth` ease (`morph`), Kurzgesagt's flat two-tone shapes and
+  log-zoom scale crossing (`orbit`, the `dive` cut), Vox's evidence desk on two frame rates (`clippings`). Ported, not
+  run: its canvas engine draws frames; here the same moves are GSAP tweens on the page.
 
 ## 1. The picture
 
@@ -107,6 +111,20 @@ short blur carries the speed (HyperFrames' cut catalogue). **The old scene is go
   ground's colours (words, grey and halo) over the change, never white words left on a light ground.
 - **leak:** a wide, soft streak of light (the accent and the second accent, screen-blended) sweeps across the frame
   over the cut in 0.9 s; the old scene blurs out under it. Named only, for energy or a reveal.
+- **dive** (Kurzgesagt's scale crossing): the outgoing ground's accent opens as a disc from the middle of the scene area
+  over the last 0.45 s, on a **log zoom** (`zoomIn(Z)`: the radius grows by the same factor every frame), covering the
+  frame on the cut; then it shrinks away in 0.6 s while the next scene pulls out from 1.6 to 1 (`zoomOut`). A linear
+  zoom reads slow then sudden, and the flight breaks. Named only, for "inside it".
+
+**Three grammars, three rules** (PLAYBOOK §E6.13):
+- **3Blue1Brown:** one object becomes the next (`morph`): no cut, no fade-out-and-in; the move is `smooth`
+  (6t^5 - 15t^4 + 10t^3), 1 to 1.2 s, and the wait after it is **still**: no drift, no breathing on the subject.
+- **Kurzgesagt:** flat, no outlines (a shadow band and a light edge do the shading), glow only on dark grounds; the
+  ambient layer (stars, signals along the links) moves while the subject, once landed, holds still; a crossing of
+  scales is a log zoom.
+- **Vox:** the camera layer is smooth, the desk moves **on twos** (twelve steps a second: `onTwos(n, k)`, `steps(n)`);
+  a label types at 13 characters a second; paper and grain are static; nothing pops or bounces; red is for the pen and
+  the string, yellow for the highlighter under the words, and nothing else is coloured.
 
 **3D scenes** (`bars-3d`, `cube`, `cards-3d`, `briefcase`, `beaker`, `donut`, `coin`, `balance`) are CSS 3D (the beaker, the donut and the
 balance are 2.5D: an elliptical rim and a ring stacked into depth), flat-shaded (top lighter, side darker), seek-safe: heights and

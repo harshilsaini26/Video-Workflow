@@ -166,6 +166,8 @@ def theme(tokens, bg):
     c["series"] = [(p[f], p[o]) for f, o in b.get("series", tokens["series"])]
     c["highlight"] = {k: p[v] for k, v in b.get("highlight", tokens["highlight"]).items()}
     c.update({k: p[v] for k, v in tokens["paper"].items()})
+    mk = tokens["marker"]
+    c["marker"] = rgba(mk["ink"], mk["alpha"])        # a highlighter over paper (an ink, like tape: the same in every look)
     return c
 
 

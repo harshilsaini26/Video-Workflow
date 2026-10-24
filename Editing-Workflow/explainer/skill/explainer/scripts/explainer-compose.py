@@ -466,7 +466,8 @@ def main():
             print("WARN %s: nothing shows for %.1f s after the scene starts; put something on its first word (PLAYBOOK §E4.9)"
                   % (sid, min(starts) - t_in))
         mine = [float(x) for x in re.findall(r'data-at="([\d.]+)"', inner + hl_html)]
-        if getattr(mod, "travels", None) and mod.TYPE == "stage":   # a stage changes on every beat: gate E5 looks before each
+        if getattr(mod, "BEATS", False) or (getattr(mod, "travels", None) and mod.TYPE == "stage"):   # a picture that changes on
+            # every beat (a stage, a morph, an orbit): gate E5 looks at it settled, just before each
             moments["scenes"][-1]["beats"] = sorted({round(x, 3) for x in mine})
         if k == 0 and mine and max(mine) > E.HOOK_BY + 1e-6:
             late = words[0]["start"] - E.LEAD > E.HOOK_BY if words else False
@@ -488,6 +489,11 @@ def main():
             streak, streak_js = X.leak(k, t_in, [th_["accent"], th_["accent2"]])
             tx_html.append(streak)
             lines += streak_js
+        elif kinds[k] == "dive":
+            th_ = E.theme(tok, timed[k - 1][2] if k else sbg)   # the outgoing ground's accent: the thing we dive into
+            disc, disc_js = X.dive(k, t_in, th_["accent"])
+            tx_html.append(disc)
+            lines += [X.ZOOM_JS] + disc_js
         elif kinds[k] == "brush":
             th_ = E.theme(tok, timed[k - 1][2] if k else sbg)   # the outgoing ground's ink: the bands show over it
             bands, band_js = X.brush(k, t_in, [th_["accent"], th_["ink"]])
@@ -574,9 +580,10 @@ def main():
         css["~thread"] = TH.CSS
 
     # ---- boil: strokes wobble as if drawn by hand (the paper look), an ambient seed walk, never on text -----------
-    # (its region in user space: a straight stroke has a zero-height box, and a box-sized region would draw nothing)
+    # (its region in user space, in pixels: a straight stroke has a zero-height box, so a box-sized region draws nothing,
+    # and percentages here resolve against the 0x0 svg that holds the filter, which draws nothing either)
     if tok["motion"].get("boil"):
-        bg_html += ('    <svg width="0" height="0" style="position:absolute"><filter id="boil" filterUnits="userSpaceOnUse" x="-50%" y="-50%" width="200%" height="200%">'
+        bg_html += ('    <svg width="0" height="0" style="position:absolute"><filter id="boil" filterUnits="userSpaceOnUse" x="-1080" y="-1920" width="3240" height="5760">'
                     '<feTurbulence id="boil-turb" type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="14"/>'
                     '<feDisplacementMap in="SourceGraphic" scale="2.5" xChannelSelector="R" yChannelSelector="G"/></filter></svg>\n')
         bg_js.append("tl.fromTo({ v: 0 }, { v: 0 }, { v: 1, duration: %.3f, ease: 'none', immediateRender: false, onUpdate: function () { "

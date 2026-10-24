@@ -511,7 +511,7 @@ More detail: [`Editing-Workflow/explainer/README.md`](Editing-Workflow/explainer
 
 ## 8. What the explainer can draw
 
-Sixty library scenes, a sandboxed custom scene for anything else, and a stage that holds the others. Each one builds
+Sixty-three library scenes, a sandboxed custom scene for anything else, and a stage that holds the others. Each one builds
 on the voice's words, holds alive while it is on screen, and leaves cleanly. The full list, with every field, is in
 [the playbook](Editing-Workflow/explainer/skill/explainer/PLAYBOOK.md).
 
@@ -524,10 +524,11 @@ on the voice's words, holds alive while it is on screen, and leaves cleanly. The
 | **3D objects** | 3D bars, a cube, 3D cards, a briefcase that opens, a beaker that fills in layers, a donut chart, a coin that flips in, a balance scale that tips |
 | **Math** | formulas (KaTeX, colour-coded per symbol), loss curves whose tangents slide to the minimum, a neural network (a handwritten digit in, a forward pass, the answer ringed, the error swept back), a loss surface a ball descends step by step, guesses against the right answer with each error and the loss as a square |
 | **The stage** | one picture that keeps changing instead of a cut per idea: any library scenes as objects in boxes, coming in, leaving, moving and resizing on their words (the network shrinks aside while the curves come in, the formula above it changes) |
+| **Film grammars** | 3Blue1Brown's one object becoming the next (pixels fold into a column of neurons, then into one sum), Kurzgesagt's flat world with no outlines and a camera that dives into one part to show what is inside it, and Vox's evidence desk (torn clippings, your photos as prints, label strips, red string, a highlighter sweeping the quoted line, a red circle) |
 | **Real things** | brand logos (Simple Icons), page screenshots that can zoom to one line, your product cut-outs and photos with circles and labels drawn on them |
 | **Words** | giant captions (the voice's own words, huge in the middle), headlines in the paper look, word captions under the picture |
 
-**Transitions:** fade, push, zoom-through, wipe, burst, cut, a paper brush and a light leak, picked by what changes. The
+**Transitions:** fade, push, zoom-through, wipe, burst, cut, a paper brush, a light leak and a dive (a scale crossing into the next scene), picked by what changes. The
 last scene closes into the hook's ground, so the reel loops cleanly (or rewinds, if you chose that).
 
 **Looks** (one word in the script) and **palettes** (colour only, on any look):
@@ -711,7 +712,7 @@ Video-Workflow/
     ├── longform/                  the YouTube team: Producer skill, playbook, 13 agents, research
     ├── reels/                     the Reels team: Producer skill, playbook, 11 agents, vertical scripts, research
     └── explainer/                 the explainer team: Producer skill, playbook, motion doctrine, 4 agents (+5 from
-                                   Reels), voice and scene scripts, 60 library scenes, design spec, research
+                                   Reels), voice and scene scripts, 63 library scenes, design spec, research
 ```
 
 | Read this | When you want |

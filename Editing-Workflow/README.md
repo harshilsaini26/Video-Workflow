@@ -1119,7 +1119,7 @@ rules.
 | Checkpoint A | the cut and the story, hook angles | the cut and the story, hook angles (from a long video: the moments to cut) | the script, its sources and its real length timed at your voice; hook angles; three voice samples on the first project |
 | Checkpoint B | stills per section, the voice-polish pair | stills with the app's covered areas drawn on | every scene settled (a stage at each beat), the hook at 0.3, 0.7 and 1.0 s, review sheets, the voiceover |
 | Captions | a closed-caption SRT (long form: two or three key words on screen) | word by word from the final cut, in the caption slot (x 150 to 930, y 1050 to 1248) | word by word from the aligned script, 44 px, in the band at y 1130 to 1235; or **off**, and the scenes take the band |
-| On screen | 40+ kit formats, sized to the face-safe zone | 10 vertical formats inside the safe zone (65 / 269 / 672 px), narrower near the button column | 60 library scenes, custom scenes and a continuous stage, scaled to fill the scene area (x 65 to 1015, y 345 to 1105, or to 1235 without captions; a narrower column, x 150 to 930, below y 960); text never under 28 px |
+| On screen | 40+ kit formats, sized to the face-safe zone | 10 vertical formats inside the safe zone (65 / 269 / 672 px), narrower near the button column | 63 library scenes, custom scenes and a continuous stage, scaled to fill the scene area (x 65 to 1015, y 345 to 1105, or to 1235 without captions; a narrower column, x 150 to 930, below y 960); text never under 28 px |
 | Keep clear | your face | your face, the top 14 %, the bottom 35 %, 6 % each side, the button column | the same as Reels |
 | Look | the kit's style guide | the Reels playbook | three looks (`latte`, `paper`, `dark`) and five palettes |
 | Sound | ducked music bed on the master | none in the file (added in the app) or a free licensed track, about 18 dB under the voice | a generated pad under the voice, whooshes on transitions, pops as items land, a chime on the payoff |
@@ -1185,7 +1185,7 @@ flowchart LR
 | 9 | Notes | you | words to the Writer, a pronunciation to the Voice, timing or pictures to the Director and Animator | every note routed |
 | 10 | Learn | `reels-librarian` | rules into the explainer PLAYBOOK, repeated mistakes into checks | its tests |
 
-**What the explainer can draw.** Sixty library scenes in nine kinds, each building on the voice's words:
+**What the explainer can draw.** Sixty-three library scenes in ten kinds, each building on the voice's words:
 
 | Kind | Scenes |
 |---|---|
@@ -1196,11 +1196,12 @@ flowchart LR
 | 3D (CSS and SVG) | `bars-3d`, `cube`, `cards-3d`, `briefcase`, `beaker`, `donut`, `coin`, `balance` |
 | Math | `formula` (KaTeX, a colour per symbol), `plot` (a loss curve whose tangent slides to the minimum), `network` (a handwritten digit in, a forward pass, the answer ringed, the error swept back), `surface` (a loss bowl a ball descends one gradient step at a time), `outputs` (guesses against the right answer, each error and the loss as a square) |
 | Stage | one continuous picture: any library scenes as objects that come in, leave, move and resize on their words |
+| Film grammars | `morph` (3Blue1Brown: one object becomes the next, point for point, on manim's smooth ease), `orbit` (Kurzgesagt: flat shapes with no outline, nodes around a thing, a log-zoom dive into one of them), `clippings` (Vox: clippings, prints, labels and notes on a desk, red string, a highlighter and a red pen, moving on twos) |
 | Real things | brand logos (Simple Icons), page screenshots that zoom to one line, your photos and product cut-outs with circles and labels drawn on |
 | Words | giant captions, headlines (paper look), word captions |
 
 Anything else is a **custom scene**: sandboxed HTML and GSAP (three.js allowed) under the same lint and the same gates.
-Transitions are fade, push, zoom, wipe, burst, cut, brush and light leak; the last scene closes into the hook's ground
+Transitions are fade, push, zoom, wipe, burst, cut, brush, light leak and dive (Kurzgesagt's scale crossing); the last scene closes into the hook's ground
 so the reel loops (or **rewinds**: it streaks back under a rewind mark). The three looks are `latte` (soft Catppuccin
 grounds that change with the story), `paper` (editorial: warm paper, near-black ink, one red accent, a hand-drawn line
 through the reel) and `dark` (near-black grounds and manim's colours, the 3Blue1Brown style for math and AI); the five

@@ -15,7 +15,7 @@ class Pick(unittest.TestCase):
         self.assertEqual(X.pick(1, "mantle", "mantle", None), "zoom")
         self.assertEqual(X.pick(2, "mantle", "mantle", None), "push")
         self.assertEqual(X.pick(2, "mantle", "base", "burst"), "burst")     # the storyboard's choice wins
-        self.assertEqual(set(X.KINDS), {"fade", "push", "zoom", "wipe", "burst", "cut", "brush", "leak"})
+        self.assertEqual(set(X.KINDS), {"fade", "push", "zoom", "wipe", "burst", "cut", "brush", "leak", "dive"})
 
     def test_burst_is_the_same_every_time(self):
         a, b = X.burst(2, 4.0, ["#fff", "#0AF0F0"]), X.burst(2, 4.0, ["#fff", "#0AF0F0"])

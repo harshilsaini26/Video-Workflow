@@ -158,6 +158,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | a neural network: what goes in, what lights up, what comes back | `network` | `layers` (2 to 5, 1 to 10 nodes each), `labels` (one per output node, 3 at most), `input` ({`digit` 0 to 9, `at`}: a pixel digit), `forward` (lights layer by layer), `answer` ({`node`, `at`}: ringed), `backward` (the error sweeps from the output back) |
    | gradient descent: a ball rolls to the bottom of the loss | `surface` | `descend` ({`at`, `steps` 1 to 10}: one true gradient step each), `start` ([x, y] inside the rim), `lr` (0.05 to 0.45), `label` (16 at most) |
    | what a model answered against what was right: the error, then the loss | `outputs` | `labels` (2 to 10, 3 characters at most), `guess` (one per label, 0 to 1: blue bars), `at` (the bars grow), `target` ({`row`, `at`}: the right answer outlined), `error` (each row's gap to the truth, a red bar under it), `loss` (a red square, its area the summed squared gaps) |
+   | one thing becoming the next (pixels into neurons, a sum folding into one) | `morph` | `n` (4 to 64 pieces), `values` (one 0 to 1 a piece: how strong), `steps` (2 to 6, each {`form`: grid, column, row, ring, bars (with `heights`) or merge, `at`, `label` 28 at most, `color`: a role}), `indicate` ({`piece`, `at`}); §E6.13 |
+   | an idea as a thing, its parts around it, and what is inside one of them | `orbit` | `center` (20 at most), `shape` (circle, rounded, hex), `nodes` (1 to 4 {`text` 14 at most, `at`}), `dive` ({`into`, `at`, `center`, `shape`, `nodes`}: the camera crosses into that node); §E6.13 |
+   | the evidence: a clipping, a photo, a dated label, a note, marked up as they are read | `clippings` | `items` (1 to 4: `clipping` {`head`, `lines` 1 to 4}, `print` {`src`, `credit`, `label`, `halftone`}, `label` {`text`}, `note` {`text`}; each with `at`), `marks` ({`kind`: highlight (a clipping's `line`), circle or underline, `item`, `at`}), `strings` (red string between items, on by default); needs a source when it shows a number; §E6.13 |
    | one picture that keeps changing instead of a cut per idea (the 3Blue1Brown style) | `stage` | `objects` (1 to 12, each {`id`, `scene`: any library scene, `box`: [x, y, width] from the scene area's top left, `in`, `out`}), `moves` ({`obj`, `at`, `box`}: the object moves and resizes there); §E6.12 |
    | the call to action: comment a word | `comment-cta` | `keyword{text, at}`, `gets{text, at}` |
    | what people say | `comment-drop` | `comments[{name, text, likes, time, at}]` (2 to 4) |
@@ -273,7 +276,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    last scene runs 1 s at least, or E3 refuses it), so the loop
    seams into the hook. Choose a transition for a reason (MOTION.md §3): a new place, a wipe or brush; the same idea,
    a fade; a jolt, a whip. **`leak`** (a soft streak of light in the accent colours sweeping across over the cut) is
-   never chosen on its own: name it for a burst of energy or a reveal.
+   never chosen on its own: name it for a burst of energy or a reveal. **`dive`** (§E6.13) is never chosen on its own
+   either: name it on the scene that is *inside* the one before ("zoom into a single cell").
 8. **Fill the frame:** the composer lays each library scene out narrower and scales it up (to 1.8x; a title to
    150 px, a number to 1.3x) to fill the scene area; `moments.json` records each scene's box and scale. Two scenes in
    a row with the same layout get a WARN: change the picture, or merge them into one build.
@@ -312,6 +316,29 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
     has none and may shrink to a corner); a number inside an object still needs the stage's `source`. Gate E5 looks at
     the settled picture before every beat, not only the last. Swap a formula by giving the old one an `out` and the new
     one the same box and that word as its `in`.
+13. **Three film grammars** (from huashu-art-motion's animation-grammar cards, MIT; each scene keeps its grammar's
+    rule, and every gate still applies):
+    - **3Blue1Brown, one object becomes the next** (`morph`): never a cut between two pictures of the same idea; the
+      pieces themselves move into the next form on the voice's verb ("we flatten the image into a column", "every
+      input folds into one sum"). Each piece is one path that starts at its top left and runs clockwise in every form,
+      so it moves straight to its partner; the move is manim's `smooth` (6t^5 - 15t^4 + 10t^3), lagged a little piece
+      by piece, and between moves the picture holds still: the next Transform is the motion. One colour means one
+      concept for the whole reel (the column in `accent2` is the input, everywhere). Best on the dark look.
+    - **Kurzgesagt, flat with no outline, scale crossing** (`orbit`, the `dive` transition): the idea is drawn as a
+      thing; every shape is flat, never outlined, a shadow band at the bottom right and a thin light edge at the top
+      left (the light comes from the top left); on a dark ground the centre glows and stars twinkle, while the subject
+      holds still once it lands. A `dive` pushes the camera into one node on a log zoom (each frame grows by the same
+      factor, so the flight is steady, never slow then sudden) until its colour fills the box, and the next level
+      pulls out of a centre in that colour. Between scenes, `"transition": "dive"` does the same with the outgoing
+      ground's accent. Kurzgesagt's pop overshoots to 108 %; ours lands with expo.out and a ripple ring instead
+      (MOTION.md: no overshoot).
+    - **Vox, clippings, red lines, highlighters** (`clippings`): the argument laid out as real material (a press
+      clipping with torn edges, the creator's photo as a print with tape and a white border, a black label strip, an
+      index card), tied with red string, and marked up as the voice reads: the highlighter sweeps the quoted line
+      under its words, a red pen circles an item in one stroke that does not close, an underline wavers. Two frame
+      rates: the page moves smoothly, everything on the desk moves on twos (twelve steps a second), a label types at
+      13 characters a second. Paper is static, shadows are weak, nothing pops: on a real desk things are just there.
+      Best on the paper look; the highlighter is one physical ink in every look (`tokens.marker`).
 
 ## §E7 Sources and claims
 

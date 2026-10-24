@@ -112,6 +112,8 @@ class Theme(unittest.TestCase):
 
     def every_colour(self, look, pal, palette=None):
         rgbs = {tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h in pal.values()}
+        ink = E.load_tokens()["marker"]["ink"]     # the one declared physical ink (a highlighter, like tape): every look
+        rgbs.add(tuple(int(ink[i:i + 2], 16) for i in (1, 3, 5)))
         mc = make_cases()
         root = scratch(self)
         vendor = stub_vendor(root, icons=("book", "clock", "calculator", "send", "file-text"))
