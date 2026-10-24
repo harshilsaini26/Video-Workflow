@@ -67,6 +67,12 @@ class Sheet(UICase):
 
 
 class Formula(UICase):
+    def test_a_colour_code_takes_no_width(self):
+        # \textcolor{#58C4DD}{x} draws one x: its colour is not seven characters of the formula's width
+        from scenes import formula as F
+        plain, coloured = {"tex": r"e = \hat{y} - y"}, {"tex": r"\textcolor{#FC6255}{e} = \textcolor{#58C4DD}{\hat{y}} - \color{#83C167} y"}
+        self.assertEqual(F.min_width(coloured), F.min_width(plain))
+
     scene = {"type": "formula", "tex": "PV = \\frac{FV}{(1+r)^n}",
              "parts": [{"tex": "PV =", "at": "word:6"}, {"tex": "\\frac{FV}{(1+r)^n}", "at": "word:9"}]}
 

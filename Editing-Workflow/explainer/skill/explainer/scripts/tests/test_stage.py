@@ -27,15 +27,20 @@ class Stage(E3.Case):
         self.fails(bad(moves=[{"obj": "pl", "at": W(14), "box": [0, 0, 200]}]), "28 px")
         self.fails(bad(objects=STAGE["objects"] + [dict(STAGE["objects"][0])]), "used twice")
         self.fails(bad(objects=[{"id": "x", "scene": dict(NET, layers=[40]), "box": [0, 0, 600]}], moves=[]), "x: a network takes 2 to 5 layers")
+        many = [{"id": "e%d" % k, "scene": {"type": "formula", "tex": "x"}, "box": [175, 0, 600]} for k in range(13)]
+        self.fails(bad(objects=many, moves=[]), "1 to 12 objects")
 
     def test_objects_sit_in_their_boxes_and_bring_their_css(self):
         html = self.ok(STAGE)
         for o in STAGE["objects"]:
-            m = re.search(r'<div class="st-obj" id="sc_%s-obj" style="left:(\d+)px;top:(\d+)px;width:(\d+)px;[^"]*transform:scale\(([\d.]+)\)' % o["id"], html)
+            # the wrapper GSAP moves carries no CSS transform (HyperFrames: gsap_css_transform_conflict); the fit is inside it
+            m = re.search(r'<div class="st-obj" id="sc_%s-obj" style="left:(\d+)px;top:(\d+)px;width:\d+px;height:\d+px[^"]*">'
+                          r'<div class="st-fit" style="width:(\d+)px;[^"]*transform:scale\(([\d.]+)\)' % o["id"], html)
             self.assertTrue(m, o["id"])
             self.assertEqual((int(m.group(1)), int(m.group(2))), tuple(o["box"][:2]))
             self.assertAlmostEqual(int(m.group(3)) * float(m.group(4)), o["box"][2], delta=2)
         self.assertIn("id=\"sc_net-nw\"", html)
+        self.assertNotRegex(html, r'class="st-obj"[^>]*transform')
         for rule in (".nw-label {", ".pl-ax {", ".f-row {"):
             self.assertIn(rule, html)
 
@@ -43,13 +48,21 @@ class Stage(E3.Case):
         html = self.ok(STAGE)
         mv = re.search(r"tl\.to\('#sc_net-obj', \{ x: (-?[\d.]+), y: (-?[\d.]+), scale: ([\d.]+), duration: [\d.]+, ease: '[\w.]+' \}, ([\d.]+)\);", html)
         self.assertTrue(mv)
-        self.assertEqual((float(mv.group(1)), float(mv.group(2))), (-175.0, -200.0))
+        self.assertEqual((float(mv.group(1)), float(mv.group(2)), float(mv.group(3))), (-175.0, -200.0, 0.5))   # 600 px wide to 300
         self.assertAlmostEqual(float(mv.group(4)), E3.lead(10), places=2)
         out = re.search(r"tl\.to\('#sc_eq-obj', \{ opacity: 0, [^}]*\}, ([\d.]+)\);", html)
         self.assertAlmostEqual(float(out.group(1)), E3.lead(10) - 0.2, places=2)
         ins = re.search(r"tl\.fromTo\('#sc_pl-p0', \{ opacity: 0[^}]*\}, \{[^}]*\}, ([\d.]+)\);", html)
         self.assertAlmostEqual(float(ins.group(1)), E3.lead(11), places=2)
         self.assertGreaterEqual(len(re.findall(r'data-at="[\d.]+" data-anchor="word\d+"', self.body(html))), 6)
+
+    def test_an_object_is_hidden_until_its_word(self):
+        # a scene's own entrances only bring in some of its parts: the object itself waits unseen until its `in`
+        html = self.ok(STAGE)
+        self.assertRegex(html, r'<div class="st-obj" id="sc_pl-obj" style="[^"]*visibility:hidden')
+        m = re.search(r"tl\.set\('#sc_pl-obj', \{ visibility: 'visible' \}, ([\d.]+)\);", html)
+        self.assertAlmostEqual(float(m.group(1)), E3.lead(11), places=2)
+        self.assertNotRegex(html, r'<div class="st-obj" id="sc_net-obj" style="[^"]*visibility:hidden')   # in from the start
 
     def test_a_number_inside_an_object_needs_a_source(self):
         st = copy.deepcopy(STAGE)

@@ -20,11 +20,13 @@ from scenes import Ctx, js_obj
 TYPE = "stage"
 DECOR_KEYS = ("objects", "moves")           # each object's own claims are checked as that scene's (subscenes)
 MOVE = 0.9
+MAX_OBJECTS = 12
 AREA_W = E.SCENE["right"] - E.SCENE["left"]
 AREA_H = E.SCENE["bottom"] - E.SCENE["top"]
 CSS = """
   .st { position:relative; width:100%; }
   .st-obj { position:absolute; transform-origin:0 0; }
+  .st-fit { transform-origin:0 0; }
 """
 _ID = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")
 
@@ -76,8 +78,8 @@ def _check_box(oid, mod, sub, box, errs, what="box"):
 def validate(scene):
     errs = []
     objs = scene.get("objects")
-    if not isinstance(objs, list) or not 1 <= len(objs) <= 6:
-        return ["a stage holds 1 to 6 objects"]
+    if not isinstance(objs, list) or not 1 <= len(objs) <= MAX_OBJECTS:
+        return ["a stage holds 1 to %d objects (they come and go: a formula that changes is a new one)" % MAX_OBJECTS]
     reg, ids = _reg(), {}
     for o in objs:
         if not isinstance(o, dict) or not _ID.match(str(o.get("id", ""))) or not isinstance(o.get("scene"), dict):
@@ -141,15 +143,20 @@ def render(scene, ctx, box):
         inner, lines = mod.render(sub, sc, (0, 0, iw))
         ctx.ambient_lines += sc.ambient_lines
         wid = "%s-obj" % sub["id"]
-        html.append('<div class="st-obj" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;transform:scale(%s)"><div class="box" id="%s" '
-                    'style="position:relative;width:%dpx;height:%dpx">%s</div></div>' % (wid, x, y, iw, ih, ("%.4f" % s).rstrip("0").rstrip("."),
-                                                                                        sub["id"], iw, ih, inner))
+        later = o.get("in") is not None and t_in > ctx.t_in + 1e-6     # unseen until its word (its entrances bring in only parts)
+        # GSAP moves the wrapper (no CSS transform on it, or GSAP would drop it); the fit to the box is the inner scale
+        html.append('<div class="st-obj" id="%s" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx%s"><div class="st-fit" style="width:%dpx;height:%dpx;'
+                    'transform:scale(%s)"><div class="box" id="%s" style="position:relative;width:%dpx;height:%dpx">%s</div></div></div>'
+                    % (wid, x, y, w, int(math.ceil(ih * s)), ";visibility:hidden" if later else "", iw, ih, ("%.4f" % s).rstrip("0").rstrip("."),
+                       sub["id"], iw, ih, inner))
+        if later:
+            js.append("tl.set('#%s', { visibility: 'visible' }, %.3f);" % (wid, t_in))
         js += lines
         for m in [m for m in scene.get("moves") or [] if m["obj"] == o["id"]]:
             t, attrs = ctx.item(m["at"])
             marks.append("<i%s></i>" % attrs)
             nx, ny, nw = m["box"]
-            js.append("tl.to('#%s', %s, %.3f);" % (wid, js_obj({"x": nx - x, "y": ny - y, "scale": round(nw / float(iw), 4), "duration": MOVE,
+            js.append("tl.to('#%s', %s, %.3f);" % (wid, js_obj({"x": nx - x, "y": ny - y, "scale": round(nw / float(w), 4), "duration": MOVE,
                                                                 "ease": "power3.inOut"}), t))
         if o.get("out") is not None:
             marks.append("<i%s></i>" % ctx.item(o["out"])[1])
