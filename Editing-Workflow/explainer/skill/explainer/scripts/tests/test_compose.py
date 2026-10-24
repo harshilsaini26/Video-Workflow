@@ -78,6 +78,12 @@ class Compose(unittest.TestCase):
         self.assertIn('data-duration="%.3f" data-fps="60"' % (VOICE + 1.4), html)
         self.fails(lambda b: b.update(tail=9), "tail is the seconds")
 
+    def test_the_last_scene_is_long_enough_for_the_close(self):
+        # the close takes its last 0.4 s: a last scene under LAST_MIN would be read inside it (or on its ground)
+        def edit(b):
+            b["scenes"][1]["out"] = b["scenes"][2]["in"] = round(D - 0.8, 3)
+        self.fails(edit, "the last scene runs 0.80 s")
+
     def test_builds_vertical_60_with_voice_and_kit_markup(self):
         html, page, _ = self.ok()
         self.assertIn('data-fps="60" data-width="1080" data-height="1920"', html)

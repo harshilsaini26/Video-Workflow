@@ -1,4 +1,4 @@
-"""Calibration cases for group G, the 3D containers and round objects: briefcase, beaker, donut, coin (make-cases.py loads
+"""Calibration cases for group G, the 3D containers and round objects: briefcase, beaker, donut, coin, balance (make-cases.py loads
 this file). The scene runs from word 1; its pieces land on word 2 and later."""
 
 
@@ -34,5 +34,12 @@ CASES = {
         ("short", {"text": "ROI", "at": at(2)}),
         ("mid", {"text": "EPS", "dir": "up", "sub": "earnings per share", "at": at(2)}),
         ("long", {"text": "WACC", "dir": "down", "sub": "the cost of capital", "at": at(3)}),
+    ],
+    "balance": [
+        ("short", {"left": {"label": "COST", "at": at(2)}, "right": {"label": "VALUE", "at": at(3)}}),
+        ("mid", {"left": {"label": "RISK", "at": at(2)}, "right": {"label": "RETURN", "at": at(3)}, "tip": {"to": "right", "at": at(5)},
+                 "note": {"text": "WORTH IT", "at": at(6)}}),
+        ("long", {"left": {"label": "PURCHASE", "at": at(2)}, "right": {"label": "SYNERGIES", "at": at(4)},
+                  "tip": {"to": "left", "at": at(6)}, "note": {"text": "THE DEAL OVERPAYS BY FAR", "at": at(7)}}),
     ],
 }

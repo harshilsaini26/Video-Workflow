@@ -18,7 +18,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
   name the brand), Chrome on the creator's machine for page screenshots, DM Sans and JetBrains Mono (OFL, bundled in
   `assets/fonts/`), and a music pad and sound effects the composer generates. No paid voice, stock, AI video or avatar.
 - **The layers:** a Catppuccin Latte ground (`mantle` #e6e9ef and `base` #eff1f5, strong `blue` #1e66f5, dark `ink`
-  #4c4f69: the planner sets a rhythm, MOTION.md §1.3) with faint glows that travel with each cut and particles rising
+  #4c4f69: the planner sets a rhythm, MOTION.md §1.3) with faint glows that travel with each cut and particles drifting
   for the whole reel, one scene at a time scaled up to fill the scene area (x 65 to 1015, y 345 to 1105, the centre of
   the frame; 780 px wide below y 960) inside a camera that slowly pushes in, a transition layer, and small captions
   under it in the band at y 1130 to 1235 (y 1235 is the one bottom line for any text, in the composer, gate E5 and
@@ -153,6 +153,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | parts of a whole that stack (debt and equity, a price's make-up) | `beaker` | `layers[{label, value, at, text?}]` (1 to 4, bottom up; values are shares of the glass, 100 at most); needs a source |
    | parts of a whole that share (who pays, market share) | `donut` | `slices[{label, value, at, text?}]` (2 to 5), `center` (the total, 9 characters at most, in the hole); needs a source |
    | one key metric as an object (EPS, ROI, WACC) | `coin` | `text` (4 characters at most, never a figure), `dir` (up or down: an arrow on the face), `sub` (a line under it, 22 at most), `at` (it spins in) |
+   | two sides weighed (cost against value, risk against return) | `balance` | `left`, `right` (each {`label` 12 at most, `at`}: a weight drops into its pan), `tip` ({`to`: left or right, `at`}: that side goes down; without it the scale stays level), `note` ({`text` 24 at most, `at`}: a line above the beam) |
    | the call to action: comment a word | `comment-cta` | `keyword{text, at}`, `gets{text, at}` |
    | what people say | `comment-drop` | `comments[{name, text, likes, time, at}]` (2 to 4) |
    | typing into an AI | `prompt-bar` | `prompt{text, at}`, `send{at}`, `reply{text, at}` |
@@ -263,7 +264,8 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    accelerating into the cut and each entrance decelerating out of it. A scene can name its own with `"transition"`:
    `fade`, `push`, `zoom`, `wipe`, `burst` (a spray of colour, for a hook or a reveal), `cut` or `brush`. In the paper
    look a new ground comes in with the **brush** (five ragged bands cover the frame on the cut and sweep off). Every
-   scene leaves, the last one too: **the close** takes it off over the last 0.4 s onto the hook's ground, so the loop
+   scene leaves, the last one too: **the close** takes it off in the first half of the last 0.4 s and the hook's ground wipes in over the second (the
+   last scene runs 1 s at least, or E3 refuses it), so the loop
    seams into the hook. Choose a transition for a reason (MOTION.md §3): a new place, a wipe or brush; the same idea,
    a fade; a jolt, a whip. **`leak`** (a soft streak of light in the accent colours sweeping across over the cut) is
    never chosen on its own: name it for a burst of energy or a reveal.

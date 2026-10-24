@@ -80,6 +80,7 @@ BG_FADE = 0.4       # background cross-fade
 TAIL = 0.5          # the composition runs this long past the voice
 EXIT = 0.2          # a scene's exit runs over the last EXIT seconds before its cut, so two scenes never share the screen
 CLOSE = 0.4         # the last scene leaves over the last CLOSE seconds, onto the hook's ground (transitions.close)
+LAST_MIN = 1.0      # the last scene runs this long at least: read before the close takes its last CLOSE seconds
 MAX_VOICE = 90.0    # the ceiling: a reel's voice is at most 90 s (SPEC; the RAG reel shipped at 92.3 s)
 HOOK_BY = 0.8       # every item of the hook lands by 0.8 s, so the hook is whole on screen by 1.0 s (SOP S8)
 

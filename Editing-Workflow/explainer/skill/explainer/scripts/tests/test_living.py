@@ -50,17 +50,45 @@ class Living(unittest.TestCase):
             self.assertRegex(html, r'<div class="box" id="%s"[^>]*><div class="cam" id="%s-cam"><div class="live" id="%s-live"' % ((sc["id"],) * 3))
         self.assertNotRegex(html, r"tl\.\w+\('#\w+-live'")
 
-    def test_particles_rise_behind_the_scenes_for_the_whole_reel(self):
+    def test_particles_drift_behind_the_scenes_for_the_whole_reel(self):
         html, out = self.build(BOARD)
         p = TOK["ambient"]["particles"]
         for i in (0, 1):                                   # each background layer has its own field
-            dots = re.findall(r'<i class="pt" id="bg%d-p(\d+)"' % i, html)
-            self.assertEqual(len(dots), p["count"])
-            tweens = re.findall(r"tl\.fromTo\('#bg%d-p\d+', \{[^}]*\}, \{[^}]*duration: ([\d.]+), ease: 'none'" % i, html)
-            self.assertEqual(len(tweens), p["count"])
-            self.assertTrue(all(abs(float(d) - D) < 1e-3 for d in tweens))
+            self.assertEqual(len(re.findall(r'<i class="pt" id="bg%d-p(\d+)"' % i, html)), p["count"])
+            for k in range(p["count"]):
+                for prop in ("x", "y"):                    # four quarters of one loop, end to end, over the whole reel
+                    legs = self.legs(html, "bg%d-p%d" % (i, k), prop)
+                    self.assertEqual(len(legs), 4)
+                    self.assertAlmostEqual(sum(d for _, _, d, _ in legs), D, places=2)
+                    self.assertEqual([b for _, b, _, _ in legs[:-1]], [a for a, _, _, _ in legs[1:]])   # no jump between legs
         a, b = self.build(BOARD)[0], self.build(BOARD)[0]
         self.assertEqual(re.findall(r'class="pt"[^>]*>', a), re.findall(r'class="pt"[^>]*>', b))   # seeded: the same every time
+
+    def test_the_particle_field_loops_without_a_jump(self):
+        # the reel loops: at D every particle is back where it was at 0, and the close's layer (the hook's ground again)
+        # carries the hook's own field, so the seam shows the same picture
+        html, _ = self.build(BOARD)
+        bgs = re.findall(r'<div class="bg" id="bg(\d+)" style="background:([^;"]+)', html)
+        last = int(bgs[-1][0])
+        self.assertEqual(bgs[-1][1], bgs[0][1])
+        field = lambda i: [re.sub(r'id="bg\d+-', 'id="', m) for m in re.findall(r'<i class="pt" id="bg%d-p\d+"[^>]*>' % i, html)]
+        self.assertEqual(field(last), field(0))
+        for k in range(TOK["ambient"]["particles"]["count"]):
+            for prop in ("x", "y"):
+                a, b = self.legs(html, "bg0-p%d" % k, prop), self.legs(html, "bg%d-p%d" % (last, k), prop)
+                self.assertEqual(a[0][0], a[-1][1])          # where it starts is where it ends
+                self.assertEqual(a, b)
+        # a quarter of an ellipse each (never still); the turn is a quarter turn, the same picture for a square or a dot
+        self.assertNotRegex(html, r"tl\.fromTo\('#bg\d+-p\d+', \{ [xy]: [^;]*ease: '(?!sine\.in'|sine\.out')")
+        for turn in re.findall(r"tl\.fromTo\('#bg\d+-p\d+', \{ rotation: 0 \}, \{ rotation: (-?\d+),", html):
+            self.assertEqual(abs(int(turn)), 90)
+
+    @staticmethod
+    def legs(html, pid, prop):
+        """[(from, to, duration, ease)] of one particle's tweens on one property, in time order."""
+        rx = r"tl\.fromTo\('#%s', \{ %s: (-?[\d.]+) \}, \{ %s: (-?[\d.]+), duration: ([\d.]+), ease: '([\w.]+)', immediateRender: false \}, ([\d.]+)\);"
+        found = sorted(re.findall(rx % (pid, prop, prop), html), key=lambda m: float(m[4]))
+        return [(float(a), float(b), float(d), e) for a, b, d, e, _ in found]
 
     def test_each_background_has_its_own_glows(self):
         html, _ = self.build(BOARD)                      # black, black, then light at the count-up: two background layers

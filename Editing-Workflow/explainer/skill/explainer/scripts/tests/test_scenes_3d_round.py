@@ -1,5 +1,5 @@
 """The 3D containers and round objects: a briefcase whose lid opens and papers rise on the word, a beaker filling in
-labelled layers, a thick donut whose slices sweep in, and a coin that flips in. Like the box scenes: bad data refused
+labelled layers, a thick donut whose slices sweep in, and a coin that flips in, and a balance scale that tips. Like the box scenes: bad data refused
 with a reason, every piece on its word, tweens on the timeline (seek-safe), words flat over the 3D for gate E5, and
 every ground of both looks."""
 import re, unittest
@@ -119,6 +119,44 @@ class Coin(E3.Case):
         self.assertGreaterEqual(len(re.findall(r'class="cn-edge"', html)), 24)
         self.assertRegex(html, r'class="cn-text"[^>]*>EPS<')
         self.assertIn("earnings per share", html)
+
+
+SCALE = {"type": "balance", "left": {"label": "COST", "at": W(6)}, "right": {"label": "VALUE", "at": W(8)},
+         "tip": {"to": "right", "at": W(11)}, "note": {"text": "WORTH IT", "at": W(13)}}
+
+
+class Balance(E3.Case):
+    def test_bad_data_is_refused(self):
+        self.fails({"type": "balance", "left": {"label": "A", "at": W(6)}}, "right")
+        self.fails(dict(SCALE, tip={"to": "up", "at": W(11)}), "left or right")
+        self.fails(dict(SCALE, left={"label": "A VERY LONG SIDE NAME", "at": W(6)}), "at most 12 characters")
+
+    def test_sides_land_on_their_words_and_the_beam_tips_on_its_own(self):
+        html = self.ok(SCALE)
+        body = self.body(html)
+        self.assertEqual(len(re.findall(r'data-at="[\d.]+" data-anchor="word\d+"', body)), 4)    # left, right, tip, note
+        tip = re.search(r"tl\.to\('#sc-beam', \{ rotation: (-?[\d.]+),[^}]*\}, ([\d.]+)\);", html)
+        self.assertTrue(tip)
+        self.assertGreater(float(tip.group(1)), 0)                       # the right side goes down
+        self.assertAlmostEqual(float(tip.group(2)), E3.lead(11), places=2)
+        left = re.search(r"tl\.to\('#sc-pl', \{ y: (-?[\d.]+),", html)
+        right = re.search(r"tl\.to\('#sc-pr', \{ y: (-?[\d.]+),", html)
+        self.assertLess(float(left.group(1)), 0)
+        self.assertGreater(float(right.group(1)), 0)
+        self.assertAlmostEqual(float(left.group(1)), -float(right.group(1)), places=1)
+        for word in ("COST", "VALUE", "WORTH IT"):
+            self.assertIn(">%s<" % word, body)
+
+    def test_a_weight_drops_into_each_pan_seek_safe(self):
+        html = self.ok(SCALE)
+        for side, w in (("l", 6), ("r", 8)):
+            m = re.search(r"tl\.fromTo\('#sc-w%s', \{[^}]*y: -\d+[^}]*\}, \{[^}]*immediateRender: false \}, ([\d.]+)\);" % side, html)
+            self.assertTrue(m, side)
+            self.assertAlmostEqual(float(m.group(1)), E3.lead(w), places=2)
+
+    def test_level_without_a_tip(self):
+        html = self.ok({k: v for k, v in SCALE.items() if k not in ("tip", "note")})
+        self.assertNotIn("#sc-beam', { rotation", html)
 
 
 if __name__ == "__main__":

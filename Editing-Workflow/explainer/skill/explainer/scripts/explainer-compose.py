@@ -195,13 +195,15 @@ def glows(i, bg, tok, cuts, bg_js):
     return "".join(out)
 
 
-def particles(i, bg, tok, D, bg_js):
-    """A field of small squares and dots inside background layer i, rising slowly for the whole reel (one linear tween
-    each, seeded: every render is the same). Behind the scenes; ambient, never a change for pace-check."""
+def particles(i, bg, tok, D, bg_js, seed):
+    """A field of small squares and dots inside background layer i, each drifting once round a small ellipse over the
+    whole reel (four quarter legs, sine-eased, so it is never still and is back where it began at D) and making a quarter
+    turn (the same picture for a square or a dot). Seeded by `seed`, the first layer on this ground: the close's layer
+    carries the hook's own field, so the loop has no seam. Behind the scenes; ambient, never a change for pace-check."""
     pt = tok["ambient"]["particles"]
-    rng = random.Random(pt["seed"] * 101 + i)
+    rng = random.Random(pt["seed"] * 101 + seed)
     cols = pt["colors"][bg]
-    out = []
+    out, q = [], round(D / 4.0, 3)
     for k in range(pt["count"]):
         size = rng.randint(pt["size"][0], pt["size"][1])
         x, y = rng.randint(20, 1060), rng.randint(120, 1880)
@@ -210,10 +212,16 @@ def particles(i, bg, tok, D, bg_js):
         out.append('<i class="pt" id="bg%d-p%d" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:%s;border-radius:%s"></i>'
                    % (i, k, x, y, size, size, E.rgba(tok["palette"][name], alpha), "50%" if round_ else "3px"))
         dx = rng.randint(-pt["drift"], pt["drift"])
-        rise = int(pt["rise"] * rng.uniform(0.6, 1.0))
-        bg_js.append("tl.fromTo('#bg%d-p%d', %s, %s, 0);" % (i, k, js_obj({"x": 0, "y": 0, "rotation": 0}),
-                                                             js_obj({"x": dx, "y": -rise, "rotation": rng.choice([-90, 90]),
-                                                                     "duration": round(D, 3), "ease": "none", "immediateRender": False})))
+        r = int(pt["rise"] * rng.uniform(0.6, 1.0) / 2)
+        pts = [(0, 0), (dx, -r), (0, -2 * r), (-dx, -r)]          # the ellipse's quarter points, from the bottom
+        for j in range(4):
+            m = (k + j) % 4                                       # each particle starts at its own quarter
+            for n, prop in enumerate(("x", "y")):                 # slow out of an extreme (sine.in), slow into one (sine.out)
+                ease = "sine.in" if (m + n) % 2 else "sine.out"
+                bg_js.append("tl.fromTo('#bg%d-p%d', %s, %s, %.3f);" % (i, k, js_obj({prop: pts[m][n]}), js_obj(
+                    {prop: pts[(m + 1) % 4][n], "duration": q, "ease": ease, "immediateRender": False}), j * q))
+        bg_js.append("tl.fromTo('#bg%d-p%d', %s, %s, 0);" % (i, k, js_obj({"rotation": 0}), js_obj(
+            {"rotation": rng.choice([-90, 90]), "duration": round(D, 3), "ease": "none", "immediateRender": False})))
     return "".join(out)
 
 
@@ -396,6 +404,9 @@ def main():
             % words[0]["start"]) if words and words[0]["start"] - E.LEAD > GAP_MAX else ""))
     if timed[-1][5] < D - GAP_MAX:
         fail("no scene from %.2f to %.2f s: the last scene ends early (out at the end: %.3f)" % (timed[-1][5], D, D))
+    if D - timed[-1][3] < E.LAST_MIN - 1e-6:
+        fail("%s: the last scene runs %.2f s; it needs %.1f s at least (the close takes its last %.1f s): start it earlier or "
+             "raise the tail" % (timed[-1][0]["id"], D - timed[-1][3], E.LAST_MIN, E.CLOSE))
 
     # fonts load up front: a scene's text is hidden until its time, and a hidden face would load a frame late
     head = ['<link rel="preload" href="fonts/%s" as="font" type="font/woff2" crossorigin />' % f
@@ -504,8 +515,8 @@ def main():
                 bg_js.append("tl.to('#bg%d', { opacity: 1, duration: %.3f, ease: 'power1.inOut' }, %.3f);" % (len(bgs), E.BG_FADE, t_in))
             bgs.append((sbg, t_in))
     if bgs[-1][0] != bgs[0][0]:                  # the close ends on the hook's ground
-        bg_js += X.wipe_bg("bg%d" % len(bgs), D - X.CLOSE, X.CLOSE)
-        bgs.append((bgs[0][0], D - X.CLOSE))
+        bg_js += X.wipe_bg("bg%d" % len(bgs), D - X.CLOSE / 2, X.CLOSE / 2)     # once the last scene has gone (X.close)
+        bgs.append((bgs[0][0], D - X.CLOSE / 2))
     layer_of, cuts = [], {}
     for k, (sc, _, sbg, t_in, _, _) in enumerate(timed):     # the layer each scene is on, and the cuts inside each layer
         i = max(j for j, (_, t0) in enumerate(bgs) if t0 <= t_in + 1e-6)
@@ -517,7 +528,7 @@ def main():
         os.makedirs(os.path.join(out, "assets"), exist_ok=True)
         shutil.copy(paper.SHIPPED if os.path.exists(paper.SHIPPED) else paper.texture(paper.SHIPPED), os.path.join(out, "assets", "paper.png"))
     bg_html = "".join('    <div class="bg" id="bg%d" style="background:%s%s;opacity:%d">%s%s</div>\n'
-                      % (i, E.theme(tok, b)["bg"], " url(assets/paper.png) 0 0 / 1080px 1920px" if textured and b == "base" else "", 0 if i else 1, glows(i, b, tok, cuts.get(i, []), bg_js), particles(i, b, tok, D, bg_js))
+                      % (i, E.theme(tok, b)["bg"], " url(assets/paper.png) 0 0 / 1080px 1920px" if textured and b == "base" else "", 0 if i else 1, glows(i, b, tok, cuts.get(i, []), bg_js), particles(i, b, tok, D, bg_js, [g for g, _ in bgs].index(b)))
                       for i, (b, _) in enumerate(bgs))
 
     def bg_at(t):

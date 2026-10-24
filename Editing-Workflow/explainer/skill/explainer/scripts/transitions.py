@@ -18,8 +18,8 @@ velocity-matched (MOTION.md): the exit accelerates into the cut and the entrance
   brush  five ragged ink bands sweep across and cover the frame on the cut, then sweep off (the paper look's wipe at a
          new ground; after ClaudeAnimationBase's brush wipe, MIT)
 
-The last scene leaves too (close()): over the last CLOSE seconds, ending exactly at the end, onto the hook's ground, so
-the loop seams back into the hook.
+The last scene leaves too (close()): over the first half of the last CLOSE seconds; the hook's ground wipes in over the
+second half, ending exactly at the end, so the loop seams back into the hook.
 """
 import math, random
 
@@ -129,8 +129,9 @@ def brush(k, t, colors):
 
 
 def close(sid, end):
-    """The last scene's exit, over the last CLOSE seconds and over exactly at `end`."""
-    return ["tl.to('#%s', %s, %.3f);" % (sid, js_obj({"opacity": 0, "y": -24, "duration": CLOSE, "ease": OUT_EASE}), end - CLOSE)]
+    """The last scene's exit, over the first half of the last CLOSE seconds: gone before the ground changes in the second
+    half (the composer's wipe), so no words are ever read over a ground that is changing."""
+    return ["tl.to('#%s', %s, %.3f);" % (sid, js_obj({"opacity": 0, "y": -24, "duration": CLOSE / 2, "ease": OUT_EASE}), end - CLOSE)]
 
 
 def leak(k, t, colors):

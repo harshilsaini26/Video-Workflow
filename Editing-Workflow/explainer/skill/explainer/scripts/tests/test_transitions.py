@@ -172,11 +172,14 @@ class Close(unittest.TestCase):
             b["scenes"][2] = sc
             html = self.build(b)
             D_ = round(VOICE + E.TAIL, 3)
-            self.assertIn("tl.to('#cu', { opacity: 0, y: -24, duration: %.1f, ease: 'power3.in' }, %.3f);" % (X.CLOSE, D_ - X.CLOSE), html)
+            # the scene leaves over the first half of the close, the ground changes over the second: never words over a
+            # ground that is changing (gate E5 samples neither)
+            self.assertIn("tl.to('#cu', { opacity: 0, y: -24, duration: %.1f, ease: 'power3.in' }, %.3f);" % (X.CLOSE / 2, D_ - X.CLOSE), html)
             hook_bg = re.search(r'<div class="bg" id="bg0" style="background:([^;"]+)', html).group(1)
             bgs = re.findall(r'<div class="bg" id="(bg\d+)" style="background:([^;"]+)', html)
             self.assertEqual(bgs[-1][1], hook_bg)                                   # the ground at D is the hook's
-            self.assertIn("tl.set('#%s', { opacity: 1 }, %.3f);" % (bgs[-1][0], D_ - X.CLOSE), html)
+            self.assertIn("tl.set('#%s', { opacity: 1 }, %.3f);" % (bgs[-1][0], D_ - X.CLOSE / 2), html)
+            self.assertRegex(html, r"tl\.fromTo\('#%s', \{ clipPath: [^}]*\}, \{ clipPath: [^}]*duration: %s," % (bgs[-1][0], X.CLOSE / 2))
 
 
 if __name__ == "__main__":

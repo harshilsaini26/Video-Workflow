@@ -58,7 +58,7 @@ Distilled from three free, open sources, read as references (none of their code 
 1. **The picture is never still** (changed 2026-10-17, measured: the earlier "nothing moves without a reason" left
    two thirds of the RAG reel's frames frozen). The camera moves through every scene: a steady push-in from 0.95 to
    0.995 (linear, so it never comes to rest; shallower where the scene's smallest text would drop under 28 px) with a 1.5° turn that alternates scene to scene (`.cam`, the composer's), and a field of small squares and
-   dots rises behind the scenes for the whole reel. Both are quiet enough to read through and never count as a new
+   dots drifts behind the scenes for the whole reel, each once round a small ellipse (back where it began, so the loop has no seam). Both are quiet enough to read through and never count as a new
    picture for pace-check. Gate E6 (`motion-check.py`) measures the page before any render (`--index`) and the rendered file: no still stretch over 1 s, under
    15% still (a frame is still when under 0.1% of it changes visibly). **Pieces still arrive on the words that name them**; a screenshot punches in on its `focus` word; a
    build keeps one small alive thing while it waits.
@@ -68,7 +68,7 @@ Distilled from three free, open sources, read as references (none of their code 
 4. **Eases:** arrivals decelerate (`power3.out` for pieces, `expo.out` for scenes and cuts); exits accelerate
    (`power3.in`, 0.2 s, over before the cut). **Never `back`, `elastic` or `bounce`**: an overshoot reads as cheap. A
    `gravity-drop` falls and rebounds as physics (power2 in, then smaller power2 out and in), not as an eased overshoot.
-   Linear only for counts, draws, the hub's slow turn, the camera's drift and the particles' rise.
+   Linear only for counts, draws, the hub's slow turn, the camera's drift and the particles' turn.
 5. **One object changing shape** beats a fade: a bar that grows, a line that draws, a card that turns. A build shows
    where it is going as **empty slots** (outlines, their words hidden), never as faint text, then fills each on its word.
 6. **Deterministic, on the timeline.** No `Math.random` or `Date.now`, no `repeat` or `yoyo`, no `infinite` CSS
@@ -83,7 +83,8 @@ Distilled from three free, open sources, read as references (none of their code 
 10. **Avoid twinning.** Two pieces never move as mirror images on the same frame: offset their staggers (the brush's
     bands start at 0, .14, .06, .18 and .1 of the cover), vary their distances.
 11. **Into, between and out of.** Every scene enters, holds alive and leaves, the last one included: the close takes it
-    off over the last 0.4 s onto the hook's ground, and **the ending rhymes with the hook** (the same ground, the same
+    off over the first half of the last 0.4 s, then the hook's ground wipes in (never words over a changing ground; E3
+    wants the last scene 1 s long at least), and **the ending rhymes with the hook** (the same ground, the same
     word, the same shape back), so the loop seams back into the start.
 12. **Hand-drawn strokes (paper).** In the paper look the strokes boil: the thread, annotation circles and leaders and
     line-art wobble a little, an SVG turbulence whose seed steps 12 times a second (ambient, after
@@ -101,12 +102,12 @@ short blur carries the speed (HyperFrames' cut catalogue). **The old scene is go
 - **wipe:** a new background opens as a circle; **burst:** a spray for the hook or a reveal; **cut:** a hard cut.
 - **brush** (the paper look's wipe): five ragged bands in the outgoing ground's accent and ink sweep across, cover
   the frame on the cut, then sweep off in 0.3 s (`expo.out`); the new ground swaps under them;
-- **the close:** the last scene leaves over the last 0.4 s, onto the hook's ground.
+- **the close:** the last scene leaves over the first 0.2 s of the last 0.4 s; the hook's ground wipes in over the last 0.2 s.
 - **leak:** a wide, soft streak of light (the accent and the second accent, screen-blended) sweeps across the frame
   over the cut in 0.9 s; the old scene blurs out under it. Named only, for energy or a reveal.
 
-**3D scenes** (`bars-3d`, `cube`, `cards-3d`, `briefcase`, `beaker`, `donut`, `coin`) are CSS 3D (the beaker and the donut
-are 2.5D: an elliptical rim and a ring stacked into depth), flat-shaded (top lighter, side darker), seek-safe: heights and
+**3D scenes** (`bars-3d`, `cube`, `cards-3d`, `briefcase`, `beaker`, `donut`, `coin`, `balance`) are CSS 3D (the beaker, the donut and the
+balance are 2.5D: an elliptical rim and a ring stacked into depth), flat-shaded (top lighter, side darker), seek-safe: heights and
 turns are tweens on the timeline, and their words sit flat over the 3D so gate E5 can read them.
 
 **Choose a transition for a reason**, not in turn: a new place (a new ground, a new subject) gets a wipe or a brush;
