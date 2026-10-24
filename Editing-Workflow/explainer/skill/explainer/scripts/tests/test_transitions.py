@@ -182,5 +182,21 @@ class Close(unittest.TestCase):
             self.assertRegex(html, r"tl\.fromTo\('#%s', \{ clipPath: [^}]*\}, \{ clipPath: [^}]*duration: %s," % (bgs[-1][0], X.CLOSE / 2))
 
 
+    def test_a_caption_on_screen_takes_the_new_grounds_colours_as_it_comes_in(self):
+        # the last caption is still up when the close wipes the hook's ground in: its words, its unsaid grey and its halo
+        # turn to the new ground's over the wipe, never white words left on a light ground (or dark on dark)
+        html = self.build(BOARD)                         # cu on base, the hook on mantle
+        D_ = round(VOICE + E.TAIL, 3)
+        t = D_ - X.CLOSE / 2
+        old, new = E.theme(E.load_tokens(), "base"), E.theme(E.load_tokens(), "mantle")
+        shows = [(int(i), float(a)) for i, a in re.findall(r"tl\.set\('#cap(\d+)', \{ visibility: 'visible' \}, ([\d.]+)\);", html)]
+        last = max(i for i, a in shows if a < t)
+        self.assertIn("tl.fromTo('#cap%d', { color: '%s', textShadow: '0 0 18px %s, 0 0 6px %s' }, { color: '%s', textShadow: '0 0 18px %s, 0 0 6px %s', "
+                      "duration: %s, ease: 'none', immediateRender: false }, %.3f);"
+                      % (last, old["muted"], old["bg"], old["bg"], new["muted"], new["bg"], new["bg"], X.CLOSE / 2, t), html)
+        said = re.findall(r"tl\.fromTo\('#cw%d-\d+', \{ color: '%s' \}, \{ color: '%s', duration: %s, ease: 'none', immediateRender: false \}, %.3f\);"
+                          % (last, re.escape(old["ink"]), re.escape(new["ink"]), X.CLOSE / 2, t), html)
+        self.assertTrue(said)
+
 if __name__ == "__main__":
     unittest.main()

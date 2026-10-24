@@ -47,7 +47,7 @@ explainer/
 │       ├── explainer_lib.py        shared: word anchors, the scene area, the looks, text measured with real glyph widths
 │       ├── scenes/                 one module per scene type (55, custom included), found without a list
 │       ├── dev/                    calibration tools (glyph widths, scene heights in Chromium)
-│       └── tests/                  553 tests (python3 -m unittest discover -s tests -t .)
+│       └── tests/                  554 tests (python3 -m unittest discover -s tests -t .)
 └── agents/                         → install to .claude/agents/
     explainer-writer.md · explainer-voice.md · explainer-director.md · explainer-animator.md
 ```
@@ -237,7 +237,7 @@ flowchart TD
 | end to end | script-check → fake voice → alignment → compose → beat-check → `hyperframes check` → a 60 fps render → the kit's `verify-render.py --res 1080x1920` | 1 (needs FFmpeg, the kit, HyperFrames and a local GSAP), plus 1 with real Kokoro and Parakeet |
 
 **How it was verified** (2026-10-14 to 2026-10-18, on Linux with HyperFrames 0.8.157 to 0.8.171, and Chromium):
-- the whole suite: 553 tests, all passing; 3 skipped where Kokoro or a long render is not available (2026-10-24, after the balance scale and the close and loop fixes; 2026-10-22, after the craft pass from ClaudeAnimationBase; 2026-10-21, after the editor hand-off; before that, 2026-10-18, after the
+- the whole suite: 554 tests, all passing; 3 skipped where Kokoro or a long render is not available (2026-10-24, after the balance scale, the close and loop fixes and captions that follow the ground; 2026-10-22, after the craft pass from ClaudeAnimationBase; 2026-10-21, after the editor hand-off; before that, 2026-10-18, after the
   editorial pass: the paper look, the headline layer, the thread and nine new scenes);
 - a 33 s paper-look demo (USB-C, with stand-in images) passed E1 to E5 before rendering, then E6 and
   `verify-render.py` on the render;

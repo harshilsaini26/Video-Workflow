@@ -504,19 +504,23 @@ def main():
             css["~hero"] = "  %s { font-family:'%s'; font-stretch:%s; font-weight:%d; }\n" % (", ".join(sel), hero["family"], hero["stretch"], hero["weight"])
 
     # ---- backgrounds ----------------------------------------------------------------------------------------------
-    bgs, bg_js = [], []
+    bgs, bg_js, swaps = [], [], []           # swaps: (when, how long) each new ground takes to come in
     for k, (sc, _, sbg, t_in, _, _) in enumerate(timed):
         if not bgs or bgs[-1][0] != sbg:
             if bgs and kinds[k] == "wipe":     # the new background opens as a circle
                 bg_js += X.wipe_bg("bg%d" % len(bgs), t_in)
+                swaps.append((t_in, X.WIPE))
             elif bgs and kinds[k] == "brush":  # the new background swaps under the bands' full cover
                 bg_js.append("tl.set('#bg%d', { opacity: 1 }, %.3f);" % (len(bgs), t_in))
+                swaps.append((t_in, 0))
             elif bgs:
                 bg_js.append("tl.to('#bg%d', { opacity: 1, duration: %.3f, ease: 'power1.inOut' }, %.3f);" % (len(bgs), E.BG_FADE, t_in))
+                swaps.append((t_in, E.BG_FADE))
             bgs.append((sbg, t_in))
     if bgs[-1][0] != bgs[0][0]:                  # the close ends on the hook's ground
         bg_js += X.wipe_bg("bg%d" % len(bgs), D - X.CLOSE / 2, X.CLOSE / 2)     # once the last scene has gone (X.close)
         bgs.append((bgs[0][0], D - X.CLOSE / 2))
+        swaps.append((D - X.CLOSE / 2, X.CLOSE / 2))
     layer_of, cuts = [], {}
     for k, (sc, _, sbg, t_in, _, _) in enumerate(timed):     # the layer each scene is on, and the cuts inside each layer
         i = max(j for j, (_, t0) in enumerate(bgs) if t0 <= t_in + 1e-6)
@@ -566,14 +570,19 @@ def main():
     giant = [(t_in, t_out) for sc, m_, _, t_in, t_out, _ in timed if m_.TYPE == "giant-captions"]
     # while giant captions run, the words are the picture: the band steps aside, never the same words twice
     chunks = [ch for ch in chunks if not any(a - 1e-3 <= ch["start"] < b - 1e-3 for a, b in giant)]
+    def ground(t):                         # the ground under the captions at t: a new one counts from when it starts in
+        return E.theme(tok, [b for b, t0 in bgs if t0 <= t + 1e-6][-1])
+
+    def halo(th):                          # legible over a shape passing behind
+        return "0 0 18px %s, 0 0 6px %s" % (th["bg"], th["bg"])
+
     caps, cap_js = [], []
     for i, ch in enumerate(chunks):
-        b = bg_at(ch["start"])
-        th = E.theme(tok, b)
-        dim, on, hl = th["muted"], th["ink"], th["highlight"]      # a word not yet said, a word said, an emphasised word
+        th = ground(ch["start"])
         spans = []
         for j, w in enumerate(ch["words"]):
             cid = "cw%d-%d" % (i, j)
+            hl, on = ground(w["start"])["highlight"], ground(w["start"])["ink"]   # an emphasised word, a word said
             if L.norm(w["text"]) in em:
                 hd = ' style="background:%s;border-color:%s"' % (hl["handle"], hl["handle_border"])   # the chip's handles, on its ground
                 spans.append('<span class="cw em" id="%s"><i class="hd a"%s></i><i class="hd b"%s></i>%s</span>' % (cid, hd, hd, html.escape(w["text"])))
@@ -582,8 +591,22 @@ def main():
             else:
                 spans.append('<span class="cw" id="%s">%s</span>' % (cid, html.escape(w["text"])))
                 cap_js.append("tl.set('#%s', { color: '%s' }, %.3f);" % (cid, on, w["start"]))
-        halo = "text-shadow:0 0 18px %s, 0 0 6px %s" % (th["bg"], th["bg"])   # legible over a shape passing behind
-        caps.append('      <div class="cap" id="cap%d" style="color:%s;%s">%s</div>\n' % (i, dim, halo, " ".join(spans)))
+        for t0, dur in swaps:              # a new ground comes in under the caption: its colours turn with it
+            if not ch["start"] < t0 < ch["end"]:
+                continue
+            a, b = ground(t0 - 1e-3), ground(t0)
+            tw = {"duration": round(dur, 3), "ease": "none", "immediateRender": False}
+            cap_js.append("tl.fromTo('#cap%d', %s, %s, %.3f);" % (i, js_obj({"color": a["muted"], "textShadow": halo(a)}),
+                                                                 js_obj(dict({"color": b["muted"], "textShadow": halo(b)}, **tw)), t0))
+            for j, w in enumerate(ch["words"]):
+                if w["start"] >= t0:
+                    continue               # said later: it takes the new ground's colour when it is said
+                if L.norm(w["text"]) in em:
+                    cap_js.append("tl.fromTo('#cw%d-%d', %s, %s, %.3f);" % (i, j, js_obj({"backgroundColor": a["highlight"]["fill"], "color": a["highlight"]["text"]}),
+                                                                           js_obj(dict({"backgroundColor": b["highlight"]["fill"], "color": b["highlight"]["text"]}, **tw)), t0))
+                else:
+                    cap_js.append("tl.fromTo('#cw%d-%d', %s, %s, %.3f);" % (i, j, js_obj({"color": a["ink"]}), js_obj(dict({"color": b["ink"]}, **tw)), t0))
+        caps.append('      <div class="cap" id="cap%d" style="color:%s;text-shadow:%s">%s</div>\n' % (i, th["muted"], halo(th), " ".join(spans)))
         cap_js.append("tl.set('#cap%d', { visibility: 'visible' }, %.3f);" % (i, ch["start"]))
         cap_js.append("tl.fromTo('#cap%d', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.12, ease: '%s', immediateRender: false }, %.3f);"
                       % (i, mo["enter_ease"], ch["start"]))

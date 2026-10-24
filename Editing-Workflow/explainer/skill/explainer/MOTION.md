@@ -103,6 +103,8 @@ short blur carries the speed (HyperFrames' cut catalogue). **The old scene is go
 - **brush** (the paper look's wipe): five ragged bands in the outgoing ground's accent and ink sweep across, cover
   the frame on the cut, then sweep off in 0.3 s (`expo.out`); the new ground swaps under them;
 - **the close:** the last scene leaves over the first 0.2 s of the last 0.4 s; the hook's ground wipes in over the last 0.2 s.
+- **captions over a new ground:** a caption still on screen when a ground comes in (a cut or the close) turns to that
+  ground's colours (words, grey and halo) over the change, never white words left on a light ground.
 - **leak:** a wide, soft streak of light (the accent and the second accent, screen-blended) sweeps across the frame
   over the cut in 0.9 s; the old scene blurs out under it. Named only, for energy or a reveal.
 
