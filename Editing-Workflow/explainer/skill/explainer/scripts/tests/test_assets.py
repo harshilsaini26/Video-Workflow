@@ -12,12 +12,12 @@ COURSERA = '<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/sv
 
 
 def png(path, w, h):
-    """A one-colour PNG of w x h (enough for the header the scenes read)."""
-    raw = b"".join(b"\x00" + b"\x30\x60\xc0" * w for _ in range(h))
+    """A one-colour PNG of w x h with an alpha channel (a cut-out; enough for the header the scenes read)."""
+    raw = b"".join(b"\x00" + b"\x30\x60\xc0\xff" * w for _ in range(h))
     chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as f:
-        f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) +
+        f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0)) +
                 chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
     return path
 
@@ -82,7 +82,8 @@ class Assets(unittest.TestCase):
                       r"ease: 'expo\.out' \}, ([\d.]+)\);", html)
         self.assertTrue(m, html[-3000:])
         self.assertAlmostEqual(float(m.group(2)), 1500 * k, delta=1)
-        self.assertAlmostEqual(float(m.group(1)), 400 / 2.0 - 1500 * k, delta=1)    # the line lands mid-view
+        from scenes import browser
+        self.assertAlmostEqual(float(m.group(1)), browser.VIEW / 2.0 - 1500 * k, delta=1)    # the line lands mid-view
         self.assertAlmostEqual(float(m.group(3)), t_word(8) - E.LEAD, places=3)
         self.assertRegex(html, r'id="sc-view" data-at="%.3f" data-anchor="word8"' % (t_word(8) - E.LEAD))
         for fy in (0, 2390):     # a line at the very top or bottom: the page never pulls away from the view's edge
@@ -90,7 +91,7 @@ class Assets(unittest.TestCase):
             m = re.search(r"tl\.to\('#sc-shot', \{ y: (-?[\d.]+), scale: 1\.25, transformOrigin: '50% ([\d.]+)px'", html)
             y, o, tall = float(m.group(1)), float(m.group(2)), 2400 * k
             self.assertLessEqual(y - 0.25 * o, 0.01, fy)                          # the top of the page at or above the view's top
-            self.assertGreaterEqual(o + 1.25 * (tall - o) + y, 400 - 0.01, fy)   # its bottom at or below the view's bottom
+            self.assertGreaterEqual(o + 1.25 * (tall - o) + y, browser.VIEW - 0.01, fy)   # its bottom at or below the view's bottom
         r, _, _ = self.build(dict(scene, focus={"y": 2600, "at": "word:8"}), files=[("shots/page.png", (1280, 2400))])
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("focus", r.stdout)

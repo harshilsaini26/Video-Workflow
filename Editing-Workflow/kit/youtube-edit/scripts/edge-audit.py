@@ -34,10 +34,10 @@ rms = lambda s, e: float(np.sqrt(np.mean(x[max(0, int(s * sr)):max(int(e * sr), 
 def valley(s, e):
     ts = np.arange(s, max(e, s + 0.02), 0.005); v = [rms(t, t + 0.02) for t in ts]; i = int(np.argmin(v)); return round(float(ts[i] + 0.01), 3), v[i]
 
-T = json.load(open(a.transcript)); T = T["words"] if isinstance(T, dict) else T
-keeps = [tuple(map(float, m.split("-"))) for m in re.findall(r"([\d.]+-[\d.]+)", open(a.keeps).read())] if a.keeps else []
+T = json.load(open(a.transcript, encoding="utf-8")); T = T["words"] if isinstance(T, dict) else T
+keeps = [tuple(map(float, m.split("-"))) for m in re.findall(r"([\d.]+-[\d.]+)", open(a.keeps, encoding="utf-8").read())] if a.keeps else []
 kept = lambda t: (not keeps) or any(k0 - 0.02 <= t <= k1 + 0.02 for k0, k1 in keeps)
-C = json.load(open(a.cut_list)); K = C["kept"]; issues, out = [], []
+C = json.load(open(a.cut_list, encoding="utf-8")); K = C["kept"]; issues, out = [], []
 for i, s in enumerate(K):
     st, en = s["start"], s["end"]
     words = [q for q in T if st - 0.35 <= q["start"] < en and kept(q["start"])]
@@ -57,4 +57,4 @@ for i, s in enumerate(K):
 print("%d segments, %d issues" % (len(K), len(issues))); print("\n".join(issues))
 if a.fix:
     C["kept"] = out; C["kept_seconds"] = round(sum(q["end"] - q["start"] for q in out), 3); C["edge_audit"] = "fixed by edge-audit.py"
-    json.dump(C, open(a.cut_list, "w"), indent=1); print("wrote %s (%d segments, %.2f s); run again without --fix to confirm" % (a.cut_list, len(out), C["kept_seconds"]))
+    json.dump(C, open(a.cut_list, "w", encoding="utf-8"), indent=1); print("wrote %s (%d segments, %.2f s); run again without --fix to confirm" % (a.cut_list, len(out), C["kept_seconds"]))

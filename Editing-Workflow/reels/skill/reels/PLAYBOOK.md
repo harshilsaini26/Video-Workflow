@@ -195,14 +195,22 @@ Turning a long video into reels (S17). Most of the work is choosing.
 
 1. **Pick moments that stand alone:** a single point with its own hook (a question, a surprising number, a demo, a
    strong opinion), 15 to 60 s, that needs nothing said earlier. The Director lists candidates with times from the
-   long-form transcript, why each works, and its hook line.
+   long-form transcript, why each works, and its hook line. It reads the transcript in windows
+   (`reels-moments.py --transcript T --windows`) and scores each candidate 0 to 100 against eight signals, strongest
+   first: a hook moment (instant curiosity: "nobody talks about..."), an emotional peak, a strong or counter-intuitive
+   opinion, a revelation (a surprising fact or number), conflict or tension, a quotable one-liner, a story's peak or
+   twist, and practical value the viewer can use today (rubric adapted from Anil-matcha/AI-Youtube-Shorts-Generator,
+   MIT). `reels-moments.py --check moments.json --out MOMENTS.md` then snaps each pick to whole sentences, fails one
+   outside 15 to 60 s, keeps the higher score of two that overlap by more than half and flags "as I said"; the creator
+   picks from MOMENTS.md, and `--scaffold videos/` makes the project folders.
 2. **Cut from the best source:** the raw 4K source (not the delivered master: no long-form overlays, no burned-in
    graphics). A 4K landscape source is cropped to vertical with `video_position` (the face's x position, e.g.
    `"38% 50%"`); check the crop on stills.
 3. **Make it stand alone:** cut "as I said earlier", "in this video", "next"; add the missing setup as on-screen text
    or a recorded line; write a **new hook** for the reel (the creator can record a 3 s line).
 4. **Point back** only after the payoff: a `chip` "Full video on my channel" in the last 2 s, if the creator wants it.
-5. Each reel is its own project folder (`videos/<long-project>-reel-<n>/`) and goes through every gate.
+5. Each reel is its own project folder (`videos/<long-project>-reel-<n>/`, made by `--scaffold`) and goes through every
+   gate.
 
 ## §R13 Delivery, posting and Insights
 
@@ -210,6 +218,13 @@ Turning a long video into reels (S17). Most of the work is choosing.
 content inside the centre **1080x1440** so the profile grid crop keeps it), `captions.srt`, `POST.md` (the post caption
 draft: the first ~125 characters carry the hook (S21), 3 to 5 relevant hashtags, any credits; the posting checklist),
 `STORYBOARD.md`.
+
+**The post caption** is a draft the creator edits, checked by `post-check.py` (the kit): the hook in the first 125
+characters, never opening on a hashtag or a handle; one call to action, and it gives a reason ("save this for your next
+launch", "comment CABLE and I'll send the list"), never bait that gives nothing back ("tag 3 friends", "double tap",
+"comment YES"); no dead closer ("thoughts?", "what do you think?"); 3 to 5 hashtags at the end: 2 to 3 niche, 1 to 2
+mid, 0 to 1 broad, every one on topic, rotated between posts; every number one the script sources. Adapted from
+sergebulaev/instagram-skills and Jakeschincariol/instagram-agent-skill (MIT); the numbers are ours (S21).
 
 **Posting checklist:** post as a Reel (not a feed video); the cover set; music added in-app if chosen (low under the
 voice); no watermark; the same file to Shorts and TikTok if wanted (upload `captions.srt` where accepted).

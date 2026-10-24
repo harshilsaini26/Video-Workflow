@@ -11,7 +11,7 @@ def hyperframes_ok():
     if not shutil.which("npx"):
         return False
     try:
-        return subprocess.run(["npx", "--no-install", "hyperframes", "--version"], capture_output=True, timeout=120).returncode == 0
+        return subprocess.run([shutil.which("npx") or "npx", "--no-install", "hyperframes", "--version"], capture_output=True, timeout=120).returncode == 0
     except subprocess.TimeoutExpired:
         return False
 
@@ -56,7 +56,7 @@ class EndToEnd(unittest.TestCase):
         r = run("script-check.py", "--script", os.path.join(d, "script.json"))
         # a 12 s render keeps the suite fast; E1's length bound (81 to 240 words) is the one rule it may break
         errors = [l for l in r.stdout.splitlines() if l.startswith("  ") or "FAIL" in l]
-        self.assertTrue(r.returncode == 0 or all("under 81 words" in l or l.startswith("E1 FAIL") for l in errors), r.stdout)
+        self.assertTrue(r.returncode == 0 or all("under 30 s" in l or l.startswith("E1 FAIL") for l in errors), r.stdout)
         self.assertNotIn("no source", r.stdout)
         self.assertEqual(len([l for l in r.stdout.splitlines() if l.startswith("  - ")]), 1, r.stdout)
         self.check(run("tts-kokoro.py", "--script", os.path.join(d, "script.json"), "--out", os.path.join(d, "voice.wav"), "--engine", "fake"), "tts")
@@ -67,14 +67,14 @@ class EndToEnd(unittest.TestCase):
         self.check(run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", pub, "--vendor", VENDOR), "compose")
         self.check(run_kit("beat-check.py", "--index", os.path.join(pub, "index.html"), "--transcript", os.path.join(d, "transcript.json")), "beat-check")
         self.check(run("pace-check.py", "--index", os.path.join(pub, "index.html")), "pace-check")
-        self.check(subprocess.run(["npx", "--no-install", "hyperframes", "check", pub], capture_output=True, text=True, timeout=600), "hyperframes check")
+        self.check(subprocess.run([shutil.which("npx") or "npx", "--no-install", "hyperframes", "check", pub], capture_output=True, text=True, timeout=600, encoding="utf-8", errors="replace"), "hyperframes check")
         mp4 = os.path.join(d, "output.mp4")
-        self.check(subprocess.run(["npx", "--no-install", "hyperframes", "render", pub, "--fps", "60", "--video-bitrate", "20M",
-                                   "--workers", "2", "-o", mp4], capture_output=True, text=True, timeout=1800), "render")
+        self.check(subprocess.run([shutil.which("npx") or "npx", "--no-install", "hyperframes", "render", pub, "--fps", "60", "--video-bitrate", "20M",
+                                   "--workers", "2", "-o", mp4], capture_output=True, text=True, timeout=1800, encoding="utf-8", errors="replace"), "render")
         r = run_kit("verify-render.py", "--render", mp4, "--index", os.path.join(pub, "index.html"), "--res", "1080x1920",
                     "--out", os.path.join(d, "VERIFY.md"))
         self.check(r, "verify-render")
-        with open(os.path.join(d, "VERIFY.md")) as f:
+        with open(os.path.join(d, "VERIFY.md"), encoding="utf-8") as f:
             self.assertIn("PASS", f.read())
 
     @unittest.skipUnless(importlib.util.find_spec("kokoro") and HAS_HF, "needs Kokoro (pip install kokoro) and npx hyperframes with Parakeet")
@@ -84,8 +84,8 @@ class EndToEnd(unittest.TestCase):
         self.check(run("tts-kokoro.py", "--script", os.path.join(d, "script.json"), "--out", os.path.join(d, "voice.wav")), "tts")
         tdir = os.path.join(d, "asr")
         os.makedirs(tdir)
-        self.check(subprocess.run(["npx", "--no-install", "hyperframes", "transcribe", os.path.join(d, "voice.wav"), "-d", tdir,
-                                   "--engine", "parakeet", "--json"], capture_output=True, text=True, timeout=1800), "transcribe")
+        self.check(subprocess.run([shutil.which("npx") or "npx", "--no-install", "hyperframes", "transcribe", os.path.join(d, "voice.wav"), "-d", tdir,
+                                   "--engine", "parakeet", "--json"], capture_output=True, text=True, timeout=1800, encoding="utf-8", errors="replace"), "transcribe")
         asr = os.path.join(tdir, "transcript.json")
         r = run("align-script.py", "--script", os.path.join(d, "script.json"), "--asr", asr, "--out", os.path.join(d, "transcript.json"))
         self.check(r, "align")

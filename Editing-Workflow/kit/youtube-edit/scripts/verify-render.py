@@ -52,7 +52,7 @@ def check(name, ok, measured, expected):
 # ---- probe --------------------------------------------------------------------------------------------------
 p = json.loads(subprocess.run(["ffprobe", "-v", "error", "-show_entries",
     "stream=codec_type,width,height,r_frame_rate,bit_rate,duration,color_primaries,color_transfer,color_space",
-    "-show_entries", "format=duration,bit_rate,size", "-of", "json", R], capture_output=True, text=True, check=True).stdout)
+    "-show_entries", "format=duration,bit_rate,size", "-of", "json", R], capture_output=True, text=True, check=True, encoding="utf-8", errors="replace").stdout)
 v = next((s for s in p.get("streams", []) if s.get("codec_type") == "video"), None)
 a = next((s for s in p.get("streams", []) if s.get("codec_type") == "audio"), None)
 if v is None:
@@ -97,7 +97,7 @@ else:
 
 comp_d, hosts = None, []
 if os.path.exists(index):
-    html = open(index).read()
+    html = open(index, encoding="utf-8").read()
     root = re.search(r'<div[^>]*data-composition-id="[^"]+"[^>]*>', html)
     m = root and re.search(r'data-duration="([\d.]+)"', root.group(0))
     comp_d = float(m.group(1)) if m else None
@@ -116,7 +116,7 @@ check("Video vs audio", adur is not None and abs(vdur - adur) <= 0.12,
 
 # ---- black frames ----------------------------------------------------------------------------------------------
 r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", R, "-map", "0:v:0", "-vf",
-                    "scale=320:-2,blackdetect=d=0:pix_th=0.08", "-an", "-f", "null", "-"], capture_output=True, text=True)
+                    "scale=320:-2,blackdetect=d=0:pix_th=0.08", "-an", "-f", "null", "-"], capture_output=True, text=True, encoding="utf-8", errors="replace")
 blacks = [(float(x), float(y), float(z)) for x, y, z in
           re.findall(r"black_start:\s*([\d.]+)\s+black_end:\s*([\d.]+)\s+black_duration:\s*([\d.]+)", r.stderr)]
 check("Black frames", r.returncode == 0 and not blacks,
@@ -136,7 +136,7 @@ for t, lab in moments:
     if round(t, 2) not in seen:
         seen.add(round(t, 2)); uniq.append((t, lab))
 tmp = tempfile.mkdtemp(prefix="verify-render-")
-has_text = "Unknown filter" not in subprocess.run(["ffmpeg", "-hide_banner", "-h", "filter=drawtext"], capture_output=True, text=True).stdout
+has_text = "Unknown filter" not in subprocess.run(["ffmpeg", "-hide_banner", "-h", "filter=drawtext"], capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
 
 def grab(t, dst, label):
     """One frame at t, 480 px wide, its time drawn on it when drawtext works (fonts can be missing: fall back)."""
@@ -167,7 +167,7 @@ sections.append(["## Frame sheet", "", "`%s`: %d frame(s)%s, read it before deli
 if args.words and args.kept:
     FILL = {"um", "uh", "er", "ah", "hmm", "mm"}
     def load(path):
-        raw = json.load(open(path)); ws = raw["words"] if isinstance(raw, dict) and "words" in raw else raw
+        raw = json.load(open(path, encoding="utf-8")); ws = raw["words"] if isinstance(raw, dict) and "words" in raw else raw
         out = []
         for w in ws:
             for tok in re.sub(r"[^a-z0-9' ]+", " ", str(w.get("text", w.get("word", ""))).lower()).split():
@@ -199,7 +199,7 @@ lines = ["# Render check: %s" % os.path.basename(R), "",
 lines += ["| %s | %s | %s | %s |" % (nm, {True: "PASS", False: "FAIL", None: "skip"}[ok], me, ex) for nm, ok, me, ex in checks]
 for sec in sections:
     lines += [""] + sec
-open(out_md, "w").write("\n".join(lines) + "\n")
+open(out_md, "w", encoding="utf-8").write("\n".join(lines) + "\n")
 for nm, ok, me, ex in checks:
     print("%-15s %-5s %s  (expected %s)" % (nm, {True: "PASS", False: "FAIL", None: "skip"}[ok], me, ex))
 for s, e, dd in blacks:

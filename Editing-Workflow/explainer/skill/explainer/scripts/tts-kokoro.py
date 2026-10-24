@@ -11,7 +11,9 @@ compression, two-pass loudnorm to -16 LUFS with the true peak at most -1 dBTP, 4
 
 It prints {"duration", "lufs", "peak"} and exits 1 when the true peak is over -1 dBTP or the length is more than
 10% off `target_seconds` (gate E2).
---samples DIR writes 10 s of line 0 in three voices for the creator to choose from (Checkpoint A).
+--samples DIR writes the script's opening (at least 30 words, so 10 s or more) in three voices for the creator to
+listen to and choose from at Checkpoint A, and writes each voice's measured words a second to --rates
+(voice-rates.json beside the skill), which script-check.py budgets the script with (SOP S4).
 The fake engine (tests) writes a 220 Hz tone, 0.32 s a word, with no model and no network.
 """
 import argparse, array, json, math, os, re, subprocess, sys, wave
@@ -44,6 +46,18 @@ def write_wav(path, samples):
         w.writeframes(pcm.tobytes())
 
 
+SAMPLE_WORDS = 30
+
+
+def voiced_seconds(pcm, floor=0.01):
+    """Seconds from the first to the last sample above `floor`: the speech, without the silence around it."""
+    first = next((i for i, s in enumerate(pcm) if abs(s) > floor), None)
+    if first is None:
+        return 0.0
+    last = next(i for i in range(len(pcm) - 1, -1, -1) if abs(pcm[i]) > floor)
+    return (last - first + 1) / float(RATE)
+
+
 def fake_engine(text, voice, speed):
     n = int(round(len(text.split()) * 0.32 * RATE))
     return [0.3 * math.sin(2 * math.pi * 220 * i / RATE) for i in range(n)]
@@ -71,7 +85,7 @@ ENGINES = {"fake": fake_engine, "kokoro": kokoro_engine}
 
 
 def ffmpeg(*args):
-    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-y"] + list(args), capture_output=True, text=True)
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-y"] + list(args), capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode:
         sys.exit("ffmpeg failed: " + r.stderr[-800:])
     return r.stderr
@@ -122,9 +136,10 @@ def main():
     ap.add_argument("--only", help="regenerate just this line id, then rebuild voice.wav")
     ap.add_argument("--engine", choices=sorted(ENGINES), default="kokoro")
     ap.add_argument("--lexicon", default=os.path.join(HERE, "..", "lexicon.json"))
-    ap.add_argument("--samples", help="write 10 s of line 0 in each sample voice here, then stop")
+    ap.add_argument("--samples", help="write the opening (10 s or more) in each sample voice here, measure each voice's rate, then stop")
+    ap.add_argument("--rates", default=os.path.join(HERE, "..", "voice-rates.json"), help="where --samples writes the rates")
     a = ap.parse_args()
-    with open(a.script) as f:
+    with open(a.script, encoding="utf-8") as f:
         S = json.load(f)
     lines = S["lines"]
     if a.only and a.only not in {ln["id"] for ln in lines}:
@@ -138,9 +153,27 @@ def main():
 
     if a.samples:
         os.makedirs(a.samples, exist_ok=True)
+        text = []
+        for ln in lines:                       # the opening, to 30 words at least: 10 s or more at any rate
+            text.append(say(ln))
+            if len(" ".join(text).split()) >= SAMPLE_WORDS:
+                break
+        text = " ".join(text)
+        rates = {}
+        if os.path.exists(a.rates):
+            with open(a.rates, encoding="utf-8") as f:
+                rates = json.load(f)
         for v in SAMPLE_VOICES:
-            write_wav(os.path.join(a.samples, v + ".wav"), synth(say(lines[0]), v, a.speed)[:10 * RATE])
-        print(json.dumps({"samples": [os.path.join(a.samples, v + ".wav") for v in SAMPLE_VOICES]}))
+            pcm = synth(text, v, a.speed)
+            write_wav(os.path.join(a.samples, v + ".wav"), pcm)
+            spoken = voiced_seconds(pcm)
+            if spoken > 0:
+                rates["%s@%g" % (v, a.speed)] = round(len(text.split()) / spoken, 3)
+        with open(a.rates, "w", encoding="utf-8") as f:
+            json.dump(rates, f, indent=2)
+            f.write("\n")
+        print(json.dumps({"samples": [os.path.join(a.samples, v + ".wav") for v in SAMPLE_VOICES],
+                          "rates": {v: rates.get("%s@%g" % (v, a.speed)) for v in SAMPLE_VOICES}}))
         return
 
     ldir = os.path.join(os.path.dirname(os.path.abspath(a.out)), "lines")
@@ -150,7 +183,7 @@ def main():
         if a.only is None or ln["id"] == a.only or not os.path.exists(p):
             text = say(ln)
             write_wav(p, synth(text, voice, a.speed))
-            with open(os.path.join(ldir, ln["id"] + ".txt"), "w") as f:
+            with open(os.path.join(ldir, ln["id"] + ".txt"), "w", encoding="utf-8") as f:
                 f.write(text + "\n")
         paths.append(p)
     pauses = [PAUSE.get(ln.get("break") or "sentence", PAUSE["sentence"]) for ln in lines[:-1]] + [0.0]

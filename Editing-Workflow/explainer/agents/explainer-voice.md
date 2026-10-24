@@ -26,7 +26,9 @@ the line ids and notes.
 ### Job `samples` (Checkpoint A, first project only)
 
 `python3 "$ES/scripts/tts-kokoro.py" --script "$W/script.json" --out "$W/voice.wav" --samples "$W/samples"`
-writes 10 s of line 0 in `af_heart`, `am_michael` and `bf_emma`. Listen to each; report anything mispronounced.
+writes the script's opening (30 words at least: 10 s or more) in `af_heart`, `am_michael` and `bf_emma`, and each
+voice's measured words a second into `$ES/voice-rates.json`, which script-check budgets the script with (SOP S4).
+Report the three files, their lengths and rates. **You cannot hear them:** the creator listens and chooses (S6).
 
 ### Job `voice`
 
@@ -42,7 +44,14 @@ writes 10 s of line 0 in `af_heart`, `am_michael` and `bf_emma`. Listen to each;
    It listens for the spoken words as Kokoro read them (after `lexicon.json`, so "WACC" is heard as "wack"), accepts
    digits for number words ("1,000" for "one thousand"), writes the shown words with their times (what the Director
    anchors to and the captions show), and fails under 98% heard or a gap inside a line over 1.2 s, naming the line.
-4. **Listen to `voice.wav` once, start to end.** Rushed lists, a flat reading, a wrong stress: §E8.
+4. **Measure, don't claim to listen** (S6): you cannot hear audio, so never write "listened". Report what is
+   measured: E2's heard ratio and gaps, the peak and loudness, and the length with
+   `python3 "$ES/scripts/script-check.py" --script "$W/script.json" --voice "$W/voice.wav"` (over 90 s it fails and
+   lists the lines to trim). Rushed lists, a flat reading, a wrong stress (§E8) are for the creator's ears at the
+   checkpoints.
+5. **Before Checkpoint A** (the dry voicing, stage 2b) this job runs once on the Writer's script, so the creator sees
+   the real length: report it, and the trim candidates if it runs long. Never raise the speed past 1.1 to make a
+   length fit: the length is the creator's call at Checkpoint A (S16).
 
 ### Job `fix`
 
@@ -54,13 +63,15 @@ for the Librarian.
 ## Done when
 
 `E2 PASS` from align-script, `voice.wav` at -16 LUFS (±1) with the peak at most -1 dBTP and the length within 10% of
-the target, `transcript.json`, `voice/asr.json` and `VOICE.md` written, and you have listened to the whole voice.
+the target, `transcript.json`, `voice/asr.json` and `VOICE.md` written, and the voiced length reported as measured.
 
 ## Never
 
 - Change the script's words to make alignment pass; respell a term in one script instead of the lexicon.
 - Use a voice other than the Brief's, or a paid or online voice.
 - Hand on a voice that failed E2.
+- Write that you listened, or edit a shared script (`tts-kokoro.py`, `align-script.py`...): report what must change and
+  why, and the Producer has the Librarian make it with a test (S11).
 
 ## Report
 

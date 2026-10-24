@@ -1,7 +1,7 @@
 """pace-check.py (gate E4, pacing): something on screen changes at least every few seconds. The kit's gap-scan cannot
 see this here: the scenes cover the whole voice by construction, so it never finds an empty stretch."""
 import copy, os, unittest
-from .helpers import run, scratch, write
+from .helpers import SCRIPTS, load, run, scratch, write
 from .test_compose import BOARD, D, VOICE, silent_wav, words30
 
 
@@ -46,3 +46,65 @@ class Pace(unittest.TestCase):
         r = run("pace-check.py", "--index", self.page(board))
         self.assertNotEqual(r.returncode, 0, r.stdout)
         self.assertIn("at most 3.0 s", r.stdout)
+
+
+def moments(items, D=10.0):
+    """A hand-written moments.json: two scenes, a change every second, and the given items."""
+    return {"duration": D, "spans": [[t, t + 1] for t in range(int(D))], "items": items,
+            "scenes": [{"id": "a", "type": "title", "in": 0, "out": 5}, {"id": "cu", "type": "count-up", "in": 5, "out": D}]}
+
+
+def it(scene, t, group=None, number=False, text="x"):
+    return {"scene": scene, "t": t, "text": text, "group": group or "%s@%s" % (scene, t), "number": number}
+
+
+class ReadFloor(unittest.TestCase):
+    def check(self, items, D=10.0):
+        d = scratch(self)
+        mp = write(os.path.join(d, "moments.json"), moments(items, D))
+        return run("pace-check.py", "--index", os.path.join(d, "index.html"), "--moments", mp)
+
+    def test_items_are_in_moments(self):
+        page = Pace("test_changing_reel_passes").page(BOARD)
+        m = load(os.path.join(os.path.dirname(page), "moments.json"))
+        self.assertTrue(m["items"])
+        self.assertEqual({"scene", "t", "text", "group", "number"}, set(m["items"][0]))
+        cu = [i for i in m["items"] if i["scene"] == "cu"]
+        self.assertTrue(cu and all(i["number"] for i in cu))
+        self.assertFalse(any(i["number"] for i in m["items"] if i["scene"] == "hook"))
+        self.assertIn("Three certificates", " ".join(i["text"] for i in m["items"]))
+
+    def test_item_text_keeps_its_word_breaks(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("compose", os.path.join(SCRIPTS, "explainer-compose.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        reads = m.Reads('<div data-at="1.0"><span>NO MORE</span><span>WRONG WAY UP</span></div>').out
+        self.assertEqual(" ".join(reads[0][1].split()), "NO MORE WRONG WAY UP")
+        reads = m.Reads('<div data-at="1.0"><svg><path d="M0 0"/></svg><style>.x{color:red}</style><b>Ninety</b> percent</div>').out
+        self.assertEqual(" ".join(reads[0][1].split()), "Ninety percent")
+
+    def test_a_number_needs_a_second(self):
+        r = self.check([it("a", 1.0), it("cu", 9.2 - 1.5, number=True), it("a", 4.2, number=True)], D=9.2)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertRegex(r.stdout, r"E4 FAIL: .*a.*0\.8 s")
+
+    def test_the_last_read_needs_time(self):
+        r = self.check([it("a", 1.0), it("cu", 8.8)])
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("1.2 s before the end", r.stdout)
+
+    def test_two_reads_at_once_warn(self):
+        r = self.check([it("a", 1.0), it("a", 1.4), it("cu", 6.0)])
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("WARN two reads at once", r.stdout)
+
+    def test_a_stagger_is_one_read(self):
+        r = self.check([it("a", 1.0 + 0.1 * k, group="a-list") for k in range(6)] + [it("cu", 6.0)])
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertNotIn("two reads", r.stdout)
+
+    def test_the_existing_cases_still_pass(self):
+        r = run("pace-check.py", "--index", Pace("test_changing_reel_passes").page(BOARD))
+        self.assertNotIn("before the end", r.stdout)
+        self.assertNotIn("before its scene", r.stdout)

@@ -16,7 +16,7 @@ ap.add_argument("--cut-list", required=True)
 ap.add_argument("--source-duration", type=float, required=True, help="seconds, from ffprobe on the downloaded source")
 ap.add_argument("--clip-max", type=float, required=True, help="clip.maxDurationSeconds from get_clip / update_clip")
 args = ap.parse_args()
-cl = json.load(open(args.cut_list))
+cl = json.load(open(args.cut_list, encoding="utf-8"))
 off = args.source_duration - args.clip_max
 cuts, t = [], 0.0
 for s in cl["kept"]:
@@ -25,6 +25,6 @@ for s in cl["kept"]:
     t = max(t, b)
 if args.clip_max - t > 0.02: cuts.append({"startTimeMs": int(round(t * 1000)), "durationMs": int(round((args.clip_max - t) * 1000))})
 out = os.path.join(os.path.dirname(os.path.abspath(args.cut_list)), "tella-cuts.json")
-json.dump({"offset_seconds": round(off, 3), "cuts": cuts}, open(out, "w"), indent=1)
+json.dump({"offset_seconds": round(off, 3), "cuts": cuts}, open(out, "w", encoding="utf-8"), indent=1)
 print(json.dumps(cuts, separators=(",", ":")))
 print("offset %.3f s, %d cuts, playback %.1f s -> %s" % (off, len(cuts), args.clip_max - sum(c["durationMs"] for c in cuts) / 1000, out))

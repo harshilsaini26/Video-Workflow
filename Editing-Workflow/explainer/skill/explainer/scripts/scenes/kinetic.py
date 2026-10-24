@@ -8,15 +8,19 @@ punch that lands last (the accent). Every piece rises out of its own mask on the
 
 Each mask is exactly as tall as the font's content area (ascent plus descent), so no letter is ever clipped, and the
 stacked masks tuck into each other's empty descender space so the type sits tight. The type sizes itself to the width it
-is given (down to half its natural size, sizes()), so any hook fits; the composer then scales it up to fill the frame.
+is given and the height of the column it sits in (sizes()): it grows up to 1.8x where there is room and shrinks where a
+long hook needs it, and brings its own box (place()): the wide column when it is short enough to stay above y 960, else
+the narrow one, whichever gives the bigger type.
 """
 import math, re
 import explainer_lib as E
 from scenes import js_obj, need
 
 TYPE = "kinetic"
-MAX_SCALE = 1.8                   # the hook is the reel's biggest moment: it may grow as far as any scene
+HERO_CSS = ".kn-m > span"            # set in the look's hero face (E.hero()), measured with its glyphs
+GROW = 1.8                        # the hook is the reel's biggest moment: it may grow as far as any scene
 BAKED = True                      # its sizes are worked out for the width it is given: measured at that width
+WIDE_W, NARROW_W = E.L.SAFE["right"] - E.L.SAFE["left"], E.L.NARROW["right"] - E.L.NARROW["left"]   # 950, 780
 ASC, DESC = 0.992, 0.310          # DM Sans 700: the content area is (ASC + DESC) x size
 TRACK = -0.02                     # letter-spacing, em
 BIG, WORD, LINE, PUNCH = 360, 120, 96, 180
@@ -35,7 +39,7 @@ def tuck(size):
 
 def _rows(scene):
     """The natural width of each row: the top row (big and words), the line, the punch."""
-    w = lambda text, size: E.text_width(text, size, spacing=TRACK)
+    w = lambda text, size: E.text_width(text, size, E.hero()["glyphs"], spacing=TRACK)
     top = max([w(x["text"], WORD) for x in scene.get("words") or []] or [0])
     if scene.get("big"):
         top += w(scene["big"]["text"], BIG) + (GAP_X if scene.get("words") else 0)
@@ -43,18 +47,38 @@ def _rows(scene):
             "punch": w(scene["punch"]["text"], PUNCH) if scene.get("punch") else 0}
 
 
-def sizes(scene, width):
-    """Every size at this width: each row keeps its natural size, or shrinks (to half at most) to fit the width on its
-    own, so a long top row does not make the line and the punch small too."""
-    rows = _rows(scene)
-    k = {r: max(0.5, min(1.0, (width - 4) / v)) if v else 1.0 for r, v in rows.items()}
+def budget(width):
+    """The height the hook may take at this width: the wide column stays above y 960, the narrow one has the area."""
+    room = 2 * E.IDLE_ROOM
+    if width > NARROW_W:
+        return E.L.RIGHT_COL_TOP - E.SCENE["top"] - room
+    return E.SCENE["bottom"] - E.SCENE["top"] - room
+
+
+def _sizes(k):
     z = lambda v, r: int(round(v * k[r]))
     return {"big": z(BIG, "top"), "word": z(WORD, "top"), "gap": z(GAP_X, "top"), "line": z(LINE, "line"), "punch": z(PUNCH, "punch"),
             "rule_t": z(RULE_T, "top"), "rule_h": max(4, z(RULE_H, "top")), "rule_b": z(RULE_B, "top")}
 
 
+def sizes(scene, width):
+    """Every size at this width: each row grows (to GROW) or shrinks (to half) to fit the width on its own, so a long
+    top row does not make the line and the punch small too; then all of them shrink together until the hook fits the
+    column's height (budget())."""
+    rows = _rows(scene)
+    k = {r: max(0.5, min(GROW, (width - 4) / v)) if v else 1.0 for r, v in rows.items()}
+    cap = budget(width)
+    for _ in range(6):                     # whole-pixel rounding: a few passes settle it
+        h = _height(scene, _sizes(k))
+        if h <= cap:
+            break
+        f = cap / float(h) * 0.995
+        k = {r: v * f for r, v in k.items()}
+    return _sizes(k)
+
+
 CSS = """
-  .kn { width:100%%; display:flex; flex-direction:column; align-items:flex-start; }
+  .kn { width:max-content; max-width:100%%; margin:0 auto; display:flex; flex-direction:column; align-items:flex-start; }
   .kn-row { display:flex; align-items:flex-end; }
   .kn-stack { display:flex; flex-direction:column; }
   .kn-m { overflow:hidden; white-space:nowrap; }
@@ -63,6 +87,24 @@ CSS = """
   .kn-xw { position:relative; }
   .kn-x { position:absolute; left:-.06em; right:-.06em; height:.11em; transform:scaleX(0); transform-origin:0 50%%; }
 """ % TRACK
+
+
+def normalize(scene):
+    """A hero token written into the words ("5 STEPS", "3") becomes the big one: the reel's biggest moment is never set
+    at word size because the writer typed it in one line. A big already given is kept."""
+    ws = scene.get("words") or []
+    if scene.get("big") or not ws or not isinstance(ws[0], dict):
+        return scene
+    head, _, rest = str(ws[0].get("text", "")).strip().partition(" ")
+    if BIG_RE.match(head) and any(ch.isdigit() for ch in head):
+        scene["big"] = {"text": head, "at": ws[0].get("at")}
+        if rest.strip():
+            ws[0] = dict(ws[0], text=rest.strip())
+        else:
+            ws.pop(0)
+        if not ws:
+            scene.pop("words", None)
+    return scene
 
 
 def validate(scene):
@@ -100,7 +142,10 @@ def _row1(scene, z):
 
 
 def height(scene, width):
-    z = sizes(scene, width)
+    return _height(scene, sizes(scene, width))
+
+
+def _height(scene, z):
     h = _row1(scene, z)
     if scene.get("line"):
         h += z["rule_t"] + z["rule_h"] + z["rule_b"] + lh(z["line"])
@@ -113,13 +158,44 @@ def min_width(scene):
     return int(math.ceil(max(_rows(scene).values()) * 0.5)) + 4
 
 
+def place(scene):
+    """Its own box: the column (wide above y 960, else narrow) that gives the bigger type, centred like any scene."""
+    best = None
+    for left, width in ((E.L.SAFE["left"], WIDE_W), (E.L.NARROW["left"], NARROW_W)):
+        if min_width(scene) > width:
+            continue
+        z, h = sizes(scene, width), height(scene, width)
+        if h > budget(width):
+            continue
+        lead = z["big"] if scene.get("big") else z["word"] if scene.get("words") else z["line"]
+        if best is None or lead > best[0]:
+            best = (lead, (left, E.centre_top(h, width > NARROW_W), width, h))
+    if best is None:
+        if min_width(scene) > NARROW_W:
+            raise ValueError("a row of it is about %d px wide at half size, wider than the %d px column; shorten it"
+                             % (min_width(scene), NARROW_W))
+        raise ValueError("the hook does not fit the scene area at half its size: shorten it")
+    return best[1]
+
+
+STAGGER = 0.1      # pieces of the hook that share a word land this far apart (the plan's ruling 4)
+
+
 def render(scene, ctx, box):
     c, sid = ctx.c, ctx.id
     z = sizes(scene, box[2])
     js = []
 
+    taken = []
+
     def rise(sel, at, size, color, cls, text, extra=""):
         t, attrs = ctx.item(at) if at is not None else (ctx.t_in, "")
+        if at is not None:            # pieces sharing a word rise one after another, STAGGER apart, never as one block
+            k = sum(1 for x in taken if abs(x - t) < 1e-6)
+            taken.append(t)
+            if k:
+                t = round(t + STAGGER * k, 3)
+                attrs = re.sub(r'data-at="[\d.]+"', 'data-at="%.3f"' % t, attrs)
         # below its mask from the start (set through GSAP: a CSS translate would be read as pixels and never undone)
         js.append("tl.set('%s', { yPercent: 110 }, 0);" % sel)
         js.append("tl.fromTo('%s', { yPercent: 110 }, %s, %.3f);" % (sel, js_obj({"yPercent": 0, "duration": 0.6, "ease": "expo.out",
@@ -127,6 +203,8 @@ def render(scene, ctx, box):
         return t, ('<div class="kn-m" style="height:%dpx%s"><span class="%s" id="%s"%s style="color:%s;font-size:%dpx;line-height:%dpx">%s</span></div>'
                    % (lh(size), extra, cls, sel[1:], attrs, color, size, lh(size), text))
 
+    hero = rise("#%s-b" % sid, scene["big"].get("at"), z["big"], c["accent"], "kn-big", ctx.esc(scene["big"]["text"]))[1] \
+        if scene.get("big") else None          # the hero rises first when it shares a word with the rest
     words = scene.get("words") or []
     stack = []
     for i, w in enumerate(words):
@@ -134,9 +212,8 @@ def render(scene, ctx, box):
                     ";margin-top:-%dpx" % tuck(z["word"]) if i else "")
         stack.append(h)
     row = []
-    if scene.get("big"):
-        _, h = rise("#%s-b" % sid, scene["big"].get("at"), z["big"], c["accent"], "kn-big", ctx.esc(scene["big"]["text"]))
-        row.append(h)
+    if hero:
+        row.append(hero)
     if stack:
         pad = int(round(DESC * (z["big"] - z["word"]))) if scene.get("big") else 0
         row.append('<div class="kn-stack" style="padding-bottom:%dpx;margin-left:%dpx">%s</div>'

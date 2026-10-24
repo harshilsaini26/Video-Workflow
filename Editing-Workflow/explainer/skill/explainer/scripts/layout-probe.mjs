@@ -2,14 +2,20 @@
 // timeline to t, and look at what is really drawn. Prints one JSON array of {scene, t, kind, text, detail}. Run by
 // layout-check.py (gate E5), which finds puppeteer and Chrome on this machine and passes them in the job.
 //   kind: "overlap"  two pieces of text overlap
-//         "covered"  something painted sits on top of the text
+//         "covered"  something painted sits on top of the text (text marked data-depth="behind" may be covered by
+//                    its own scene's picture: a product-hero's title)
 //         "crosses"  the text is drawn over a line or a shape that is not its own card
 //         "spill"    the text runs out of the card or chip it sits on
-//         "outside"  text or a shape leaves the safe area (x 65 to 1015, y 520 to 1420; x 150 to 930 below y 960)
+//         "outside"  text or a card leaves the safe area (x 65 to 1015, y 345 to 1105; x 150 to 930 below y 960); a
+//                    painted shape with no text in it may run on to area.picture_bottom (1650)
+//         "handover" at a cut, the outgoing and the incoming scene both show content at 30% or more (job handovers)
 //         "small"    text drawn smaller than min_px on the 1080 px frame
+//         "contrast" text under 3:1 against what is really behind it (all text is 28 px or more: WCAG's large-text
+//                    rule), the stage, the background layers and every filled box under it composited
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const job = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const req = createRequire(path.join(job.puppeteer_dir, "noop.js"));
@@ -21,7 +27,7 @@ const page = await browser.newPage();
 await page.setViewport({ width: 1080, height: 1920 });
 const issues = [];
 for (const pg of job.pages || [{ index: job.index, samples: job.samples }]) {
-await page.goto("file://" + path.resolve(pg.index), { waitUntil: "load" });
+await page.goto(pathToFileURL(path.resolve(pg.index)).href, { waitUntil: "load" });
 await page.evaluate(async () => { await Promise.all([...document.fonts].map((f) => f.load())); await document.fonts.ready; });
 await page.addStyleTag({ content: "* { pointer-events: auto !important; }" });   // elementsFromPoint must see every layer
 for (const s of pg.samples) {
@@ -67,7 +73,7 @@ for (const s of pg.samples) {
     };
     const name = (el) => (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.className && el.className.baseVal === undefined ? "." + String(el.className).split(" ")[0] : ""));
     const where = (r) => " (x " + Math.round(r.left) + " to " + Math.round(r.right) + ", y " + Math.round(r.top) + " to " + Math.round(r.bottom) + ")";
-    const outside = (r) => r.left < area.left - 2 || r.right > area.right + 2 || r.top < area.top - 2 || r.bottom > area.bottom + 2 ||
+    const outside = (r, bottom) => r.left < area.left - 2 || r.right > area.right + 2 || r.top < area.top - 2 || r.bottom > (bottom || area.bottom) + 2 ||
       (r.bottom > area.col_top + 2 && (r.left < area.narrow_left - 2 || r.right > area.narrow_right + 2));
     // what is really visible of a box: clipped by every ancestor that hides its overflow (a screenshot in its window)
     const clip = (el, r) => {
@@ -82,10 +88,18 @@ for (const s of pg.samples) {
     };
     // the text on screen: elements with their own visible text, and the rectangles of its lines
     const texts = [];
-    for (const k of root.querySelectorAll(".katex")) {    // a typeset formula is one piece: KaTeX places its glyphs itself
-      if (alpha(k) < 0.5) continue;
-      const r = k.getBoundingClientRect();
-      if (r.width > 1) texts.push({ el: k, rects: [r], text: k.textContent.trim().slice(0, 40), px: 99, formula: true });
+    for (const k of root.querySelectorAll(".katex")) {    // a typeset formula is one piece, judged by its glyphs: a hat,
+      if (alpha(k) < 0.5) continue;                       // a subscript or a descender is where it touches its neighbours
+      const rects = [];
+      for (const g of k.querySelectorAll(".katex-html *")) {
+        for (const n of g.childNodes) {
+          if (n.nodeType !== 3 || !n.textContent.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(n);
+          for (const r of range.getClientRects()) if (r.width > 1 && r.height > 1) rects.push(r);
+        }
+      }
+      if (rects.length) texts.push({ el: k, rects, text: k.querySelector(".katex-html").textContent.replace(/\u200b/g, "").trim().slice(0, 40), px: 99, formula: true });
     }
     for (const el of root.querySelectorAll("*")) {
       if (el.closest(".katex")) continue;
@@ -108,14 +122,50 @@ for (const s of pg.samples) {
       texts.push({ el, rects, text: nodes.map((n) => n.textContent.trim()).join(" ").slice(0, 40),
                    px: parseFloat(getComputedStyle(el).fontSize) * scale });
     }
+    // the colour really behind a piece of text: the stage, each background layer, then every filled box above them
+    const rgb = (s) => { const m = (s || "").match(/[\d.]+/g); return m ? { r: +m[0], g: +m[1], b: +m[2], a: m.length > 3 ? +m[3] : 1 } : null; };
+    const over = (top, under, a) => ({ r: top.r * a + under.r * (1 - a), g: top.g * a + under.g * (1 - a), b: top.b * a + under.b * (1 - a) });
+    const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+                         return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+    const ratio = (a, b) => { const [h, l] = [lum(a), lum(b)].sort((x, y) => y - x); return (h + 0.05) / (l + 0.05); };
+    const behind = (el) => {
+      const stage = document.getElementById("stage") || document.body;
+      let c = rgb(getComputedStyle(stage).backgroundColor) || { r: 255, g: 255, b: 255 };
+      for (const bg of document.querySelectorAll(".bg")) {
+        const v = rgb(getComputedStyle(bg).backgroundColor), a = alpha(bg);
+        if (v && a > 0) c = over(v, c, a * v.a);
+      }
+      const chain = [];
+      for (let e = el; e && e !== stage; e = e.parentElement) chain.unshift(e);
+      for (const e of chain) {
+        const cs = getComputedStyle(e);
+        if (cs.backgroundImage !== "none" && e !== el) return null;      // a gradient or a picture: not judged here
+        const v = rgb(cs.backgroundColor), a = alpha(e);
+        if (v && v.a > 0.02 && a > 0) c = over(v, c, a * v.a);
+      }
+      return c;
+    };
     const related = (a, b) => a === b || a.contains(b) || b.contains(a);
     // where the letters are: a line box is taller than its glyphs (ascent and descent), so two snug lines of a
     // headline touch boxes without touching letters; collisions are judged on the middle 60% of each line
     const core = (r) => ({ left: r.left + 2, right: r.right - 2, top: r.top + r.height * 0.2, bottom: r.bottom - r.height * 0.2,
                            width: r.width - 4, height: r.height * 0.6 });
+    // a formula's glyph box is near its glyph (KaTeX sets each one): only a sliver is trimmed, so a descender counts
+    const glyph = (r) => ({ left: r.left + 1, right: r.right - 1, top: r.top + r.height * 0.1, bottom: r.bottom - r.height * 0.1,
+                            width: r.width - 2, height: r.height * 0.8 });
+    const box = (t) => t.rects.map(t.formula ? glyph : core);
     const hit = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
     for (const t of texts) {
-      if (!t.formula && t.px < minPx) out.push({ kind: "small", text: t.text, detail: "text drawn at " + t.px.toFixed(0) + " px (at least " + minPx + "): too small" });
+      // half a pixel of grace: the camera's push-in ends at 0.995, so 28 px type settles at 27.9
+      if (!t.formula && t.px < minPx - 0.5) out.push({ kind: "small", text: t.text, detail: "text drawn at " + t.px.toFixed(0) + " px (at least " + minPx + "): too small" });
+      if (!t.formula && !t.el.closest("svg")) {
+        const g = behind(t.el), fg = rgb(getComputedStyle(t.el).color);
+        if (g && fg) {
+          const seen = over(fg, g, fg.a * alpha(t.el));
+          const k = ratio(seen, g);
+          if (k < 3) out.push({ kind: "contrast", text: t.text, detail: "contrast " + k.toFixed(2) + ":1 against its ground (3:1 at least)" });
+        }
+      }
       // judged on the letters, not the font's box (a 220 px number's box reaches far above its digits)
       for (const r of t.rects.map((r) => clip(t.el, t.formula ? r : core(r)))) if (r.width > 1 && outside(r)) { out.push({ kind: "outside", text: t.text, detail: "outside the safe area" + where(r) }); break; }
       // its card: the nearest painted element under it (itself included)
@@ -128,7 +178,11 @@ for (const s of pg.samples) {
       }
       // what is drawn above and below it, sampled across each line of text
       const seen = new Set();
-      for (const r of (t.formula ? [] : t.rects.map(core))) {
+      // declared depth (Ruling 6): text marked data-depth="behind" (a product-hero's title) may be covered by its own
+      // scene's picture; only that pair is let through, and every other check still applies to it
+      const depth = t.el.closest('[data-depth="behind"]'), host = depth && depth.closest(".card-host");
+      const ownDepth = (e) => !!host && host.contains(e);
+      for (const r of box(t)) {
         // a grid every ~6 px down and ~24 px across the line: a thin rule or a spoke through the words is found
         const ny = Math.max(4, Math.ceil(r.height / 6)), nx = Math.max(3, Math.ceil(r.width / 24));
         for (let ix = 0; ix < nx; ix++) for (let iy = 0; iy < ny; iy++) {
@@ -137,12 +191,14 @@ for (const s of pg.samples) {
           const j = stack.findIndex((e) => e === t.el || t.el.contains(e));
           if (j < 0) continue;
           for (const e of stack.slice(0, j)) {
-            if (related(e, t.el) || !opaque(e) || alpha(e) < 0.5 || seen.has(e)) continue;
+            if (e.closest && e.closest("[data-thread]")) continue;     // the thread is decoration, like the ground
+            if (related(e, t.el) || !opaque(e) || alpha(e) < 0.5 || seen.has(e) || ownDepth(e)) continue;
             seen.add(e);
             out.push({ kind: "covered", text: t.text, detail: "covered by " + name(e) });
           }
           if (painted(t.el)) continue;              // the text sits on its own chip
           for (const e of stack.slice(j + 1)) {
+            if (e.closest && e.closest("[data-thread]")) continue;
             if (e === root || !root.contains(e)) break;
             if (e.contains(t.el)) { if (painted(e)) break; continue; }
             if (!painted(e) || alpha(e) < 0.5 || seen.has(e)) continue;
@@ -155,17 +211,66 @@ for (const s of pg.samples) {
     for (let i = 0; i < texts.length; i++) for (let k = i + 1; k < texts.length; k++) {
       const a = texts[i], b = texts[k];
       if (related(a.el, b.el)) continue;
-      if (a.rects.some((ra) => b.rects.some((rb) => hit(core(ra), core(rb)) > 6)))
+      if (box(a).some((ra) => box(b).some((rb) => hit(ra, rb) > 6)))
         out.push({ kind: "overlap", text: a.text, detail: "overlaps \"" + b.text + "\"" });
     }
     for (const el of root.querySelectorAll("*")) {          // shapes too must stay inside the safe area
       if (!painted(el) || alpha(el) < 0.5) continue;
       const r = clip(el, el.getBoundingClientRect());
-      if (r.width > 1 && r.height > 1 && outside(r)) out.push({ kind: "outside", text: "", detail: name(el) + " is outside the safe area" + where(r) });
+      const bare = !el.textContent.trim() && !el.querySelector(".katex");      // no words on it: it may use the lower frame
+      if (r.width > 1 && r.height > 1 && outside(r, bare ? area.picture_bottom : area.bottom))
+        out.push({ kind: "outside", text: "", detail: name(el) + " is outside the safe area" + where(r) });
     }
     return out;
   }, s, job.area, job.min_px);
   for (const f of found) issues.push(Object.assign({ page: pg.index, scene: s.id, t: s.t }, f));
+}
+// the cuts: each host shown only inside its own clip (data-start, data-duration), as HyperFrames does
+for (const h of pg.handovers || []) {
+  const f = await page.evaluate((h) => {
+    const tl = Object.values(window.__timelines || {})[0];
+    for (const c of document.querySelectorAll(".card-host")) {
+      const s = parseFloat(c.dataset.start), d = parseFloat(c.dataset.duration);
+      c.style.visibility = h.t >= s - 1e-6 && h.t < s + d - 1e-6 ? "visible" : "hidden";
+    }
+    for (const c of document.querySelectorAll(".cap-layer, .tx-layer")) c.style.visibility = "hidden";
+    if (tl) tl.seek(h.t, false);
+    const alpha = (el) => {
+      let o = 1;
+      for (let e = el; e && e.nodeType === 1; e = e.parentElement) {
+        const cs = getComputedStyle(e);
+        if (cs.visibility === "hidden" || cs.display === "none") return 0;
+        o *= parseFloat(cs.opacity);
+      }
+      return o;
+    };
+    // what a scene shows: its strongest piece of text or paint, and where its shown pieces are
+    const shown = (id) => {
+      const root = document.getElementById(id);
+      if (!root) return { a: 0, box: null };
+      let a = 0, box = null;
+      for (const el of root.querySelectorAll("*")) {
+        const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+        const cs = getComputedStyle(el);
+        const paint = own || cs.backgroundColor !== "rgba(0, 0, 0, 0)" || cs.backgroundImage !== "none" || el.tagName.toLowerCase() === "img";
+        if (!paint) continue;
+        const v = alpha(el);
+        if (v < 0.3) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2) continue;
+        a = Math.max(a, v);
+        box = box ? { l: Math.min(box.l, r.left), t: Math.min(box.t, r.top), r: Math.max(box.r, r.right), b: Math.max(box.b, r.bottom) }
+                  : { l: r.left, t: r.top, r: r.right, b: r.bottom };
+      }
+      return { a, box };
+    };
+    const A = shown(h.a), B = shown(h.b);
+    if (A.a < 0.3 || B.a < 0.3 || !A.box || !B.box) return null;
+    const cross = Math.min(A.box.r, B.box.r) > Math.max(A.box.l, B.box.l) && Math.min(A.box.b, B.box.b) > Math.max(A.box.t, B.box.t);
+    return cross ? { kind: "handover", text: "", detail: h.a + " and " + h.b + " are both on screen (" + Math.round(A.a * 100) + "% and " +
+                     Math.round(B.a * 100) + "%): the old scene must be gone by the cut" } : null;
+  }, h);
+  if (f) issues.push(Object.assign({ page: pg.index, scene: h.b, t: h.t }, f));
 }
 }
 await browser.close();

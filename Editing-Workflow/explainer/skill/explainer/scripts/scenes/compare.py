@@ -1,7 +1,7 @@
 """compare: two columns side by side, a VS between their titles; each side's rows arrive on their words, and a winner
 can be called on a word (it glows and gets a check, the other side dims) (PLAYBOOK §E4). For "instead of X, Y"."""
 import explainer_lib as E
-from scenes import GHOST, js_obj, need
+from scenes import SLOT, js_obj, need
 
 TYPE = "compare"
 HEAD, H_GAP, ROW, R_GAP, COL_GAP = 104, 22, 84, 14, 26
@@ -20,7 +20,7 @@ CSS = """
   .cp-row + .cp-row { margin-top:%dpx; }
   .cp-dot { width:%dpx; height:%dpx; border-radius:50%%; flex:none; }
   .cp-vs { position:absolute; left:50%%; top:%dpx; width:76px; height:76px; margin:-38px 0 0 -38px; border-radius:50%%; z-index:2;
-    display:flex; align-items:center; justify-content:center; font-family: var(--label); font-weight:500; font-size:26px; opacity:0; }
+    display:flex; align-items:center; justify-content:center; font-family: var(--label); font-weight:500; font-size:28px; opacity:0; }
   .cp-win { position:absolute; right:12px; top:%dpx; width:64px; height:64px; border-radius:50%%; display:flex; align-items:center;
     justify-content:center; font-weight:700; font-size:38px; opacity:0; z-index:3; }
 """ % (COL_GAP, HEAD, H_GAP, T_SIZE, ROW, M_GAP, PAD, R_SIZE, R_GAP, MARK, MARK, HEAD // 2, (HEAD - 64) // 2)
@@ -73,23 +73,24 @@ def render(scene, ctx, box):
         rows_html = []
         for i, it in enumerate(scene[s]["items"]):
             t, attrs = ctx.item(it["at"])
-            rows_html.append('<div class="cp-row" id="%s-%s%d"%s style="%s;color:%s"><i class="cp-dot" style="background:%s"></i>%s</div>'
+            rows_html.append('<div class="cp-row" id="%s-%s%d"%s style="%s;color:%s"><i class="cp-dot gt" style="background:%s"></i><span class="gt">%s</span></div>'
                              % (sid, s[0], i, attrs, face, ctx.ink, acc if k else c["muted"], ctx.esc(it["text"])))
-            off = {"x": -40 if k == 0 else 40}       # a dim ghost of the row, off to its side, until its word slides it in
-            js.append(ctx.ghost("#%s-%s%d" % (sid, s[0], i), off))
-            js.append(ctx.enter("#%s-%s%d" % (sid, s[0], i), t, dict(off, opacity=GHOST)))
+            off = {"x": -40 if k == 0 else 40}       # an empty slot for the row, off to its side, until its word slides it in
+            js += ctx.slot("#%s-%s%d" % (sid, s[0], i), off)
+            js.append(ctx.enter("#%s-%s%d" % (sid, s[0], i), t, dict(off, opacity=SLOT)))
+            js.append(ctx.fill("#%s-%s%d" % (sid, s[0], i), t))
         cols.append('<div class="cp-col" id="%s-c%d"><div class="cp-head" id="%s-h%d" style="%s">%s</div>%s</div>'
                     % (sid, k, sid, k, head, ctx.esc(scene[s]["title"]), "".join(rows_html)))
     js.append(ctx.enter("#%s-h0, #%s-h1" % (sid, sid), ctx.t_in, {"y": -24}, stagger=0.12))
     js.append(ctx.enter("#%s-vs" % sid, ctx.t_in + 0.2, {"scale": 0.4}))
-    vs = '<div class="cp-vs" id="%s-vs" style="background:%s;color:%s">VS</div>' % (sid, acc, c["on_accent"])
+    vs = '<div class="cp-vs" id="%s-vs" style="background:%s;color:%s">VS</div>' % (sid, c["fill"], c["on_fill"])
     win = ""
     w = scene.get("winner")
     if w:
         t = ctx.at(w["at"])
         k = SIDES.index(w["side"])
-        win = '<div class="cp-win" id="%s-w" style="background:%s;color:%s">&#10003;</div>' % (sid, acc, c["on_accent"])
-        js.append("tl.to('#%s-h%d', %s, %.3f);" % (sid, k, js_obj({"backgroundColor": acc, "color": c["on_accent"],
+        win = '<div class="cp-win" id="%s-w" style="background:%s;color:%s">&#10003;</div>' % (sid, c["fill"], c["on_fill"])
+        js.append("tl.to('#%s-h%d', %s, %.3f);" % (sid, k, js_obj({"backgroundColor": c["fill"], "color": c["on_fill"],
                                                                    "duration": 0.3, "ease": mo["enter_ease"]}), t))
         js.append("tl.to('#%s-c%d', %s, %.3f);" % (sid, 1 - k, js_obj({"opacity": 0.45, "duration": 0.4, "ease": mo["enter_ease"]}), t))
         js.append(ctx.enter("#%s-w" % sid, t + 0.1, {"scale": 0.3}))

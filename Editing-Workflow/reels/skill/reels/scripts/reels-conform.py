@@ -39,7 +39,7 @@ still = os.path.splitext(a.src)[1].lower() in (".png", ".jpg", ".jpeg", ".webp")
 
 def probe(path):
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,width,height,r_frame_rate:format=duration",
-                        "-of", "json", path], capture_output=True, text=True)
+                        "-of", "json", path], capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode:
         sys.exit("cannot read %s: %s" % (path, r.stderr.strip()))
     return json.loads(r.stdout)
@@ -85,7 +85,7 @@ cmd = (["ffmpeg", "-y", "-v", "error"] + inp + ["-filter_complex", graph, "-map"
        "-c:v", "libx264", "-crf", "16", "-preset", "fast", "-pix_fmt", "yuv420p", "-g", "30", "-keyint_min", "30",
        "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-color_range", "tv",
        "-movflags", "+faststart+write_colr", a.out])
-r = subprocess.run(cmd, capture_output=True, text=True)
+r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
 if r.returncode:
     sys.exit("ffmpeg failed: %s" % r.stderr.strip()[-600:])
 

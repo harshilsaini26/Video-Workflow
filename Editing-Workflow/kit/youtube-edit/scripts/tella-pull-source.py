@@ -19,7 +19,7 @@ ap.add_argument("--out", required=True, help="output .mp4 (stream copy)")
 ap.add_argument("--wav", help="also write a 16 kHz mono WAV for the cut stage / Parakeet")
 ap.add_argument("--audio-only", action="store_true", help="skip the video rendition (faster when only the WAV is needed)")
 args = ap.parse_args()
-url = args.url or open(args.url_file).read().strip()
+url = args.url or open(args.url_file, encoding="utf-8").read().strip()
 if not url: sys.exit("no URL")
 split = urllib.parse.urlsplit(url)
 base = split.scheme + "://" + split.netloc + split.path.rsplit("/", 1)[0] + "/"
@@ -71,5 +71,5 @@ cmd += ["-c", "copy", "-movflags", "+faststart", args.out]
 subprocess.run(cmd, check=True)
 if args.wav:
     subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", args.out, "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", args.wav], check=True)
-probe = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", args.out], capture_output=True, text=True).stdout.strip()
+probe = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", args.out], capture_output=True, text=True, encoding="utf-8", errors="replace").stdout.strip()
 print("-> %s (%s s)%s" % (args.out, probe, (" + " + args.wav) if args.wav else ""))

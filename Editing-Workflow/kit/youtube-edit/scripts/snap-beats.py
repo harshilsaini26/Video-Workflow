@@ -13,7 +13,7 @@ ap.add_argument("--project", required=True)
 ap.add_argument("--at", action="append", default=[])
 args = ap.parse_args()
 P = args.project
-S = json.load(open(os.path.join(P, "storyboard.json")))
+S = json.load(open(os.path.join(P, "storyboard.json"), encoding="utf-8"))
 moments = []
 for tag in S.get("tags") or ([S["tag"]] if S.get("tag") else []):   # compose.py: one "tag" or a "tags" list
     moments.append(float(tag["in"]) + 0.9)
@@ -45,7 +45,7 @@ def shot_time(path):
 
 for t in moments:
     started = time.time()
-    r = subprocess.run(["npx", "hyperframes", "snapshot", pub, "--at", str(t)], env=env, capture_output=True, text=True)
+    r = subprocess.run([shutil.which("npx") or "npx", "hyperframes", "snapshot", pub, "--at", str(t)], env=env, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:
         print("snapshot failed at %s: %s" % (t, (r.stderr.strip().splitlines() or ["exit %d" % r.returncode])[-1])); continue
     # only a frame of THIS moment written by THIS run: public/snapshots can hold frames from earlier moments and runs

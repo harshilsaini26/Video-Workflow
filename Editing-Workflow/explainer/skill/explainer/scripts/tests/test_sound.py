@@ -77,7 +77,7 @@ class Sound(unittest.TestCase):
         board["scenes"][1]["chime"] = True                    # n1 comes in on word 8
         r, out, _ = self.build(board)
         self.assertEqual(r.returncode, 0, r.stdout)
-        with open(os.path.join(out, "moments.json")) as f:
+        with open(os.path.join(out, "moments.json"), encoding="utf-8") as f:
             sounds = json.load(f)["sounds"]
         self.assertIn([round(0.5 + 8 * 0.4, 3), "chime"], sounds)    # on its word, not ahead of it
 

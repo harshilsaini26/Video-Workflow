@@ -128,14 +128,20 @@ def _sfx_track(evs, duration, folder):
     return path
 
 
-def mix_bed(voice, music, evs, duration, out, music_db=-22):
+def mix_bed(voice, music, evs, duration, out, music_db=-22, stems=None):
     """Write the bed to `out` (48 kHz stereo, `duration` long): `music` (a file, or None) looped, faded in and out and
-    ducked under `voice` (a file, or None), with the sound effects `evs` on top. Returns `out`."""
+    ducked under `voice` (a file, or None), with the sound effects `evs` on top. Returns `out`. With `stems` (a
+    folder), it also writes the two parts the bed is the sum of, for the editor hand-off: music.wav (the ducked music,
+    silence without music) and sfx.wav (the sound effects)."""
     folder = tempfile.mkdtemp(prefix="explainer-bed-")
     try:
         sfx = _sfx_track(evs, duration, folder)
+        if stems:
+            shutil.copy(sfx, os.path.join(stems, "sfx.wav"))
         if not music:
             shutil.copy(sfx, out)
+            if stems:
+                _write(os.path.join(stems, "music.wav"), [0] * int(round(duration * RATE)))
             return out
         D = "%.3f" % duration
         fmt = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo"
@@ -149,8 +155,13 @@ def mix_bed(voice, music, evs, duration, out, music_db=-22):
             last = "d"
         else:
             last = "m"
+        if stems:                   # the ducked music alone as well, for the editor hand-off
+            graph.append("[%s]asplit=2[%s1][%s2]" % (last, last, last))
+            last += "1"
         graph.append("[%s][1:a]amix=inputs=2:normalize=0:duration=first[o]" % last)
         cmd += ["-filter_complex", ";".join(graph), "-map", "[o]", "-t", D, "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", out]
+        if stems:
+            cmd += ["-map", "[%s2]" % last[:-1], "-t", D, "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", os.path.join(stems, "music.wav")]
         subprocess.run(cmd, check=True, capture_output=True)
         return out
     finally:

@@ -5,6 +5,8 @@ tools: Read, Write, Bash, Glob, Grep
 model: inherit
 ---
 
+**Opt-in:** the default end is the editor hand-off (the Animator's `handoff` job); you render only when the creator asked for a finished file (stage R, opt-in).
+
 # Renderer (YouTube long-form)
 
 You turn a checked composition into a file, safely and as fast as the length allows. Long-form sections are long

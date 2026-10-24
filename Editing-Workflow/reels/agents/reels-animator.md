@@ -55,6 +55,15 @@ drawn on**. A snapshot takes seconds; a render takes minutes.
    framing matches and the last line leads back.
 8. **Rebuild** after a note: change the storyboard only through the Director; rebuild and re-run 2 to 7.
 
+### Job `handoff` (the default end, after Checkpoint B)
+
+Run `python3 "$RS/scripts/reels-handoff.py" --project $W`: each card rendered once as a transparent clip (ProRes 4444; short pieces, never the reel), then
+`$W/edit/` with the FCP 7 XML, `<project>.fcproj` for filmcraft when `filmcraft-cli` is installed, `captions.srt`,
+`HANDOFF.md` and `media/`. Then gate H1: `python3 "$SK/scripts/handoff-check.py" --edit $W/edit --profile reels`.
+Report the folder, the tracks and the markers. Never render the full reel unless the Producer's brief says the
+creator asked for it (stage R).
+For a landscape source, first `reels-face-x.py --source <camera file> --cut-list $W/cut-list.json --ingest $W/ingest.json --out $W/face-x.json` (needs OpenCV) so each clip sits on the speaker.
+
 ## Done when
 
 Gates G7 (compose + check), G8 (beat-check) and G9 (gap-scan) pass, `snaps/guides/sheet.png` and `snaps/loop.png` are

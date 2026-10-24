@@ -17,10 +17,13 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
   (MIT), Lucide icons (ISC), simple-icons for brand marks (CC0 data; each mark is its owner's trademark, shown only to
   name the brand), Chrome on the creator's machine for page screenshots, DM Sans and JetBrains Mono (OFL, bundled in
   `assets/fonts/`), and a music pad and sound effects the composer generates. No paid voice, stock, AI video or avatar.
-- **The layers:** a Catppuccin Latte background (`mantle` #e6e9ef, or `base` #eff1f5 for a new section) with two or
-  three faint lavender and sky glows that travel with each cut, one
-  scene at a time scaled up to fill the scene area (x 65 to 1015, y 520 to 1420, Instagram's clear line; 780 px wide
-  below y 960), a transition layer, and captions in the band at y 330 to 470. Under the voice, a sound bed (§E3.7). Nothing else goes on screen.
+- **The layers:** a Catppuccin Latte ground (`mantle` #e6e9ef and `base` #eff1f5, strong `blue` #1e66f5, dark `ink`
+  #4c4f69: the planner sets a rhythm, MOTION.md §1.3) with faint glows that travel with each cut and particles drifting
+  for the whole reel, one scene at a time scaled up to fill the scene area (x 65 to 1015, y 345 to 1105, the centre of
+  the frame; 780 px wide below y 960) inside a camera that slowly pushes in, a transition layer, and small captions
+  under it in the band at y 1130 to 1235 (y 1235 is the one bottom line for any text, in the composer, gate E5 and
+  QA). Under the voice, a sound bed
+  (§E3.7). Nothing else goes on screen.
 - **The look** lives in `$ES/tokens.json`: change it once and every scene follows.
 - **Reused from Reels unchanged:** the renderer, QA, packager, librarian and analyst, and their checks (Reels PLAYBOOK
   §R3 safe zone, §R10 free sources).
@@ -49,8 +52,11 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 
 ## §E2 Script rules
 
-1. **Length:** 2.7 words a second; 30 to 90 s is **81 to 240 words** (`script-check.py`, gate E1). A target length
-   (30 to 90 s; anything else fails) narrows that to its own ±15%.
+1. **Length:** the spoken words at the voice's own measured rate (`voice-rates.json`, written by the samples; 2.4 words
+   a second for am_michael until measured) plus the pauses between lines; 30 to 90 s (`script-check.py`, gate E1). A
+   target (30 to 90 s; 90 is a target too) narrows that to its own ±15%. At most 3 section breaks every 75 s. The
+   script is voiced once before Checkpoint A and `script-check.py --voice` gives its real length; over 90 s it lists
+   the lines to trim, and the creator decides (SOP S4, S5, S16).
 2. **Every line twice:** `say` is what the voice reads ("one thousand dollars", "wack"); `show` is what the screen
    shows ("$1,000", "WACC"). Numbers are shown in full digits (1,000, never 1K).
 3. **Short lines:** one breath, one clause. A line over about 18 words gets split.
@@ -63,12 +69,22 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    from §E4.1 and its items as plain words: `{"type": "flow", "nodes": ["Retrieve", "Augment", "Generate"]}`).
    A line over about 3 s gets a list of hints, each after the first starting on a word of the line (`"from": "large"`).
    `plan-storyboard.py` turns the hints into the draft storyboard (§E4.8); a line without one becomes a draft title
-   the Director must replace.
+   the Director must replace. A hint may carry a **`headline`** (§E4.11: `{"text": "No battery", "at": "battery",
+   "aside": "seriously?", "aside_at": "seriously"}`, words for its anchors), and the script may carry a **`look`**
+   (`paper` or `latte`) and a **`thread`** (§E4.12: its keys' `at` are words of the voice, in order).
 8. **Talk to one viewer:** "you" and contractions, never "users" or "one"; one question to the viewer (in the hook
    or the call to action) so the comments have something to answer; one real example (`role: example`: a case, a
    number, a short story) because a concrete case is what people remember; humour only where it serves the point
    (one light line, never a sketch). `script-check.py` warns when a script never says "you", asks nothing or gives no
    example.
+9. **Plain spoken words** (the kit's `wording.py`, run by `script-check.py`): no preamble in the hook ("hey guys", "in
+   this video", "stop scrolling"; E1 fails it), no leaked AI text or invisible characters (fail); no stock phrases
+   ("here's the thing", "game changer", "let's dive in"), no "it's not X, it's Y" or "No X. No Y. Just Z." shapes, no
+   dash in `say` (the voice reads it as a pause: use a break), a hook with a number or a name in it that is said in
+   3 s, lines of 18 words or fewer (warnings). The writer fixes what is named; nothing is rewritten automatically.
+   **Do not over-correct:** contractions and one natural list of three are fine; never add hedges, "honestly", or a
+   number to sound human (every number is sourced, §E7). The lists credit the repositories they came from
+   (RESEARCH.md › Credits).
 
 ## §E3 Voice
 
@@ -106,13 +122,13 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | land one number | `count-up` | `value`, `prefix`, `suffix`, `decimals`, `sub` |
    | list 2 to 4 things | `list-cards` | `items[{label, at}]` |
    | list 2 to 4 things with a picture each | `icon-row` | `items[{icon, label, at}]` (a Lucide icon name) |
-   | show change over time | `line-chart` | `points`, `x`, `label`, `prefix`, `suffix`, `reveal[{point, at}]` |
+   | show change over time | `line-chart` | `points`, `x`, `label`, `prefix`, `suffix`, `reveal[{point, at}]`, `shape` (line, or step: a level, then the jump) |
    | compare amounts | `bars` | `rows[{label, value, text, hi, at}]` (2 to 5) |
    | say how long something takes | `duration` | `value`, `unit` (hours, days, weeks), `style` (clock, dial) |
    | ask the viewer's questions | `qa-stack` | `items[{text, em[], at}]` (at most 5) |
    | name a website, course or product | `browser` | `title`, `subtitle`, `badges[]`, `button`, `domain`, or `screenshot` (a PNG from `snap-page.py`) |
    | name a company, school or product by its mark | `logo-card` | `logo` (a simple-icons slug) or `src` (an image), `name`, `badge`, `sub` |
-   | walk through a process | `flow` | `nodes[{label, icon, at}]` (2 to 4) |
+   | walk through a process | `flow` | `nodes[{label, icon, at}]` (2 to 6; 5 or 6 travel down a window, the camera moving to each step) |
    | build one thing on another | `stack` | `items[{label, at}]` (2 to 5, the first at the bottom) |
    | set two things against each other | `compare` | `left` / `right{title, items[{text, at}]}` (1 to 4), `winner{side, at}` |
    | walk through a plan or a history | `timeline` | `steps[{label, sub, at}]` (2 to 5) |
@@ -120,19 +136,66 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    | name the parts of one idea | `hub` | `center` (one short word), `items[{label, at}]` (2 to 6) |
    | walk through a table or a calculation | `sheet` | `rows[[...]]` (at most 8), `highlight{row or cell, at}`, `formula` |
    | give a formula | `formula` | `tex`, `parts[{tex, at}]` (KaTeX) |
+   | land a hero figure ("8 HOURS", "+$363") | `stat` | `value`, `prefix`, `suffix`, `unit`, `decimals`, `label`, `at` (200 to 320 px; needs a source) |
+   | ask and answer (an assistant, a support bot) | `chat` | `name`, `messages[{role, text, at, cite{text, at}}]` (2, 4 or 6, user first) |
+   | show the passage a system found | `doc` | `name`, `title`, `blocks[{text, at, tag} or {filler: n}]` (a block with `at` highlights) |
+   | let the words be the picture | `giant-captions` | `keywords[]` (the voice's own words, 1 to 3 at a time, 120 to 200 px; the caption band steps aside) |
+   | words or tools piling up | `gravity-drop` | `items[{text, at}]` (2 to 8), `style` (chips or words) |
+   | open a chapter | `title-card` | `kicker`, `title` (6 words at most), `subtitle` (or `{text, at}`) |
+   | cross one thing out (and bring its replacement) | `icon-strike` | `icon`, `label`, `at`, `strike{at}`, `replacement{icon, label, at}` |
+   | say what is not there ("no case, no battery") | `crossed-list` | `prefix` (mono, over each row, 12 characters at most), `items[{text, at, strike}]` (2 to 5, hero face; `strike` draws a line through and greys the row) |
+   | say what it costs | `price-sticker` | `price` (8 characters at most), `label` (mono, 28 at most), `src` (a product image, any aspect), `at` (needs a source) |
+   | draw one thing, with an aside | `line-art` | `icon` (Lucide) or `svg` (the creator's stroke-only SVG; a filled shape fails), `caption` (serif aside, 14 words at most), `at`, `strike` (crosses the caption out) |
+   | compare sizes in 3D (deals, models, market share) | `bars-3d` | `bars[{label, value, at, text?, hi?}]` (2 to 4; labels 10 characters at most), `floor` (a caption under it, 24 at most); needs a source |
+   | "every piece connects", "solve it step by step" | `cube` | `at`, `labels` (9 cells, 3 characters each; default A1 to C3), `turns[{dir: left/right/up/down, at}]`, `twist[{dir: left/right, at}]` (the top layer), `highlight{cell, at}` |
+   | count steps or options in 3D | `cards-3d` | `cards[{text, sub?, at}]` (1 to 4; `text` a mark of 3 characters at most, never a figure; `sub` 16 at most) |
+   | "what's inside", the deal book, the prep | `briefcase` | `at` (it lands), `open` (the lid swings up and papers rise), `papers` (1 to 5), `label` (a caption under it, 24 at most) |
+   | parts of a whole that stack (debt and equity, a price's make-up) | `beaker` | `layers[{label, value, at, text?}]` (1 to 4, bottom up; values are shares of the glass, 100 at most); needs a source |
+   | parts of a whole that share (who pays, market share) | `donut` | `slices[{label, value, at, text?}]` (2 to 5), `center` (the total, 9 characters at most, in the hole); needs a source |
+   | one key metric as an object (EPS, ROI, WACC) | `coin` | `text` (4 characters at most, never a figure), `dir` (up or down: an arrow on the face), `sub` (a line under it, 22 at most), `at` (it spins in) |
+   | two sides weighed (cost against value, risk against return) | `balance` | `left`, `right` (each {`label` 12 at most, `at`}: a weight drops into its pan), `tip` ({`to`: left or right, `at`}: that side goes down; without it the scale stays level), `note` ({`text` 24 at most, `at`}: a line above the beam) |
+   | how a model learns: a loss curve and its slope, side by side | `plot` | `panels` (1 to 6, each {`from`, `min`}, -1 to 1: where the point starts, where the curve bottoms), `x`, `y` (axis letters, 3 at most), `tangent` (the tangents show), `descend` (the points slide down to the minimum, the tangents turning flat) |
+   | a neural network: what goes in, what lights up, what comes back | `network` | `layers` (2 to 5, 1 to 10 nodes each), `labels` (one per output node, 3 at most), `input` ({`digit` 0 to 9, `at`}: a pixel digit), `forward` (lights layer by layer), `answer` ({`node`, `at`}: ringed), `backward` (the error sweeps from the output back) |
+   | gradient descent: a ball rolls to the bottom of the loss | `surface` | `descend` ({`at`, `steps` 1 to 10}: one true gradient step each), `start` ([x, y] inside the rim), `lr` (0.05 to 0.45), `label` (16 at most) |
+   | what a model answered against what was right: the error, then the loss | `outputs` | `labels` (2 to 10, 3 characters at most), `guess` (one per label, 0 to 1: blue bars), `at` (the bars grow), `target` ({`row`, `at`}: the right answer outlined), `error` (each row's gap to the truth, a red bar under it), `loss` (a red square, its area the summed squared gaps) |
+   | one thing becoming the next (pixels into neurons, a sum folding into one) | `morph` | `n` (4 to 64 pieces), `values` (one 0 to 1 a piece: how strong), `steps` (2 to 6, each {`form`: grid, column, row, ring, bars (with `heights`) or merge, `at`, `label` 28 at most, `color`: a role}), `indicate` ({`piece`, `at`}); §E6.13 |
+   | an idea as a thing, its parts around it, and what is inside one of them | `orbit` | `center` (20 at most), `shape` (circle, rounded, hex), `nodes` (1 to 4 {`text` 14 at most, `at`}), `dive` ({`into`, `at`, `center`, `shape`, `nodes`}: the camera crosses into that node); §E6.13 |
+   | the evidence: a clipping, a photo, a dated label, a note, marked up as they are read | `clippings` | `items` (1 to 4: `clipping` {`head`, `lines` 1 to 4}, `print` {`src`, `credit`, `label`, `halftone`}, `label` {`text`}, `note` {`text`}; each with `at`), `marks` ({`kind`: highlight (a clipping's `line`), circle or underline, `item`, `at`}), `strings` (red string between items, on by default); needs a source when it shows a number; §E6.13 |
+   | one picture that keeps changing instead of a cut per idea (the 3Blue1Brown style) | `stage` | `objects` (1 to 12, each {`id`, `scene`: any library scene, `box`: [x, y, width] from the scene area's top left, `in`, `out`}), `moves` ({`obj`, `at`, `box`}: the object moves and resizes there); §E6.12 |
+   | the call to action: comment a word | `comment-cta` | `keyword{text, at}`, `gets{text, at}` |
+   | what people say | `comment-drop` | `comments[{name, text, likes, time, at}]` (2 to 4) |
+   | typing into an AI | `prompt-bar` | `prompt{text, at}`, `send{at}`, `reply{text, at}` |
+   | planning shots | `storyboard-deck` | `frames[{note, sketch, at}]` (2 to 4; sketch face, screen, chart, wide or title) |
+   | bringing files in | `file-drop` | `files[{name, size, icon, at}]` (1 to 4), `done{label, at}` |
+   | cutting a video | `nle-timeline` | `tracks[{kind, clips[{label, length}]}]`, `cuts[{track, time, length, at}]` |
+   | removing what you don't need | `jiggle-delete` | `tiles[{label, icon, at}]` (3 to 8; a tile with `at` is deleted then), `jiggle{at}`, `done{at}` |
+   | grading a picture | `grade-slider` | `src`, `sliders[{kind, label, from, to, at}]` (contrast, saturation, exposure, temperature) |
+   | picking a colour from a picture | `eyedropper-grade` | `src`, `picks[{color, label, x, y, at}]` (Latte colour names) |
+   | giving a picture a film look | `film-look` | `src`, `at`, `title`, `before`, `after` |
+   | many videos at once | `playing-grid` | `src`, `cols`, `tiles[{label, src, at}]` (4 to 9), `pick{tile, at}` |
+   | one video | `video-card` | `src`, `title`, `channel`, `meta`, `duration`, `start`, `play{at}` |
+   | the reels feed | `reel-feed` | `src`, `reels[{user, caption, likes, comments, shares, at}]` (2 to 3) |
+   | a sound, and how it changes | `waveform` | `states[{kind, label, at}]` (1 to 4; noise, calm, music, pulse or flat), `color` (ink or accent) |
+   | switching modes (noise cancelling, a setting) | `mode-switch` | `options[{label, wave, note, at}]` (2 to 4, left to right; a label of 10 characters at most, a waveform kind) |
+   | show the product itself, big, with its name behind it | `product-hero` | `src` (a cut-out PNG is best), `alt`, `aspect` (width / height; the composer notes the right value), `title` (behind it, 124 to 200 px), `title_at`, `at`, `notes[{x, y, label, at, mark, side}]`, `float` |
+   | show real photos, credited | `photo-grid` | `photos[{src, credit, tag, at}]` (1 to 4; every photo needs a `credit`), `layout` (stack 1 to 3, grid 1 to 4, collage 2 to 4), `notes[]` (on the first photo) |
    | need something the library can't show (only when the creator asks) | `custom` | `box{x, y, w, h}`, `html`, `build` (§E6.5) |
 
 2. **Ids** are letters, digits and `_` (the page builds `<id>-...` ids from them), never `stage`, `captions`, `voice`,
    `bg<n>` or `cap<n>`.
 3. **Anchors, not seconds:** every `in`, `out` and item `at` is `word:N`, the Nth display word in `transcript.json`.
    An entrance lands 0.2 s before its word; the kit's beat-check holds it to 0.15 to 0.25 s.
-4. **No dead air:** scenes cover the whole voice; more than 0.3 s with no scene fails the build. Scenes hand over with
-   the old one exiting while the new one enters (at most 0.3 s of overlap). The last scene runs to `"end"`.
+4. **No dead air, no double exposure:** scenes cover the whole voice; more than 0.3 s with no scene fails the build.
+   A scene ends where the next begins (its `out` is the next one's `in`): the old one's exit is over by the cut, and
+   gate E5 checks every cut (SOP S9). The last scene runs to `"end"`. A scene holds at most 8 s (E4; a travelling flow
+   may hold longer), and the hook's items land by 0.8 s (E3, SOP S8).
 5. **One hero element per scene**; never the same scene type three times in a row.
-6. **Backgrounds** mark sections: change `bg` where the script's `section` breaks are, not on every scene.
+6. **Grounds keep a rhythm** in the `latte` look: the hook on `ink`, the payoff on `blue`, `mantle`/`base` by section,
+   a `blue` beat every third scene in a section (the planner sets it; MOTION.md §1.3). The `paper` look keeps **one
+   ground** (`base`, the warm paper): colour comes from the images and the one accent (MOTION.md §1.6).
 7. **Fit by construction:** each scene knows its height; the composer scales it to fill the scene area, narrows it
-   below y 960, and fails a word wider than its column. Shorten the words, never shrink the type below the scene's
-   minimum. The hub works out its own geometry (every node clears the middle and every other node), a formula shrinks
+   below y 960, and fails a word wider than its column. A scene too tall may shrink to 0.8, never under 28 px text;
+   past that, drop a row or an item (the captions carry the words) and **never split a scene to fix its height**. The hub works out its own geometry (every node clears the middle and every other node), a formula shrinks
    itself to its row, and the kinetic hook sizes each row to the width it is given.
 8. **Start from the planner:** `plan-storyboard.py` writes the draft storyboard from the script's `viz` hints (§E2.7)
    and the aligned words: each hint's items on the words that say them, money and percent figures as count-ups,
@@ -140,7 +203,7 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    (replacing every draft title with a picture) rather than writing scenes and anchors by hand. The hook is a
    `kinetic` scene from the script's hint; custom scenes only when the creator asks for one.
 9. **Never a bare stage:** something shows on a scene's first word. The build-up scenes and list-cards show every
-   piece dimmed from the start and light each one on its word; any other scene whose first change comes over 0.8 s
+   piece as an empty slot from the start (its outline, its words hidden) and fill each one on its word; any other scene whose first change comes over 0.8 s
    after it starts gets a WARN from the composer (start the scene later, or put an item on its first word).
 10. **Gate E5, a clean picture:** `layout-check.py --index public/index.html` opens every scene in Chromium on the
    creator's machine at the moment it is fully built and fails on text over text, text covered by or crossing a shape
@@ -148,9 +211,30 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    `hyperframes check` at the same moments adds clipped text and WCAG contrast. No tokens; every failure names the
    scene and the text. Run after every compose, before any still goes to the creator.
 
+11. **Headlines** (`"headline"` on any placed scene; `headline.py`): the scene's title top-left in the look's hero
+   face, the scene's picture centred under it. Upper case unless `"case": "as-is"`; at most three lines and 260 px
+   (the fewest lines that stay big); `accent` words in the accent; a mono `kicker` above and `sub` below; an
+   Instrument Serif italic `aside` ("seriously?", "Yes." in the accent). The lines rise on `at`, the aside on
+   `aside_at`. E3 names a headline that leaves the scene too little room: shorten it or drop an item.
+12. **The thread** (`"thread"` in the storyboard; `thread.py`): one line through the whole reel, as the reference's cable
+   runs from scene to scene. Keys `{"at", "shape", ...}` in time order, shapes `drop`, `loop`, `wave`, `rule`,
+   `underline`, `off`; it draws on at the first key and morphs on each later key's word. It runs above the ground and
+   under the scenes and the captions, may pass behind a scene's words (E5 treats it as the ground), and each morph is
+   a change for E4. No key's shape rests in the captions (y 1130 to 1235, x 150 to 930; E3 names the key): a stem goes
+   down the outer edge (x under 150 or over 930), a loop or a wave sits above or below the band (a morph across the
+   band passes behind the captions, under their halo). Use it for continuity: the line that drops in becomes the loop round a year, the wave under a
+   sound, the ruler of a timeline; take it `off` when the story moves on.
+13. **Images** are the creator's (`src`, relative to storyboard.json; PNG, JPEG, WebP or GIF; sized from their own
+   headers): a product cut-out in `product-hero`, photos in `photo-grid`, each photo with a `credit` shown on it (E3
+   fails a photo without one). Notes over an image (`notes`: a circle drawn on, a leader, a pill label) point at what
+   the voice names. Only a product-hero's title may sit behind its image (`data-depth="behind"`, at least 120 px):
+   every other text is never covered.
+
 ## §E5 Captions
 
-1. **Phrases of up to 4 words and 24 characters**, in the band at y 330 to 470, cleared at a pause of 0.35 s or more.
+1. **Phrases of up to 4 words and 24 characters**, 44 px, at most two lines, in the band at y 1130 to 1235 (the
+   narrow column, under the scene: the centre is the animation's), with a halo of their ground, cleared at a pause
+   of 0.35 s or more.
 2. **The word being spoken turns from muted (`overlay2`, 3.3:1 or more) to ink (`text`, 6.6:1 or more).**
 3. **Emphasis words get the highlight box** (an accent fill with corner handles), matched without punctuation or case,
    every time they are said.
@@ -174,8 +258,9 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    and a missing function. A function defined in a `<script type="module">` (three.js) also needs
    `window.build<Id> = build<Id>;`: a module's names are its own, so the page could not call it. GSAP is always there; KaTeX and three.js come from the local vendor folder. Checkpoint B shows them at in, middle and out;
    one the creator likes is promoted into the library by the Librarian, with a test.
-6. **Motion with a reason** (MOTION.md §2): nothing moves unless the voice gives it a reason. No scene pushes in on
-   its own and the background never drifts: its three glows travel with each cut (up to 380 px across and 420 px down,
+6. **Motion with a reason** (MOTION.md §2): every scene's camera pushes in slowly and steadily (0.95 to 0.995, linear,
+   so the picture is never still), but nothing on the content pushes in unless the voice asks for it, and the
+   background never drifts: its three glows travel with each cut (up to 380 px across and 420 px down,
    expo.out over 1.2 s, each move written from where the last one ended, so every render is the same) and hold
    between cuts. A build-up scene keeps one
    idle motion while it holds (a pulse down a connector, a float, a slow turn); a screenshot holds still and punches
@@ -185,13 +270,75 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
    in as a growing circle, and the rest alternate a zoom-through (the old scene rushes past the viewer into a blur,
    the new one lands from behind) and a whip (the old one flies up, the new one lands from below), each exit
    accelerating into the cut and each entrance decelerating out of it. A scene can name its own with `"transition"`:
-   `fade`, `push`, `zoom`, `wipe`, `burst` (a spray of colour, for a hook or a reveal) or `cut`.
+   `fade`, `push`, `zoom`, `wipe`, `burst` (a spray of colour, for a hook or a reveal), `cut` or `brush`. In the paper
+   look a new ground comes in with the **brush** (five ragged bands cover the frame on the cut and sweep off). Every
+   scene leaves, the last one too: **the close** takes it off in the first half of the last 0.4 s and the hook's ground wipes in over the second (the
+   last scene runs 1 s at least, or E3 refuses it), so the loop
+   seams into the hook. Choose a transition for a reason (MOTION.md §3): a new place, a wipe or brush; the same idea,
+   a fade; a jolt, a whip. **`leak`** (a soft streak of light in the accent colours sweeping across over the cut) is
+   never chosen on its own: name it for a burst of energy or a reveal. **`dive`** (§E6.13) is never chosen on its own
+   either: name it on the scene that is *inside* the one before ("zoom into a single cell").
 8. **Fill the frame:** the composer lays each library scene out narrower and scales it up (to 1.8x; a title to
    150 px, a number to 1.3x) to fill the scene area; `moments.json` records each scene's box and scale. Two scenes in
    a row with the same layout get a WARN: change the picture, or merge them into one build.
 9. **The hook is kinetic type from data** (`kinetic`, §E4.1): a big accent token, stacked words, a claim struck
    through and a punch, each on its word. No code to write, so a reel costs no tokens beyond its script. Custom scenes
    (§E6.5) are opt-in, only when the creator asks for a moment the library cannot make.
+10. **Palettes (colour only, on any look):** `"palette": "<name>"` in script.json or the storyboard recolours the
+    reel and keeps the look's fonts, texture and boil. Pick by the subject; leave it out for the look's own colours.
+
+    | Palette | Colours | Mood | Rule | Best for |
+    |---|---|---|---|---|
+    | `terracotta` | #E07A5F #F2CC8F #81B29A #3D405B #F4F1DE | warm, grounded, unhurried; handmade | #F4F1DE ground, #3D405B text (8.9:1), #E07A5F for shapes and buttons; accent words take it deeper | lifestyle, wellness, artisan food, interiors |
+    | `monochrome` | #000000 #2B2B2B #6E6E6E #C4C4C4 #FFFFFF | bold, editorial; composition does the work | no colour; restraint is the effect | fashion, photography, architecture, luxury |
+    | `electric-pop` | #FF006E #FB5607 #FFBE0B #8338EC #3A86FF | loud, made to stop a scroll | white ground; only #FF006E and #8338EC (the other three are the signals); never one bright colour on another | youth brands, events, music, entertainment |
+    | `nordic-frost` | #CAF0F8 #90E0EF #00B4D8 #0077B6 #03045E | clear, trustworthy | light for grounds, dark for type (#03045E on #CAF0F8), mid tones for accents | tech, SaaS, finance, healthcare |
+    | `bold-citrus` | #F94144 #F3722C #F8961E #F9C74F #90BE6D | fun, appetizing | each scene's ground is the next colour, in order; text #2A1D0E | food, fitness, kids, quick service |
+
+    Every palette passes the theme's contrast rules on every ground and gate E5 on every scene case; a colour too light
+    to read as text keeps its hue and is taken deeper for words only, while shapes that carry words (buttons, badges,
+    stickers, keyword chips: the `fill` role) keep the exact hex, as Terracotta's #E07A5F buttons with #3D405B on them
+    (`tokens.json` palettes; `explainer_lib.palette_tokens`). The creator picks: `palettes.py --for "<topic>"` lists the
+    five, best fit first; `plan-storyboard.py --palette <name>` overrides the script's.
+11. **The dark look, no captions, a rewind (the 3Blue1Brown-style reference):** `"look": "dark"` puts every ground
+    near-black or deep (`mantle` #0B0E13), the words near-white, and manim's colours on them (accent #58C4DD, the second
+    accent #F4D345, bad #FC6255, good #83C167); a UI mock-up still sits on light paper. It suits math and how-it-works
+    topics, with `formula`, `outputs`, `plot`, `network` and `surface`. `"captions": "off"` in the storyboard leaves the
+    words to the voice and the formulas, and the scenes take the caption band too (the area runs to y 1235: they centre
+    lower and may grow); `"close": "rewind"` ends the reel with the last scene
+    streaking back, blurred, under a rewind mark, before the hook's ground comes in.
+12. **The stage (one picture that keeps changing):** where the reference keeps the same network on screen while the
+    formula above it changes and it shrinks aside for the loss curves, use one `stage` scene instead of a cut per idea.
+    Its objects are library scenes in boxes ([x, y, width] in px from the scene area's top left: 950 wide, 760 tall,
+    890 without captions, and below y 615 only x 85 to 865); each is laid out at its own width and scaled to its box. An object comes in on
+    its `in` (its own entrances run from there) and leaves on its `out`; a move re-boxes it on a word (one 0.9 s tween).
+    E3 refuses a box outside the area, or one that would draw the object's words under 28 px (a network without labels
+    has none and may shrink to a corner); a number inside an object still needs the stage's `source`. Gate E5 looks at
+    the settled picture before every beat, not only the last. Swap a formula by giving the old one an `out` and the new
+    one the same box and that word as its `in`.
+13. **Three film grammars** (from huashu-art-motion's animation-grammar cards, MIT; each scene keeps its grammar's
+    rule, and every gate still applies):
+    - **3Blue1Brown, one object becomes the next** (`morph`): never a cut between two pictures of the same idea; the
+      pieces themselves move into the next form on the voice's verb ("we flatten the image into a column", "every
+      input folds into one sum"). Each piece is one path that starts at its top left and runs clockwise in every form,
+      so it moves straight to its partner; the move is manim's `smooth` (6t^5 - 15t^4 + 10t^3), lagged a little piece
+      by piece, and between moves the picture holds still: the next Transform is the motion. One colour means one
+      concept for the whole reel (the column in `accent2` is the input, everywhere). Best on the dark look.
+    - **Kurzgesagt, flat with no outline, scale crossing** (`orbit`, the `dive` transition): the idea is drawn as a
+      thing; every shape is flat, never outlined, a shadow band at the bottom right and a thin light edge at the top
+      left (the light comes from the top left); on a dark ground the centre glows and stars twinkle, while the subject
+      holds still once it lands. A `dive` pushes the camera into one node on a log zoom (each frame grows by the same
+      factor, so the flight is steady, never slow then sudden) until its colour fills the box, and the next level
+      pulls out of a centre in that colour. Between scenes, `"transition": "dive"` does the same with the outgoing
+      ground's accent. Kurzgesagt's pop overshoots to 108 %; ours lands with expo.out and a ripple ring instead
+      (MOTION.md: no overshoot).
+    - **Vox, clippings, red lines, highlighters** (`clippings`): the argument laid out as real material (a press
+      clipping with torn edges, the creator's photo as a print with tape and a white border, a black label strip, an
+      index card), tied with red string, and marked up as the voice reads: the highlighter sweeps the quoted line
+      under its words, a red pen circles an item in one stroke that does not close, an underline wavers. Two frame
+      rates: the page moves smoothly, everything on the desk moves on twos (twelve steps a second), a label types at
+      13 characters a second. Paper is static, shadows are weak, nothing pops: on a real desk things are just there.
+      Best on the paper look; the highlighter is one physical ink in every look (`tokens.marker`).
 
 ## §E7 Sources and claims
 
@@ -212,6 +359,13 @@ Paths: `ES=.claude/skills/explainer` (this skill), `RS=.claude/skills/reels`, `S
 | a gap inside a line over 1.2 s | a comma read as a long pause, or a stumble | split the line or reword it (Writer), regenerate (Voice) |
 | "no scene from a to b" | a scene's `out` before the next `in` | move the anchor (Director) |
 | "overlap by 0.5 s" | the next scene starts before the old one's `out` | end the old scene on the next scene's `in` word (Director) |
+| "the hook is not whole on screen by 1.0 s" | a hook item lands after 0.8 s | anchor the hook's pieces to words 0 and 1 (Director; the planner does it) |
+| "over the 90 s ceiling" | the voice runs past 90 s | trim the lines `script-check.py --voice` lists, with the creator (Writer) |
+| "E4 FAIL: <id> is held 9.0 s" | one picture held over 8 s | split the line's picture into two scenes, or use a flow that travels (Director) |
+| "are both on screen" (E5) | two scenes overlap at a cut | the old scene's `out` on the new one's `in`; a custom scene's exit inside its time (Director, Animator) |
+| "contrast 2.4:1" (E5) | text too close to what is behind it | the scene's colours come from its ground's roles; a UI mock-up uses the paper roles (the Librarian, with a test) |
+| "E6 FAIL: still from 12.3 to 14.0 s" | the rendered picture froze | a build, a camera move or a cut inside that stretch (Director) |
+| "SKILL FAIL: ... changed since the pin" | the skill was updated or edited mid-project | tell the creator; re-pin only when they choose (Producer) |
 | "wider than the column" | a long single word or number at its size | shorter word, or a smaller `size` within the scene's range (Director) |
 | "taller than the scene area" | too many items or long labels | fewer items, or split into two scenes (Director) |
 | a caption shows the misheard word | the display words come from `show`, so the script is wrong | fix `show` (Writer), re-align (Voice) |

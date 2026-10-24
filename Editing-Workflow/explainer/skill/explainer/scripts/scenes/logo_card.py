@@ -34,7 +34,7 @@ def brand(vendor_dir, name):
     if path not in _DATA:
         _DATA[path] = {}
         if os.path.exists(path):
-            with open(path) as f:
+            with open(path, encoding="utf-8") as f:
                 for it in json.load(f).get("icons", []):
                     _DATA[path][it.get("slug") or slug(it["title"])] = it
     return _DATA[path].get(name)
@@ -88,12 +88,12 @@ def render(scene, ctx, box):
         if not re.match(r"^[a-z0-9]+$", name_) or not os.path.exists(path):
             ctx.fail("unknown logo %r: no vendor/simple-icons/icons/%s.svg (find the slug at simpleicons.org; get the set with: %s)"
                      % (name_, name_, INSTALL))
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             svg = f.read().strip()
         if not svg.startswith("<svg") or re.search(r"<script|on\w+=|href", svg, re.I):
             ctx.fail("vendor/simple-icons/icons/%s.svg is not a plain SVG mark" % name_)
-        info = brand(ctx.vendor_dir, name_) or {"title": name_, "hex": c["ink"][1:]}
-        svg = re.sub(r"<title>.*?</title>", "", svg, flags=re.S).replace("<svg ", '<svg fill="%s" ' % readable(info["hex"], c["ink"]), 1)
+        info = brand(ctx.vendor_dir, name_) or {"title": name_, "hex": ctx.pc["ink"][1:]}
+        svg = re.sub(r"<title>.*?</title>", "", svg, flags=re.S).replace("<svg ", '<svg fill="%s" ' % readable(info["hex"], ctx.pc["ink"]), 1)
         mark = svg
         title = scene.get("name") or info["title"]
         print("note: %s: %s is a trademark of its owner; show it only to name the brand%s"
@@ -103,12 +103,12 @@ def render(scene, ctx, box):
         mark = '<img src="%s" alt="" />' % ctx.esc(rel)
         title = scene["name"]
     badge = ('<div class="lc-badge" id="%s-b" style="background:%s;color:%s">%s</div>'
-             % (sid, c["accent"], c["on_accent"], ctx.esc(scene["badge"])) if scene.get("badge") is not None else "")
+             % (sid, c["fill"], c["on_fill"], ctx.esc(scene["badge"])) if scene.get("badge") is not None else "")
     sub = '<div class="lc-sub" id="%s-s" style="color:%s">%s</div>' % (sid, c["dim"], ctx.esc(scene["sub"])) \
         if scene.get("sub") else '<div class="lc-sub"></div>'
     html = ('<div class="lc"><div class="lc-card" id="%s-card" style="%s"><div class="lc-mark">%s</div>%s</div>'
             '<div class="lc-name" id="%s-n" style="color:%s">%s</div>%s</div>'
-            % (sid, ctx.card(), mark, badge, sid, ctx.ink, ctx.esc(title), sub))
+            % (sid, ctx.paper_card(), mark, badge, sid, ctx.ink, ctx.esc(title), sub))     # the mark on light paper
     t = ctx.t_in
     js = ["tl.fromTo('#%s-card', %s, %s, %.3f);" % (sid, js_obj({"opacity": 0, "scale": 0.6, "y": 60, "rotation": -8}),
                                                     js_obj({"opacity": 1, "scale": 1, "y": 0, "rotation": 0, "duration": 0.6,

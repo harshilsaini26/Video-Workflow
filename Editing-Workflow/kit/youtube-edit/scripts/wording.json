@@ -1,0 +1,199 @@
+{
+  "_about": "wording.py's lists. Each entry: id, pattern (a case-insensitive regex), example (must fire), why; warn entries also carry a lookalike (must not fire). Adapted, with thanks, from two MIT-licensed repositories: sergebulaev/instagram-skills (ig-humanizer scrub-rules: forensic strings, reveal bridges, negative parallelism, sincerity markers, staccato) and Jakeschincariol/instagram-agent-skill (ig-human slop.json and ig-reel hookscore dealbreakers). The over-broad single words (compound, significant, robust, landscape, quietly) are left out on purpose: they misfire on finance and tech explainers.",
+  "fail": [
+    {
+      "id": "oaicite",
+      "pattern": "oaicite|contentReference\\[",
+      "example": "USB-C is everywhere oaicite:0",
+      "why": "leaked AI citation markup",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "turn0search",
+      "pattern": "turn\\d+(search|view|news)\\d+",
+      "example": "It carries 240 watts turn0search3",
+      "why": "leaked AI search marker",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "last-update",
+      "pattern": "\\bas of my last (knowledge )?(update|training)",
+      "example": "As of my last update, USB4 is the newest",
+      "why": "leaked AI disclaimer",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "as-an-ai",
+      "pattern": "\\bas an ai( language model)?\\b",
+      "example": "As an AI, I think cables matter",
+      "why": "leaked AI disclaimer",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "template-blank",
+      "pattern": "\\[(your|insert|company|brand|name)[^\\]]*\\]",
+      "example": "Follow [Your Name] for more",
+      "why": "a template blank never filled in",
+      "src": "sergebulaev/instagram-skills"
+    }
+  ],
+  "hook_fail": [
+    {
+      "id": "greeting",
+      "pattern": "^\\W*(hey|hi|hello|what'?s up|welcome back)\\b",
+      "example": "Hey guys, cables changed",
+      "why": "a greeting spends the first second on nothing",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "in-this-video",
+      "pattern": "\\bin (this|today'?s) (video|reel|clip)\\b",
+      "example": "In this video, 3 cable facts",
+      "why": "a preamble instead of the promise",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "stop-scrolling",
+      "pattern": "\\bstop scrolling\\b",
+      "example": "Stop scrolling, 3 cable facts",
+      "why": "begging for attention instead of earning it",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "hashtag",
+      "pattern": "(^|\\s)#[A-Za-z_]",
+      "example": "3 cable facts #tech",
+      "why": "a hashtag is not spoken",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "emoji",
+      "pattern": "[\\U0001F300-\\U0001FAFF\\u2600-\\u27BF]",
+      "example": "3 cable facts ⚡",
+      "why": "an emoji is not spoken",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    }
+  ],
+  "warn": [
+    {
+      "id": "here-thing",
+      "pattern": "\\bhere'?s the thing\\b",
+      "example": "Here's the thing about chargers",
+      "lookalike": "Here's the thinking behind it",
+      "why": "a reveal bridge: say the thing",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "the-result",
+      "pattern": "\\bthe result\\?",
+      "example": "The result? Faster charging",
+      "lookalike": "The result was 40 percent faster",
+      "why": "a reveal bridge: say the result",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "dive-in",
+      "pattern": "\\blet'?s (dive|jump) (in|into|right in)\\b",
+      "example": "Let's dive into the specs",
+      "lookalike": "Divers jump into the lake",
+      "why": "a stock opener",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "lets-talk",
+      "pattern": "\\blet'?s talk about\\b",
+      "example": "Let's talk about cables",
+      "lookalike": "We talked about cables",
+      "why": "a reveal bridge: start with the point",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "sincerity",
+      "pattern": "\\b(real talk|not gonna lie|honestly\\?|to be honest)\\b",
+      "example": "Real talk, this one matters",
+      "lookalike": "An honest answer matters",
+      "why": "a sincerity marker reads as the opposite",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "game-changer",
+      "pattern": "\\bgame[- ]?changer\\b",
+      "example": "This port is a game changer",
+      "lookalike": "The game changed in 2014",
+      "why": "a stock phrase: say what changed",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "delve",
+      "pattern": "\\bdelv(e|es|ed|ing)\\b",
+      "example": "We delve into the details",
+      "lookalike": "The delivery took two days",
+      "why": "a word people do not say",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "fast-paced",
+      "pattern": "\\bin today'?s (fast[- ]paced|digital|ever[- ]changing)\\b",
+      "example": "In today's fast-paced world, time matters",
+      "lookalike": "Today the race was fast",
+      "why": "a stock opener",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "unlock",
+      "pattern": "\\bunlock(s|ing)? (the|your) (full )?(power|potential|secrets?)\\b",
+      "example": "Unlock the power of USB-C",
+      "lookalike": "Unlock your phone first",
+      "why": "a stock promise: say what it does",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "not-x-its-y",
+      "pattern": "\\b(it'?s|this is|that'?s) not (just )?[\\w' ]{1,30}[,;] (it'?s|this is|that'?s)\\b",
+      "example": "It's not a cable, it's a lifeline",
+      "lookalike": "It's not working on my laptop",
+      "why": "negative parallelism, the commonest AI shape",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "not-just-but",
+      "pattern": "\\bnot (just|only) [\\w' ]{1,30},? but( also)?\\b",
+      "example": "Not just faster but also safer",
+      "lookalike": "Not just yet, thanks",
+      "why": "negative parallelism",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "staccato",
+      "pattern": "\\bno \\w+\\. no \\w+\\. just\\b",
+      "example": "No cables. No chargers. Just one plug",
+      "lookalike": "No cables here, just one plug",
+      "why": "manufactured staccato",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "sink-in",
+      "pattern": "\\blet that sink in\\b",
+      "example": "Let that sink in",
+      "lookalike": "The sink is in the kitchen",
+      "why": "a stock line",
+      "src": "sergebulaev/instagram-skills"
+    },
+    {
+      "id": "further-ado",
+      "pattern": "\\bwithout further ado\\b|\\bbuckle up\\b",
+      "example": "Without further ado, the list",
+      "lookalike": "Further on, the list",
+      "why": "filler before the point",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    },
+    {
+      "id": "cutting-edge",
+      "pattern": "\\b(cutting[- ]edge|next[- ]level|revolutionary|seamless(ly)?)\\b",
+      "example": "A cutting-edge design",
+      "lookalike": "The edge of the cutting board",
+      "why": "a stock adjective: say the number or the thing",
+      "src": "Jakeschincariol/instagram-agent-skill"
+    }
+  ]
+}

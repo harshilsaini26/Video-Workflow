@@ -2,11 +2,12 @@
 a focus can lift one card on a word (the others dim); each card floats while it holds (PLAYBOOK §E4). For "three
 certificates", "two courses": things to count and name."""
 import explainer_lib as E
-from scenes import GHOST, js_obj, need
+from scenes import SLOT, js_obj, need
 
 TYPE = "cards"
 CW, CH = 250, 320                # a card
 FAN = 50                         # room for the fan's tilt and lift
+LIFT = 56                        # room above the fan for a focused card's lift (1.12x and 30 px up)
 TITLE_OUT = 0.2                  # the last title leaves in this long before the next comes in
 OFF, OFF_MIN = 170, 110          # card to card, at most and at least
 GAP = 36                         # fan to title
@@ -17,7 +18,7 @@ CSS = """
   .cd { position:relative; width:100%%; }
   .cd-card { position:absolute; width:%dpx; height:%dpx; opacity:0; }
   .cd-face { position:absolute; inset:0; border-radius:24px; padding:26px; overflow:hidden; }
-  .cd-tag { font-family: var(--label); font-weight:500; font-size:20px; letter-spacing:.14em; opacity:.7; }
+  .cd-tag { font-family: var(--label); font-weight:500; font-size:28px; letter-spacing:.12em; }
   .cd-n { font-weight:700; font-style:italic; font-size:150px; line-height:1; margin-top:10px; letter-spacing:-.04em; }
   .cd-bar { height:12px; border-radius:6px; margin-top:16px; opacity:.28; }
   .cd-star { position:absolute; right:22px; top:20px; width:46px; height:46px; border-radius:50%%; border:4px solid; }
@@ -40,8 +41,12 @@ def validate(scene):
     return errs
 
 
+def lift(scene):
+    return LIFT if scene.get("focus") else 0
+
+
 def height(scene, width):
-    return CH + FAN + GAP + T_LINE + S_LINE
+    return lift(scene) + CH + FAN + GAP + T_LINE + S_LINE
 
 
 def min_width(scene):
@@ -63,18 +68,19 @@ def render(scene, ctx, box):
         times.append(t)
         fill, ink = ctx.c["series"][i % len(ctx.c["series"])]
         left = W / 2.0 - CW / 2.0 + (i - mid) * off
-        top = FAN / 2.0 + abs(i - mid) * 16
+        top = lift(scene) + FAN / 2.0 + abs(i - mid) * 16
         bars = "".join('<div class="cd-bar" style="width:%d%%;background:%s"></div>' % (w, ink) for w in (86, 70, 54))
         parts.append('<div class="cd-card" id="%s-c%d"%s style="left:%.0fpx;top:%.0fpx;z-index:%d"><div class="cd-face" id="%s-f%d" '
-                     'style="background:%s;color:%s;box-shadow:%s"><div class="cd-tag">No. %d</div><div class="cd-n">%d</div>%s'
+                     'style="background:%s;color:%s;box-shadow:%s"><div class="cd-tag gt">No. %d</div><div class="cd-n gt">%d</div>%s'
                      '<i class="cd-star" style="border-color:%s"></i></div></div>'
                      % (sid, i, attrs, left, top, i + 1, sid, i, fill, ink, ctx.c["shadow"], i + 1, i + 1, bars, ink))
-        js.append(ctx.ghost("#%s-c%d" % (sid, i), {"rotation": round((i - mid) * 8, 2)}))   # its place in the fan, dimmed
+        js += ctx.slot("#%s-c%d" % (sid, i), {"rotation": round((i - mid) * 8, 2)})   # its place in the fan, an empty card
         js.append("tl.fromTo('#%s-c%d', %s, %s, %.3f);" % (
-            sid, i, js_obj({"opacity": GHOST, "x": 320, "y": 420, "rotation": 40}),
+            sid, i, js_obj({"opacity": SLOT, "x": 320, "y": 420, "rotation": 40}),
             js_obj({"opacity": 1, "x": 0, "y": 0, "rotation": round((i - mid) * 8, 2), "duration": 0.6, "ease": mo["enter_ease"],
                     "immediateRender": False}), t))
-        ty = CH + FAN + GAP
+        js.append(ctx.fill("#%s-c%d" % (sid, i), t))
+        ty = lift(scene) + CH + FAN + GAP
         titles.append('<div class="cd-t" id="%s-t%d" style="top:%dpx;color:%s">%s</div>' % (sid, i, ty, ctx.ink, ctx.esc(cd["title"])))
         if cd.get("sub"):
             titles.append('<div class="cd-s" id="%s-u%d" style="top:%dpx;color:%s">%s</div>' % (sid, i, ty + T_LINE, dim, ctx.esc(cd["sub"])))

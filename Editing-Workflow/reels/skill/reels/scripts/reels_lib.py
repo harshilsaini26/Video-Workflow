@@ -4,7 +4,19 @@ The frame is 1080x1920. The safe zone is Meta's published box for Reels and Stor
 side), the strictest of Instagram, TikTok and YouTube Shorts, so one file posts everywhere. Below RIGHT_COL_TOP the right
 edge also holds the platforms' action column (like, comment, share), so anything centred down there is narrower.
 """
-import json, math, os, re
+import json, math, os, re, sys
+
+
+def utf8_stdio():
+    """Print UTF-8 on any platform: on Windows a pipe defaults to the code page, and a "§" or "→" in a message would
+    stop the script (the RAG reel's Windows run). A console that is already UTF-8 is left alone."""
+    for stream in (sys.stdout, sys.stderr):
+        enc = (getattr(stream, "encoding", "") or "").lower().replace("-", "")
+        if enc != "utf8" and hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+utf8_stdio()
 
 W, H = 1080, 1920
 SAFE_TOP, SAFE_BOTTOM, SAFE_SIDE = 269, 672, 65           # px clear of platform UI (PLAYBOOK §R3)
@@ -29,7 +41,7 @@ def inside_safe(left, top, width, height):
 
 
 def load_words(path):
-    d = json.load(open(path))
+    d = json.load(open(path, encoding="utf-8"))
     words = d["words"] if isinstance(d, dict) and "words" in d else d
     return [{"text": str(w["text"]).strip(), "start": float(w["start"]), "end": float(w["end"])} for w in words if str(w["text"]).strip()]
 
@@ -124,7 +136,7 @@ def glyphs():
     """Advance widths in em of DM Sans 700/500 and JetBrains Mono 500 ("display700", "display500", "mono500"), measured
     in Chromium with the shipped fonts (dev/measure-glyphs.mjs -> glyphs.json)."""
     if not _GLYPHS:
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "glyphs.json")) as f:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "glyphs.json"), encoding="utf-8") as f:
             _GLYPHS.update(json.load(f))
     return _GLYPHS
 

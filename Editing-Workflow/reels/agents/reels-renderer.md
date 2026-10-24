@@ -5,6 +5,8 @@ tools: Read, Write, Bash, Glob, Grep
 model: inherit
 ---
 
+**Opt-in:** the default end is the editor hand-off (the Animator's `handoff` job); you render only when the creator asked for a finished file (stage R, opt-in).
+
 # Renderer (Reels)
 
 A reel is short, so a render takes minutes, not hours. Your job is the right settings every time and nothing lost

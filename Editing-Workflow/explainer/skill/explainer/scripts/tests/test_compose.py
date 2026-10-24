@@ -2,6 +2,7 @@
 import copy, os, re, unittest, wave
 from .helpers import load, needs_kit, read, run, run_kit, scratch, write
 import explainer_lib as E
+import transitions as X
 
 TOK = E.load_tokens()
 STEP, T0 = 0.4, 0.5
@@ -69,6 +70,20 @@ class Compose(unittest.TestCase):
         self.assertIn(text, r.stdout + r.stderr)
         return r
 
+    def test_a_tail_runs_the_page_past_the_voice(self):
+        def edit(b):
+            b["tail"] = 1.4
+            b["scenes"][2]["out"] = "end"
+        html, _, _ = self.ok(edit)
+        self.assertIn('data-duration="%.3f" data-fps="60"' % (VOICE + 1.4), html)
+        self.fails(lambda b: b.update(tail=9), "tail is the seconds")
+
+    def test_the_last_scene_is_long_enough_for_the_close(self):
+        # the close takes its last 0.4 s: a last scene under LAST_MIN would be read inside it (or on its ground)
+        def edit(b):
+            b["scenes"][1]["out"] = b["scenes"][2]["in"] = round(D - 0.8, 3)
+        self.fails(edit, "the last scene runs 0.80 s")
+
     def test_builds_vertical_60_with_voice_and_kit_markup(self):
         html, page, _ = self.ok()
         self.assertIn('data-fps="60" data-width="1080" data-height="1920"', html)
@@ -134,15 +149,16 @@ class Compose(unittest.TestCase):
             b["scenes"][2]["out"] = "word:28"
         self.fails(early_end, "no scene from")
 
-    def test_overlap_over_0_3_fails(self):
+    def test_scenes_hand_over_on_one_cut(self):
+        # SOP S9: a scene ends where the next begins; any overlap would put two scenes on screen
         n1_in = t_word(8) - E.LEAD
 
         def wide(b):
-            b["scenes"][0]["out"] = round(n1_in + 0.5 - TOK["motion"]["exit"], 3)
+            b["scenes"][0]["out"] = round(n1_in + 0.1, 3)
         self.fails(wide, "overlap")
 
         def snug(b):
-            b["scenes"][0]["out"] = round(n1_in + 0.25 - TOK["motion"]["exit"], 3)
+            b["scenes"][0]["out"] = round(n1_in, 3)
         self.ok(snug)
 
     def test_last_out_can_be_end(self):
@@ -175,7 +191,7 @@ class Compose(unittest.TestCase):
             b["scenes"][1]["bg"] = "base"
             b["scenes"][1]["transition"] = "push"     # a named transition other than wipe keeps the cross-fade
         html, _, _ = self.ok(edit)
-        self.assertEqual(len(re.findall(r'class="bg"', html)), 2)
+        self.assertEqual(len(re.findall(r'class="bg"', html)), 3)      # and the close's, back onto the hook's ground
         fades = re.findall(r"tl\.to\('#bg(\d+)', \{ opacity: 1, duration: ([\d.]+)[^;]*\}, ([\d.]+)\);", html)
         self.assertEqual(len(fades), 1)
         self.assertEqual(fades[0][0], "1")
@@ -208,7 +224,9 @@ class Compose(unittest.TestCase):
         self.assertTrue(tweens)
         entrances = exits = 0
         for tw in tweens:
-            if re.search(r"ease: 'none'", tw) and re.search(r"\b(x|y|scale): ", tw):
+            if re.search(r"ease: 'none'", tw) and re.search(r"\b(x|y|scale): ", tw) and not re.match(r"tl\.fromTo\('#(bg\d+-p\d+|\w+-cam)'", tw):
+                # (the background's particles and the camera drift at a constant speed: an ambient drift, not a move with a
+                # start and an end)
                 self.fail("linear easing on movement: " + tw)
             if tw.startswith("tl.fromTo(") and re.search(r"^tl\.fromTo\([^{]*\{ opacity: 0[,} ]", tw):
                 entrances += 1
@@ -216,9 +234,9 @@ class Compose(unittest.TestCase):
             elif tw.startswith("tl.to(") and re.search(r"\{ opacity: 0[,} ]", tw):   # to 0, not to 0.4
                 exits += 1
                 self.assertIn("ease: '%s'" % m["exit_ease"], tw)
-                self.assertLessEqual(float(re.search(r"duration: ([\d.]+)", tw).group(1)), m["exit"])
+                self.assertLessEqual(float(re.search(r"duration: ([\d.]+)", tw).group(1)), E.EXIT if exits <= 2 else X.CLOSE)
         self.assertGreaterEqual(entrances, 3)
-        self.assertGreaterEqual(exits, 2)   # the last scene holds to the end: no exit
+        self.assertEqual(exits, 3)          # the last scene leaves too: the close, over the last 0.4 s
         self.assertNotRegex(html, r"stagger: [\d.]")
         for amount in re.findall(r"stagger: \{ amount: ([\d.]+)", html):
             self.assertLessEqual(float(amount), m["stagger_total_max"])

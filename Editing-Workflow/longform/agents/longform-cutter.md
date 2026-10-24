@@ -100,6 +100,12 @@ times, with each section's folder name `NN-slug`).
    and last word of each section are present in its transcript; no word appears in two sections.
 6. Write `$W/sections.json`: `[{"part", "flat_start", "flat_end", "duration"}]`.
 
+### Wording notes (after the cut)
+
+Run `python3 "$SK/scripts/wording.py" --transcript $W/transcript-raw.json --kept $W/cut-list.json` and list its FAIL, WARN and NOTE lines
+in the cut report for Checkpoint A. A FAIL (a greeting or "in this video" as the first line, leaked text) is fixed by
+moving or cutting, never by rewriting the creator's words; the rest are notes for the creator.
+
 ## Done when
 
 - `cut`/`note`: Gates G2 (edge-audit 0), G3 (no DRIFT, no lost word) and G4 (dead-air 0) pass, `PAPER-CUT.md` and (when

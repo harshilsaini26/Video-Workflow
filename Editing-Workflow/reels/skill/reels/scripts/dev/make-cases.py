@@ -48,7 +48,7 @@ for k, (t, size) in enumerate(CAPS):   # one caption chunk; tests/test_heights.p
 def spec(name, b, d):
     if "caption" in b:   # a caption case: the whole text is one chunk, on screen from 0.2 s
         words = [{"text": w, "start": 0.2 + 0.3 * i, "end": 0.45 + 0.3 * i} for i, w in enumerate(b["caption"].split())]
-        with open(os.path.join(d, "transcript.json"), "w") as f:
+        with open(os.path.join(d, "transcript.json"), "w", encoding="utf-8") as f:
             json.dump({"words": words}, f)
         return {"id": name, "duration": 5.0, "fps": 60, "beats": [],
                 "captions": {"transcript": "transcript.json", "size": b["size"], "max_words": 99, "max_chars": 99}}
@@ -61,24 +61,24 @@ def compose(root):
     for name, b in cases:
         d = os.path.join(root, name)
         os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, "storyboard.json"), "w") as f:
+        with open(os.path.join(d, "storyboard.json"), "w", encoding="utf-8") as f:
             json.dump(spec(name, b, d), f)
         r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "reels-compose.py"), "--spec", os.path.join(d, "storyboard.json"),
-                            "--out", os.path.join(d, "public")], capture_output=True, text=True)
+                            "--out", os.path.join(d, "public")], capture_output=True, text=True, encoding="utf-8", errors="replace")
         if r.returncode:
             print("skipped %s: %s" % (name, r.stderr.strip()[-160:]))
             continue
         out.append({"case": name, "beat": b})
-    with open(os.path.join(root, "cases.json"), "w") as f:
+    with open(os.path.join(root, "cases.json"), "w", encoding="utf-8") as f:
         json.dump(out, f, indent=1)
     print("composed %d cases in %s" % (len(out), root))
 
 
 def merge(root, measured):
-    beats = {c["case"]: c["beat"] for c in json.load(open(os.path.join(root, "cases.json")))}
-    rows = [dict(json.loads(l), beat=beats[json.loads(l)["case"]]) for l in open(measured) if l.strip()]
+    beats = {c["case"]: c["beat"] for c in json.load(open(os.path.join(root, "cases.json"), encoding="utf-8"))}
+    rows = [dict(json.loads(l), beat=beats[json.loads(l)["case"]]) for l in open(measured, encoding="utf-8") if l.strip()]
     os.makedirs(os.path.dirname(FIXTURE), exist_ok=True)
-    with open(FIXTURE, "w") as f:
+    with open(FIXTURE, "w", encoding="utf-8") as f:
         f.write("[\n" + ",\n".join(json.dumps(r) for r in rows) + "\n]\n")
     print("wrote %d rows to %s" % (len(rows), FIXTURE))
 

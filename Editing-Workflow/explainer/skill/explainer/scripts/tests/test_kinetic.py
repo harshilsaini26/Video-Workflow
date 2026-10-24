@@ -7,10 +7,11 @@ from .test_scenes_ui import stub_vendor
 import explainer_lib as E
 from scenes import REGISTRY
 
-HOOK = {"type": "kinetic", "id": "hk", "bg": "mantle", "in": "word:0", "out": "word:12",
-        "big": {"text": "3", "at": "word:0"}, "words": [{"text": "STEP", "at": "word:1"}, {"text": "TRICK", "at": "word:2"}],
-        "line": {"text": "AI INVENTS", "at": "word:5"}, "strike": {"word": "INVENTS", "at": "word:7"},
-        "punch": {"text": "LESS", "at": "word:7"}, "source": "s1"}
+HOOK = {"type": "kinetic", "id": "hk", "bg": "mantle", "in": "word:2", "out": "word:12",
+        "big": {"text": "3", "at": "word:2"}, "words": [{"text": "STEP", "at": "word:3"}, {"text": "TRICK", "at": "word:4"}],
+        "line": {"text": "AI INVENTS", "at": "word:7"}, "strike": {"word": "INVENTS", "at": "word:9"},
+        "punch": {"text": "LESS", "at": "word:9"}, "source": "s1"}
+LEAD = {"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:2", "text": "Lead"}   # the hook rule aside
 TAIL = {"type": "title", "id": "tail", "bg": "mantle", "in": "word:12", "out": D, "text": "The end"}
 
 
@@ -19,7 +20,7 @@ class Kinetic(unittest.TestCase):
         d = scratch(self)
         write(os.path.join(d, "transcript.json"), {"words": words30()})
         silent_wav(os.path.join(d, "voice.wav"), VOICE)
-        sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [scene, TAIL]})
+        sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [LEAD, scene, TAIL]})
         r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
         return r, (read(os.path.join(d, "public", "index.html")) if r.returncode == 0 else "")
 
@@ -31,14 +32,14 @@ class Kinetic(unittest.TestCase):
             self.assertLessEqual(E.text_width("90%", z["big"], spacing=mod.TRACK) + z["gap"]
                                  + E.text_width("SCRIPTS", z["word"], spacing=mod.TRACK), w)
         self.assertLessEqual(mod.min_width(long), 780)
-        self.assertGreater(mod.height(HOOK, 950), mod.height(long, mod.min_width(long)))
+        self.assertGreater(mod.sizes(HOOK, 780)["big"], mod.sizes(long, mod.min_width(long))["big"])   # a long hook shrinks
 
     def test_every_piece_rises_on_its_word(self):
         r, html = self.build(HOOK)
         self.assertEqual(r.returncode, 0, r.stdout)
         body = html.split('id="host-hk"')[1].split('id="host-tail"')[0]
-        self.assertEqual(len(re.findall(r'data-at="[\d.]+" data-anchor="word\d+"', body)), 6)   # big, 2 words, line, strike, punch
-        for sel, w in (("#hk-b", 0), ("#hk-w1", 2), ("#hk-l", 5), ("#hk-p", 7)):
+        self.assertEqual(len(re.findall(r'data-at="[\d.]+" data-anchor="[^"]+"', body)), 6)   # big, 2 words, line, strike, punch
+        for sel, w in (("#hk-b", 2), ("#hk-w1", 4), ("#hk-l", 7), ("#hk-p", 9)):
             t = max(0.0, t_word(w) - E.LEAD)
             self.assertRegex(html, r"tl\.fromTo\('%s', \{ yPercent: 110 \}, \{ yPercent: 0, duration: [\d.]+, ease: 'expo\.out', "
                                    r"immediateRender: false \}, %.3f\);" % (sel, t))

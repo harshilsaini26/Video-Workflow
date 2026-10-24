@@ -98,19 +98,43 @@ class Build(unittest.TestCase):
             self.assertTrue(ctx.ambient_lines, t)
             self.assertTrue(all(l.startswith("tl.") for l in ctx.ambient_lines), t)
 
-    def test_the_structure_shows_dimmed_until_each_piece_is_said(self):
-        # the stage is never bare while a build waits for its first word: every piece is a dim ghost from the scene's in
-        ghosts = {"flow": r"#sc-n\d", "stack": r"#sc-s\d", "cards": r"#sc-c\d", "compare": r"#sc-[lr]\d", "hub": r"#sc-n\d"}
+    def test_each_piece_waits_as_an_empty_slot_until_it_is_said(self):
+        # the stage is never bare while a build waits for its words, but nothing on it reads as faint text: every piece
+        # is an empty outline (its words hidden) from the scene's in, and its words arrive on their own word
+        slots = {"flow": r"#sc-n\d", "stack": r"#sc-s\d", "cards": r"#sc-c\d", "compare": r"#sc-[lr]\d", "hub": r"#sc-n\d"}
         t_in = 0.5 + 4 * 0.4 - E.LEAD
-        for t, sel in ghosts.items():
+        for t, sel in slots.items():
             r, html = self.build(GOOD[t])
             self.assertEqual(r.returncode, 0, r.stdout)
-            dim = re.findall(r"tl\.to\('(%s)', \{ opacity: 0\.18,[^}]* duration: [\d.]+, ease: '[\w.]+' \}, ([\d.]+)\);" % sel, html)
+            dim = re.findall(r"tl\.to\('(%s)', \{ opacity: 0\.4,[^}]* duration: [\d.]+, ease: '[\w.]+' \}, ([\d.]+)\);" % sel, html)
             self.assertEqual(len(dim), COUNTS[t], t)
             self.assertTrue(all(abs(float(x) - t_in) < 1e-3 for _, x in dim), t)
+            for piece, _ in dim:
+                self.assertIn("tl.set('%s .gt', { opacity: 0 }, 0);" % piece, html, t)
+                self.assertRegex(html, r"tl\.fromTo\('%s \.gt', \{ opacity: 0 \}, \{ opacity: 1," % re.escape(piece), t)
+                self.assertRegex(html, r'id="%s"[^>]*>.*?class="[^"]*\bgt\b' % piece[1:], t)
+            self.assertNotIn("opacity: 0.18", html, t)
         r, html = self.build(GOOD["timeline"])                     # the rail and its empty dots come in with the scene
         self.assertIn("tl.fromTo('#sc .tm-rail, #sc .tm-dot', { opacity: 0, y: -16 }", html)
         self.assertNotIn("WARN sc: nothing shows", r.stdout)
+
+    def test_a_long_flow_travels_from_step_to_step(self):
+        # five or six steps don't fit the area at a readable size: the column runs past a window and the camera moves
+        # to each step as it arrives (a new framing on every step, so E4 lets the scene hold longer)
+        from scenes import flow
+        sc = {"type": "flow", "nodes": [{"label": "Step " + "ABCDEF"[i], "at": W(5 + 2 * i)} for i in range(6)]}
+        self.assertEqual(flow.validate(sc), [])
+        self.assertTrue(flow.travels(sc))
+        self.assertFalse(flow.travels(GOOD["flow"]))
+        self.assertLess(flow.height(sc, 780), 6 * flow.NODE + 5 * flow.LINK)
+        self.assertIn("2 to 6", " ".join(flow.validate(dict(sc, nodes=sc["nodes"] + [{"label": "G", "at": W(17)}]))))
+        r, html = self.build(sc)
+        self.assertEqual(r.returncode, 0, r.stdout)
+        moves = re.findall(r"tl\.to\('#sc-mv', \{ y: (-?[\d.]+), duration: [\d.]+, ease: 'expo\.out' \}, ([\d.]+)\);", html)
+        self.assertGreaterEqual(len(moves), 3)
+        ys = [float(y) for y, _ in moves]
+        self.assertEqual(ys, sorted(ys, reverse=True))            # always further down the column
+        self.assertIn('"travels": true', read(os.path.join(os.path.dirname(re.search(r"(/tmp/[^\s\"]+)/public/index.html", r.stdout).group(1) + "/public/index.html"), "moments.json")))
 
     def test_heights_are_fixed(self):
         for t, sc in GOOD.items():
@@ -173,11 +197,12 @@ class Hub(unittest.TestCase):
                     self.assertGreaterEqual(apart, hub.GAP - 0.01, (labels, i, j))
 
     def test_three_long_labels_fit_the_narrow_column(self):
-        # a portrait frame: the ring may be taller than wide, so three long labels still fit 780 px unscaled
+        # a portrait frame: the ring may be taller than wide, so three long labels fit 780 px (shrunk to 0.8 at most,
+        # which keeps the 44 px labels over the 28 px floor)
         from scenes import hub
         sc = {"center": "RAG", "items": [{"label": l, "at": W(6)} for l in ("Retrieval", "Augmented", "Generation")]}
-        self.assertLessEqual(hub.min_width(sc), 780)
-        self.assertLessEqual(hub.height(sc, 780), E.SCENE["bottom"] - E.SCENE["top"])
+        self.assertLessEqual(hub.min_width(sc) * 0.8, 780)
+        self.assertLessEqual(hub.height(sc, 780) * 0.8, E.SCENE["bottom"] - E.SCENE["top"] - 2 * E.IDLE_ROOM)
 
     def test_labels_are_large_and_nothing_spins(self):
         from scenes import hub

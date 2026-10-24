@@ -17,7 +17,7 @@ def boxes(html):
     """{id: (left, top, width, height, inner width, inner height, scale)} for every scene box on the page."""
     out = {}
     for m in re.finditer(r'<div class="box" id="(\w+)" style="left:(\d+)px;top:(\d+)px;width:(\d+)px;height:(\d+)px">'
-                         r'<div class="live" id="\1-live" style="width:(\d+)px;height:(\d+)px;transform:scale\(([\d.]+)\)">', html):
+                         r'<div class="cam" id="\1-cam"><div class="live" id="\1-live" style="width:(\d+)px;height:(\d+)px;transform:scale\(([\d.]+)\)">', html):
         out[m.group(1)] = tuple(int(x) for x in m.groups()[1:7]) + (float(m.group(8)),)
     return out
 
@@ -54,7 +54,7 @@ class Craft(unittest.TestCase):
             self.assertTrue(E.inside_scene(left, top, w, h), sid)
             self.assertGreaterEqual(top, E.SCENE["top"], sid)
             self.assertLessEqual(top + h, E.SCENE["bottom"], sid)
-        with open(os.path.join(out, "moments.json")) as f:
+        with open(os.path.join(out, "moments.json"), encoding="utf-8") as f:
             sc = {x["id"]: x for x in json.load(f)["scenes"]}
         for sid, b in bx.items():
             self.assertEqual(sc[sid]["box"], list(b[:4]), sid)
@@ -82,17 +82,18 @@ class Craft(unittest.TestCase):
         self.assertLessEqual(top + h, E.L.RIGHT_COL_TOP)
         self.assertTrue(E.inside_scene(left, top, w, h))
 
-    def test_the_scene_area_runs_down_to_the_reels_safe_line(self):
-        # motion-graphics-skills' reel-export: Instagram's UI leaves y 360 to 1420 clear (out of the right 120 px)
-        self.assertEqual(E.SCENE["bottom"], 1420)
-        self.assertTrue(E.inside_scene(150, 900, 780, 520))
-        self.assertFalse(E.inside_scene(65, 900, 950, 520))        # below y 960 it keeps clear of the action column
-        self.assertFalse(E.inside_scene(150, 900, 780, 521))
+    def test_the_scene_area_ends_at_the_one_bottom_limit(self):
+        # the scene area ends at y 1105, above the small captions (1130 to 1235); 1235 stays the one line for any text
+        self.assertEqual(E.SCENE["bottom"], 1105)
+        self.assertEqual(E.TEXT_BOTTOM, 1235)
+        self.assertTrue(E.inside_scene(150, 900, 780, 205))
+        self.assertFalse(E.inside_scene(65, 900, 950, 205))        # below y 960 it keeps clear of the action column
+        self.assertFalse(E.inside_scene(150, 900, 780, 206))
         tm = {"type": "timeline", "id": "tm", "bg": "mantle", "in": "word:4", "out": D,
               "steps": [{"label": "Step " + "ABCDE"[i], "at": "word:%d" % (5 + 2 * i)} for i in range(5)]}
         left, top, w, h, iw, ih, s = boxes(self.build(dict(BOARD, scenes=[LEAD_IN, tm]))[0])["tm"]
-        self.assertGreaterEqual(s, 1.3)                            # 660 px of steps: 1.1 at most in a 728 px area
-        self.assertLessEqual(top + h, 1420)
+        self.assertGreaterEqual(s, 1.0)                            # five steps still fill the narrow column
+        self.assertLessEqual(top + h, 1105)
 
     def test_a_scene_too_wide_even_unscaled_still_fails(self):
         d = scratch(self)

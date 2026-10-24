@@ -27,10 +27,10 @@ ap.add_argument("--after", type=float, default=0.45)
 ap.add_argument("--label", default="")
 args = ap.parse_args()
 
-raw = json.load(open(args.transcript))
+raw = json.load(open(args.transcript, encoding="utf-8"))
 words = raw["words"] if isinstance(raw, dict) and "words" in raw else raw
 words = [{"text": w["text"], "start": float(w["start"]), "end": float(w["end"])} for w in words]
-d = json.load(open(args.speech)); num, den = [int(x) for x in str(d.get("timebase", "30/1")).split("/")]; fps = num / den
+d = json.load(open(args.speech, encoding="utf-8")); num, den = [int(x) for x in str(d.get("timebase", "30/1")).split("/")]; fps = num / den
 chunks = [(a / fps, b / fps) for a, b, sp in d["chunks"] if sp not in (99999, 0)]
 
 def nearest(t):
@@ -91,10 +91,10 @@ if cursor < args.duration:
 total = sum(s["end"] - s["start"] for s in kept)
 os.makedirs(args.out_dir, exist_ok=True)
 json.dump({"source_duration": args.duration, "kept_seconds": round(total, 2), "kept": kept, "removed": removed, "hand_cut": True},
-          open(os.path.join(args.out_dir, "cut-list.json"), "w"), indent=1)
+          open(os.path.join(args.out_dir, "cut-list.json"), "w", encoding="utf-8"), indent=1)
 md = ["# Paper cut (hand cut)%s" % ((" - " + args.label) if args.label else ""), "",
       "Raw %.1fs -> kept %.1fs (%d segments). Only the kept lines are listed; everything else is out." % (args.duration, total, len(kept)), ""] + lines
-open(os.path.join(args.out_dir, "PAPER-CUT.md"), "w").write("\n".join(md) + "\n")
+open(os.path.join(args.out_dir, "PAPER-CUT.md"), "w", encoding="utf-8").write("\n".join(md) + "\n")
 print("kept %.1fs of %.1fs in %d segments" % (total, args.duration, len(kept)))
 for s in kept:
     print("  %7.3f - %7.3f" % (s["start"], s["end"]))

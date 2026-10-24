@@ -71,6 +71,21 @@ class Voice(unittest.TestCase):
         d, sp, out, r = self.make(self.three(), target=5.5)   # 5.55 s: within 10%
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
+    def test_samples_are_ten_seconds_and_measure_each_voices_rate(self):
+        # SOP S4 and S6: the RAG reel's samples were 3.5 s (one short hook line) and its length was planned at a rate
+        # the voice never spoke; the samples now run past 10 s and each voice's words a second is written down
+        lines = [{"id": "l%d" % i, "say": " ".join(["word"] * 8), "show": "x", "break": "sentence"} for i in range(6)]
+        d = scratch(self)
+        rates = os.path.join(d, "voice-rates.json")
+        write(rates, {"_note": "kept", "am_michael@1": 2.4})
+        _, _, _, r = self.make(lines, extra=("--samples", os.path.join(d, "samples"), "--rates", rates))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        got = json.load(open(rates, encoding="utf-8"))
+        self.assertEqual(got["_note"], "kept")
+        for v in ("af_heart", "am_michael", "bf_emma"):
+            self.assertGreaterEqual(duration(os.path.join(d, "samples", v + ".wav")), 10.0, v)
+            self.assertAlmostEqual(got["%s@1" % v], 1 / 0.32, delta=0.05)      # the fake voice: 0.32 s a word
+
     def test_lexicon_is_applied(self):
         lines = [{"id": "l0", "say": "estimate the WACC and WACCs first", "show": "estimate the WACC first"}]
         d, sp, out, r = self.make(lines)

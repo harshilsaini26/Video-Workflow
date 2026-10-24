@@ -73,9 +73,10 @@ run in parallel.
 | 6 | Assets | `reels-asset-scout` | G6 | 7 |
 | 7 | Compose | `reels-animator` · build | G7 G8 G9 | B |
 | B | **Checkpoint B** | you, with the creator | approval | 8 |
-| 8 | Render | `reels-renderer` | file exists | 9 |
-| 9 | Verify | `reels-qa` · render (asks `reels-transcriber` · render) | G10 G11 | 10 |
-| 10 | Package | `reels-packager`, then `reels-qa` · final | G12 | 11 |
+| 8 | **Hand-off** | `reels-animator` · handoff: `python3 "$RS/scripts/reels-handoff.py" --project $W` (the cut on the camera files, each card a transparent clip, the filmcraft project) | H1 (`handoff-check.py`) | 9 |
+| 9 | The creator edits | the creator, in filmcraft (or Premiere, or Resolve): trims, pacing, the mix, the export; `qa-export.py` on their export if they want it | their call | 10 |
+| 10 | Package | `reels-packager`: `POST.md` as a draft through `post-check.py`, `captions.srt`, covers from the creator's export | post-check | 11 |
+| R | Render (opt-in) | `reels-renderer`, then `reels-qa` · render (G10 G11): only when the creator asks for a finished file | G10 G11 | 10 |
 | 11 | Notes | you, with the creator | every note routed | 5, 4 or 8 |
 | 12 | Learn | `reels-librarian` | G13 | - |
 | - | After posting | `reels-analyst` · insights; every few reels · teardown | - | proposals |
@@ -86,6 +87,8 @@ Start agents with the Agent tool (`subagent_type` = the agent's name); update ST
 
 ```
 PROJECT   videos/<project> · version v<n> · profile reels (1080x1920, 60 fps, free tools only)
+VOICE     the creator's voice profile, if they gave 3 to 6 of their own scripts or posts (rhythm, openers, words they
+          never use, how they ask); never invented: "none" when they gave none
 JOB       <the agent's job>
 INPUTS    <exact files>
 TASK      <one or two sentences>
@@ -97,7 +100,9 @@ REPORT    the REPORT block from your agent file
 ## 4. Checkpoint A: the cut and the story
 
 One message: the paper cut (raw → flat length, what went and why); the story (`STORY.md`): the promise and where it is
-paid off, the send-worthy moment, the **hook line** and whether to move it to the front, the proposed length and what
+paid off, the send-worthy moment, the **hook line** and whether to move it to the front, two or three **hook angles** (other
+lines from the footage, or a 3 s line to record) for the creator to pick or rewrite, the wording notes on the kept
+words (`wording.py`: notes to read, never automatic rewrites), the proposed length and what
 to cut for it, the loop idea, the crop for a landscape source; for a long-video source, the context leaks; then the
 numbered questions. Record answers verbatim (A01...) in NOTES.md; cut answers → Cutter (`note`, `hook`); plan answers
 → Director.
@@ -120,10 +125,17 @@ answers (B01...), brief the Director (`replan`) and Animator (`rebuild`), show t
 | loudness, music level, the package | Packager |
 | a caption word wrong | Director (`captions.terms` / `replace`) → Animator |
 
-## 7. Delivery
+## 7. Delivery: the hand-off
 
-On QA's final PASS, tell the creator: where the reel is (`deliver/reel.mp4`, length, md5), the cover candidates to pick
-from, and the posting checklist from `POST.md`: post as a Reel; set the cover; add music in the app if chosen (low under
+The default end is an editable project, not a rendered reel: the creator finishes it by hand. On H1's PASS, tell the
+creator where `$W/edit/` is and what is in it (`HANDOFF.md`): `<project>.fcproj` to open in filmcraft (made by
+`filmcraft-cli` when installed; otherwise File > Import the `.xml`, which Premiere and Resolve also open), the kept cut
+on their own camera files (never re-encoded; placed on the speaker when `reels-face-x.py` found a face), b-roll, each
+card as a transparent clip, the sound effects, the styled captions (off) and `captions.srt`, and markers. The render
+(stage R) happens only when the creator asks for a finished file.
+
+Then the cover candidates (from the creator's export) and the posting checklist from `POST.md` (a draft for the creator
+to edit, checked with `post-check.py`): post as a Reel; set the cover; add music in the app if chosen (low under
 the voice); no watermark; the same file to Shorts / TikTok if wanted, with `captions.srt`; a phone preview first if QA
 asked for one. Then offer an **Insights review** in about a week (a screenshot of the reel's Insights: skip rate,
 retention chart, average watch time, sends).

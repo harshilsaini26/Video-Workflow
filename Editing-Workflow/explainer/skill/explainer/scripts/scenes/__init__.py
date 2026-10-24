@@ -4,16 +4,26 @@ Each module has
   TYPE                          the storyboard "type"
   CSS                           its styles (scoped by class; the composer adds each used module's CSS once)
   NEEDS_SOURCE                  optional, True when the scene shows a number or a claim
+  DECOR_KEYS                    optional, keys whose values are UI furniture (a timecode, a like count): no source needed
+  MAX_SCALE / max_scale(scene)  optional, how far the composer may scale it up (default 1.8)
+  place(scene)                  optional, its own box (left, top, width, height): never scaled, only checked
+  BAKED                         optional, True when its sizes depend on the width it is given (measured at that width)
+  travels(scene)                optional, True when its camera moves to each new item (E4 lets it hold longer)
+  SHRINK_WIDTH                  optional, True when its width is geometry, not a word (the composer may shrink it to fit)
   validate(scene) -> [str]      data-shape errors
+  ASPECT                        optional, a drawing's height over its width: height() and min_width() (600) by default
   height(scene, width) -> int   the box height at that width, from the module's own CSS constants
   min_width(scene) -> int       the widest text that cannot wrap, plus padding
   render(scene, ctx, box) -> (html, [js])
                                 the HTML inside <div class="box" id="<scene id>">, and GSAP lines for the shared `tl`
 
 Every entrance is an opacity 0 -> 1 fromTo with the enter ease (ctx.enter); exits belong to the composer. Staggers
-are written as { amount: total } and never pass tokens.motion.stagger_total_max.
+are written as { amount: total } and never pass tokens.motion.stagger_total_max. A build's pieces wait as empty slots
+(ctx.slot, ctx.fill; their words in .gt). Colours come only from ctx.c (this ground) and ctx.pc (light paper, for a UI
+mock-up on any ground), never as hex. All text is drawn at 28 px or more (the composer never scales a scene's smallest
+CSS font-size under that), and holds 3:1 against what is behind it (gate E5).
 """
-import html as _html, importlib, json, math, os, re, shutil, struct
+import html as _html, importlib, importlib.util, json, math, os, re, shutil, struct
 
 import explainer_lib as E
 
@@ -33,7 +43,8 @@ class Ctx:
         self.words, self.tokens = words, tokens
         self.vendor_dir, self.out_dir = vendor_dir, out_dir
         self.bg = bg
-        self.c = E.theme(tokens, bg)          # the colours, by role (explainer_lib.theme)
+        self.c = E.theme(tokens, bg)          # the colours, by role (explainer_lib.theme), on this ground
+        self.pc = E.theme(tokens, "base")     # light paper: inside a UI mock-up (a window, a sheet, a chat) on any ground
         self.ink = self.c["ink"]
         self.ambient_lines = []   # idle motion (a float, a pulse, a slow turn): on the page, but not a change for pace-check
 
@@ -42,6 +53,17 @@ class Ctx:
         soft shadow."""
         c = self.c
         return "background:%s;box-shadow:inset 0 0 0 2px %s, %s" % (c["card"], c["card_line"], c["shadow"])
+
+    def paper_card(self):
+        """A light paper surface on any ground (a window, a sheet, a chat): the paper fill, its hairline, the ground's
+        shadow."""
+        p = self.pc
+        return "background:%s;box-shadow:inset 0 0 0 2px %s, %s" % (p["card"], p["card_line"], self.c["shadow"])
+
+    @property
+    def boil(self):
+        """" boil" (a class) on a stroke when the look's strokes boil (tokens.motion.boil: on in paper), else ""."""
+        return " boil" if self.tokens["motion"].get("boil") else ""
 
     def ambient(self, line):
         self.ambient_lines.append(line)
@@ -60,6 +82,10 @@ class Ctx:
             self.fail(str(e))
         if not self.t_in - 1e-6 <= t <= self.t_out + 1e-6:
             self.fail("an item at %s (%.2f s) is outside the scene (%.2f to %.2f s)" % (ref, t, self.t_in, self.t_out))
+        last = self.t_out - E.EXIT - SEEN
+        if t > last + 1e-6 and last > self.t_in:
+            self.fail("an item at %s (%.2f s) lands too close to the scene's end to be seen (the exit starts at %.2f s): "
+                      "anchor it by %.2f s, or end the scene on a later word" % (ref, t, self.t_out - E.EXIT, last))
         return t
 
     def item(self, ref):
@@ -89,17 +115,25 @@ class Ctx:
         path = os.path.join(self.vendor_dir, "lucide", "%s.svg" % name)
         if not os.path.exists(path):
             self.fail("unknown icon %r: no vendor/lucide/%s.svg (browse lucide.dev/icons; get the set with: %s)" % (name, name, LUCIDE_INSTALL))
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             svg = re.sub(r"^(\s*<!--.*?-->)*\s*", "", f.read(), flags=re.S).strip()   # Lucide files open with a licence comment
         if not svg.startswith("<svg") or re.search(r"<script|on\w+=", svg, re.I):
             self.fail("vendor/lucide/%s.svg is not a plain SVG icon" % name)
         return svg
 
-    def ghost(self, sel, extra=None):
-        """Show `sel` dimmed (opacity GHOST) from the scene's in, so a build that waits for its words never leaves the
-        stage bare; its entrance then starts from GHOST (ctx.enter(sel, t, {"opacity": GHOST, ...}))."""
+    def slot(self, sel, extra=None):
+        """`sel` waits as an empty slot from the scene's in: its outline at opacity SLOT, its words (every `.gt` inside
+        it) hidden, so a build that waits for its words never leaves the stage bare and never shows faint text. Its
+        entrance then starts from SLOT (ctx.enter(sel, t, {"opacity": SLOT, ...})) and ctx.fill brings the words in."""
         m = self.tokens["motion"]
-        return "tl.to(%s, %s, %.3f);" % (sel_js(sel), js_obj(dict({"opacity": GHOST}, **dict(extra or {}, duration=m["enter"], ease=m["enter_ease"]))), self.t_in)
+        return ["tl.set(%s, { opacity: 0 }, 0);" % sel_js(sel + " .gt"),
+                "tl.to(%s, %s, %.3f);" % (sel_js(sel), js_obj(dict({"opacity": SLOT}, **dict(extra or {}, duration=m["enter"], ease=m["enter_ease"]))), self.t_in)]
+
+    def fill(self, sel, t):
+        """The words of a slot arrive, just after the slot itself fills on its word."""
+        m = self.tokens["motion"]
+        return "tl.fromTo(%s, { opacity: 0 }, %s, %.3f);" % (sel_js(sel + " .gt"), js_obj({"opacity": 1, "duration": 0.3, "ease": m["enter_ease"],
+                                                                                         "immediateRender": False}), t + 0.08)
 
     def idle(self, sel, t0, t1, props, every=1.6):
         """An idle back-and-forth while a scene holds (ambient: not a change): from t0 to t1, `sel` eases to `props` and
@@ -112,14 +146,35 @@ class Ctx:
 
     def asset(self, rel):
         """Copy a project file (a path relative to storyboard.json) next to the page as assets/<id>-<name>; returns
-        (the page's relative path, the source's full path), or fails naming the missing file."""
+        (the page's relative path, the source's full path), or fails naming the missing file. Windows backslashes are
+        fine; two files with the same name from different folders get their own copies."""
+        rel = str(rel).replace("\\", "/")
         src = rel if os.path.isabs(rel) else os.path.join(self.spec_dir, rel)
         if not os.path.isfile(src):
             self.fail("no file at %s (paths are relative to storyboard.json: %s)" % (rel, src))
         name = "%s-%s" % (self.id, os.path.basename(src))
+        taken = self.__dict__.setdefault("_assets", {})
+        if taken.get(name, src) != src:              # the same name from another folder: number it
+            base, ext = os.path.splitext(name)
+            k = 2
+            while taken.get("%s-%d%s" % (base, k, ext), src) != src:
+                k += 1
+            name = "%s-%d%s" % (base, k, ext)
+        taken[name] = src
         os.makedirs(os.path.join(self.out_dir, "assets"), exist_ok=True)
         shutil.copy(src, os.path.join(self.out_dir, "assets", name))
         return "assets/" + name, src
+
+    def image(self, rel):
+        """A creator's image (a path relative to storyboard.json; Windows backslashes are fine) copied next to the page:
+        (the page's relative path, width, height), its size read from its own header (imagesize.py, no PIL)."""
+        import imagesize
+        page, src = self.asset(rel)
+        try:
+            w, h = imagesize.size(src)
+        except ValueError as e:
+            self.fail(str(e))
+        return page, w, h
 
     def add_head(self, tag):
         if tag not in self.head:
@@ -138,7 +193,8 @@ class Ctx:
         return "tl.fromTo(%s, %s, %s, %.3f);" % (sel_js(sel), js_obj(f), js_obj(g), t)
 
 
-GHOST = 0.18      # how bright a piece of a build is before its word
+SEEN = 0.3          # an item is on screen at least this long before its scene's exit begins
+SLOT = 0.4        # how strong a piece's empty outline is before its word (its words stay hidden until then)
 LUCIDE_INSTALL = "npm pack lucide-static@0.454.0, then copy its icons/*.svg to assets/vendor/lucide/"
 
 
@@ -154,6 +210,7 @@ def sel_js(sel):
 def js_obj(d):
     parts = []
     for k, v in d.items():
+        k = k if re.match(r"^[A-Za-z_$][\w$]*$", k) else "'%s'" % k      # a CSS variable ('--h') needs its quotes
         if isinstance(v, dict):
             parts.append("%s: %s" % (k, js_obj(v)))
         elif isinstance(v, bool):
@@ -184,12 +241,13 @@ def line_px(size, lh):
     return int(round(size * lh))
 
 
-def widest(pairs, pad=0):
-    """The width of the widest single word among [(text, font size)], plus padding."""
+def widest(pairs, pad=0, font="display700", spacing=0.0):
+    """The width of the widest single word among [(text, font size)], plus padding (font: a glyphs() table, such as
+    E.hero()["glyphs"] for words set in the look's hero face)."""
     best = 0
     for text, size in pairs:
         for w in str(text or "").split():
-            best = max(best, E.text_width(w, size))
+            best = max(best, E.text_width(w, size, font, spacing=spacing))
     return int(math.ceil(best)) + pad
 
 
@@ -202,10 +260,39 @@ def need(scene, keys):
     return ["missing %r" % k for k in keys if scene.get(k) in (None, "", [])]
 
 
-_MODULES = ["title", "number", "count_up", "list_cards", "line_chart", "bars", "duration", "qa_stack",
-            "browser", "sheet", "formula", "icon_row", "custom",
-            "flow", "stack", "compare", "timeline", "cards", "hub", "logo_card", "kinetic"]
-REGISTRY = {}
-for _m in _MODULES:
-    _mod = importlib.import_module("scenes." + _m)
-    REGISTRY[_mod.TYPE] = _mod
+def is_num(v):
+    """A real number (True and False are not)."""
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def word_index(ref):
+    """The word number of a "word:N" anchor, or None for any other anchor."""
+    s = str(ref)
+    return int(s[5:]) if s.startswith("word:") and s[5:].isdigit() else None
+
+
+def discover(folder, package="scenes"):
+    """{TYPE: module} for every scenes module in `folder`: each <name>.py (not _private) that sets TYPE. A new scene is a
+    new file; nothing else to edit. Files without a TYPE (helpers, notes) are left alone."""
+    found = {}
+    for f in sorted(os.listdir(folder)):
+        if not f.endswith(".py") or f.startswith("_"):
+            continue
+        name = f[:-3]
+        if package == "scenes":
+            mod = importlib.import_module("scenes." + name)
+        else:
+            spec = importlib.util.spec_from_file_location("%s.%s" % (package, name), os.path.join(folder, f))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+        if isinstance(getattr(mod, "TYPE", None), str):
+            if mod.TYPE in found:
+                raise ImportError("two scene modules say TYPE %r: %s and %s" % (mod.TYPE, found[mod.TYPE].__name__, mod.__name__))
+            if hasattr(mod, "ASPECT"):        # a drawing that keeps its shape: its height and narrowest width follow
+                mod.height = getattr(mod, "height", lambda scene, width, a=mod.ASPECT: int(math.ceil(width * a)))
+                mod.min_width = getattr(mod, "min_width", lambda scene: 600)
+            found[mod.TYPE] = mod
+    return found
+
+
+REGISTRY = discover(os.path.dirname(os.path.abspath(__file__)))

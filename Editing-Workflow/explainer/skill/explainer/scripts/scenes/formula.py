@@ -16,6 +16,7 @@ CSS = """
 
 def _visible(tex):
     """A rough count of the characters KaTeX draws: commands and braces dropped, a fraction counts its longer side."""
+    tex = re.sub(r"\\(?:text)?color\{[^{}]*\}", "", tex)     # a colour draws nothing
     t = re.sub(r"\\frac\{([^{}]*)\}\{([^{}]*)\}", lambda m: max(m.group(1), m.group(2), key=len), tex)
     t = re.sub(r"\\[a-zA-Z]+", "x", t)
     return re.sub(r"[{}^_\s]", "", t)

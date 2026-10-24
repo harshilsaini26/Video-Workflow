@@ -14,21 +14,24 @@ import glob, json, os, re, shutil, subprocess, tempfile
 import explainer_lib as E
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MIN_PX = 28          # the smallest text a phone viewer reads on the 1080 px frame (labels are 34 px or more by design)
+MIN_PX = E.MIN_TEXT  # the smallest text a phone viewer reads on the 1080 px frame
 KEEP = ("content_overlap", "text_box_overflow", "clipped_text", "contrast_aa_failure")
 HANDOVER = 0.6       # after a scene starts, the old one may still be leaving through it (the cut and its blur)
 
 
-def area():
+def area(moments=None):
+    """The scene area the page was composed for: moments.json carries it (a reel without captions takes their band)."""
     L = E.L
-    return {"left": E.SCENE["left"], "top": E.SCENE["top"], "right": E.SCENE["right"], "bottom": E.SCENE["bottom"],
-            "col_top": L.RIGHT_COL_TOP, "narrow_left": L.NARROW["left"], "narrow_right": L.NARROW["right"]}
+    sa = dict(E.SCENE, **((moments or {}).get("area") or {}))
+    return {"left": sa["left"], "top": sa["top"], "right": sa["right"], "bottom": sa["bottom"],
+            "picture_bottom": E.PICTURE_BOTTOM, "col_top": L.RIGHT_COL_TOP, "narrow_left": L.NARROW["left"],
+            "narrow_right": L.NARROW["right"]}
 
 
 def npx_dirs():
     dirs = []
     try:
-        cache = subprocess.run(["npm", "config", "get", "cache"], capture_output=True, text=True, timeout=30).stdout.strip()
+        cache = subprocess.run(["npm", "config", "get", "cache"], capture_output=True, text=True, timeout=30, encoding="utf-8", errors="replace").stdout.strip()
         if cache:
             dirs += sorted(glob.glob(os.path.join(cache, "_npx", "*", "node_modules")), key=os.path.getmtime, reverse=True)
     except (OSError, subprocess.SubprocessError):
@@ -54,7 +57,7 @@ def find_chrome():
     if os.environ.get("CHROME") and os.path.exists(os.environ["CHROME"]):
         return os.environ["CHROME"]
     try:
-        r = subprocess.run(["npx", "--no-install", "hyperframes", "browser", "path"], capture_output=True, text=True, timeout=120)
+        r = subprocess.run([shutil.which("npx") or "npx", "--no-install", "hyperframes", "browser", "path"], capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace")
         p = (r.stdout.strip().splitlines() or [""])[-1].strip()
         if p and os.path.exists(p):
             return p
@@ -67,16 +70,32 @@ def find_chrome():
 
 
 def samples(moments):
-    """One moment per scene: just before it starts to leave, when everything in it has arrived."""
+    """One moment per scene: just before its exit starts, when everything in it has arrived (the last scene's exit is
+    the close, E.CLOSE); a stage also just before each of its beats, when the picture before it has settled."""
     out = []
     for s in moments["scenes"]:
-        t = s["out"] - 0.1 if s["out"] - s["in"] > 0.7 else (s["in"] + s["out"]) / 2.0
+        gone = E.CLOSE if s["out"] >= moments["duration"] - 1e-6 else E.EXIT
+        t = s["out"] - gone - 0.05 if s["out"] - s["in"] > 2 * gone else (s["in"] + s["out"]) / 2.0
+        out += [{"id": s["id"], "t": round(b - 0.05, 3)} for b in s.get("beats", []) if b - s["in"] > 0.6 and b < t]   # a stage: each picture
         out.append({"id": s["id"], "t": round(t, 3)})
     return out
 
 
-def probe(index, smp):
-    return probe_pages([{"index": index, "samples": smp}])
+def handovers(moments, half=0.25, step=1 / 30.0):
+    """Every cut, looked at every 2 frames from `half` before it to `half` after it (SOP S9)."""
+    out = []
+    sc = moments["scenes"]
+    for a, b in zip(sc, sc[1:]):
+        n = int(round(2 * half / step))
+        for k in range(n + 1):
+            t = b["in"] - half + k * step
+            if 0 <= t <= moments["duration"]:
+                out.append({"a": a["id"], "b": b["id"], "t": round(t, 4)})
+    return out
+
+
+def probe(index, smp, cuts=()):
+    return probe_pages([{"index": index, "samples": smp, "handovers": list(cuts)}])
 
 
 def probe_pages(pages):
@@ -89,7 +108,7 @@ def probe_pages(pages):
         json.dump({"pages": pages, "area": area(), "min_px": MIN_PX, "puppeteer_dir": pdir, "chrome": chrome}, f)
         job = f.name
     try:
-        r = subprocess.run(["node", os.path.join(HERE, "layout-probe.mjs"), job], capture_output=True, text=True, timeout=1800)
+        r = subprocess.run(["node", os.path.join(HERE, "layout-probe.mjs"), job], capture_output=True, text=True, timeout=1800, encoding="utf-8", errors="replace")
     finally:
         os.unlink(job)
     if r.returncode:
@@ -133,8 +152,8 @@ def hf_findings(report, scenes):
 
 
 def hf_check(pub, smp):
-    r = subprocess.run(["npx", "--no-install", "hyperframes", "check", pub, "--json", "--at", ",".join("%.2f" % s["t"] for s in smp)],
-                       capture_output=True, text=True, timeout=1200)
+    r = subprocess.run([shutil.which("npx") or "npx", "--no-install", "hyperframes", "check", pub, "--json", "--at", ",".join("%.2f" % s["t"] for s in smp)],
+                       capture_output=True, text=True, timeout=1200, encoding="utf-8", errors="replace")
     try:
         return json.loads(r.stdout)
     except ValueError:

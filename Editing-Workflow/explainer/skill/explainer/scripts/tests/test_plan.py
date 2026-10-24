@@ -30,14 +30,14 @@ def transcript(script):
 
 
 class Plan(unittest.TestCase):
-    def plan(self, script=SCRIPT):
+    def plan(self, script=SCRIPT, *extra):
         d = scratch(self)
         write(os.path.join(d, "script.json"), script)
         tr = transcript(script)
         write(os.path.join(d, "transcript.json"), tr)
         silent_wav(os.path.join(d, "voice.wav"), tr["words"][-1]["end"] + 0.2)
         r = run("plan-storyboard.py", "--script", os.path.join(d, "script.json"), "--transcript", os.path.join(d, "transcript.json"),
-                "--out", os.path.join(d, "storyboard.json"), "--report", os.path.join(d, "PLAN.md"), "--vendor", stub_vendor(d))
+                "--out", os.path.join(d, "storyboard.json"), "--report", os.path.join(d, "PLAN.md"), "--vendor", stub_vendor(d), *extra)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         return d, load(os.path.join(d, "storyboard.json")), tr["words"]
 
@@ -53,6 +53,20 @@ class Plan(unittest.TestCase):
             self.assertEqual(a["out"], b["in"])
         self.assertIn("| l1 |", read(os.path.join(d, "PLAN.md")))
 
+    def test_a_last_line_with_a_strike_and_a_caption_still_passes_e4(self):
+        script = copy.deepcopy(SCRIPT)
+        script["lines"][-1] = {"id": "l5", "show": "Pick a mode: slow, medium or fast.",
+                               "viz": {"type": "line-art", "icon": "clock", "caption": "Pick a mode", "at": "medium", "strike": "fast."}}
+        d, sb, words = self.plan(script)
+        said_by = lambda a: words[int(a.split(":")[1])]["text"]
+        la = sb["scenes"][-1]
+        self.assertEqual(said_by(la["strike"]), "fast.")                 # every piece stays on its word
+        self.assertGreater(sb["tail"], 0.5)                               # and the page runs on past the voice
+        r = run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        r = run("pace-check.py", "--index", os.path.join(d, "public", "index.html"))
+        self.assertNotIn("the last read", r.stdout)
+
     def test_viz_items_land_on_their_words(self):
         _, sb, words = self.plan()
         flow = next(s for s in sb["scenes"] if s["type"] == "flow")
@@ -67,13 +81,46 @@ class Plan(unittest.TestCase):
         d, sb, words = self.plan(script)
         hk = sb["scenes"][0]
         self.assertEqual(hk["type"], "kinetic")
-        said = lambda part: words[int(part["at"].split(":")[1])]["text"]
-        self.assertEqual(said(hk["big"]), "3-step")           # "3" lands on "3-step", then each piece on its own word
-        self.assertEqual([said(w) for w in hk["words"]], ["3-step", "trick"])
-        self.assertEqual((said(hk["line"]), said(hk["strike"]), said(hk["punch"])), ("AI", "invent", "less"))
+        # SOP S8: the hook is whole on screen by 1.0 s: its pieces land in order on the words said by then
+        pos = [int(p["at"].split(":")[1]) for p in [hk["big"]] + hk["words"] + [hk["line"], hk["strike"], hk["punch"]]]
+        self.assertEqual(pos, sorted(pos))
+        self.assertEqual(pos[0], 0)
+        self.assertTrue(all(words[i]["start"] <= 1.0 for i in pos), pos)
+        self.assertGreater(len(set(pos)), 1)
         self.assertEqual(hk["strike"]["word"], "INVENTS")
         r = run("explainer-compose.py", "--spec", os.path.join(d, "storyboard.json"), "--out", os.path.join(d, "public"), "--vendor", stub_vendor(d))
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_hints_for_the_new_scenes_anchor_their_pieces(self):
+        # the writer hints a picture in a line; the planner lands its pieces on the words that say them
+        script = copy.deepcopy(SCRIPT)
+        script["lines"][4]["viz"] = {"type": "chat", "messages": [{"role": "user", "text": "Which passages?"},
+                                                                  {"role": "assistant", "text": "The answer from them"}]}
+        script["lines"][5]["viz"] = {"type": "jiggle-delete", "tiles": [{"label": "Budgeting"}, {"label": "Risk", "at": "risk"},
+                                                                        {"label": "Capital"}]}
+        script["lines"][2]["viz"] = {"type": "gravity-drop", "items": ["saved", "year"]}
+        _, sb, words = self.plan(script)
+        said = lambda a: words[int(a.split(":")[1])]["text"]
+        chat = next(s for s in sb["scenes"] if s["type"] == "chat")
+        self.assertEqual([said(m["at"]) for m in chat["messages"]], ["passages", "answer"])
+        jd = next(s for s in sb["scenes"] if s["type"] == "jiggle-delete")
+        self.assertEqual([("at" in t) for t in jd["tiles"]], [False, True, False])     # only the tile that goes away
+        self.assertEqual(said(jd["tiles"][1]["at"]), "risk.")
+        script["lines"][2]["viz"] = {"type": "gravity-drop", "items": [{"text": "Cash", "at": "year"}, "saved"]}
+        _, sb2, _ = self.plan(script)
+        gd2 = next(s for s in sb2["scenes"] if s["type"] == "gravity-drop")
+        self.assertEqual(said(gd2["items"][0]["at"]), "year.")         # an "at" written as a word is kept
+        gd = next(s for s in sb["scenes"] if s["type"] == "gravity-drop")
+        self.assertEqual([said(i["at"]) for i in gd["items"]], ["saved", "year."])
+        self.assertTrue(all("text" in i for i in gd["items"]))
+
+    def test_the_grounds_change_with_the_story(self):
+        # the hook on the dark ground, the payoff on blue, light grounds between (the reference's rhythm)
+        script = dict(copy.deepcopy(SCRIPT), payoff="l4")
+        _, sb, _ = self.plan(script)
+        self.assertEqual(sb["scenes"][0]["bg"], "ink")
+        self.assertEqual([s for s in sb["scenes"] if s["id"].startswith("l4")][0]["bg"], "blue")
+        self.assertIn(sb["scenes"][1]["bg"], ("mantle", "base"))
 
     def test_the_payoff_chimes_and_the_brand_carries_over(self):
         script = dict(copy.deepcopy(SCRIPT), payoff="l4", brand={"handle": "@harshil", "part": 1})
@@ -100,7 +147,7 @@ class Plan(unittest.TestCase):
         long_line = [s for s in sb["scenes"] if s["id"].startswith("l4")]
         self.assertGreaterEqual(len(long_line), 2)                       # 16 words, 5.6 s: split into beats
         self.assertTrue(any("passages" in s.get("text", "").lower() for s in long_line))
-        self.assertEqual(sb["scenes"][0]["bg"], "mantle")
+        self.assertEqual(sb["scenes"][0]["bg"], "ink")                     # the hook on the dark ground
         self.assertEqual(next(s for s in sb["scenes"] if s["id"].startswith("l2"))["bg"], "base")   # after the section break
         self.assertIn("passages", sb["captions"]["emphasis"])
 

@@ -110,7 +110,7 @@ ap.add_argument("--spec", required=True)
 ap.add_argument("--out", required=True)
 ap.add_argument("--shared", default="")
 args = ap.parse_args()
-S = json.load(open(args.spec))
+S = json.load(open(args.spec, encoding="utf-8"))
 OUT = args.out
 os.makedirs(OUT, exist_ok=True)
 
@@ -678,10 +678,6 @@ def host(bid, t_in, t_out, track, inner, anchor=""):
     return ('    <div class="card-host clip" id="host-%s" data-card-id="%s" data-start="%.3f" data-duration="%.3f" data-track-index="%d"%s\n'
             '      style="left:0;top:0;width:1920px;height:1080px;visibility:hidden;opacity:1;">\n      <div class="card">%s</div>\n    </div>\n'
             % (bid, bid, t_in, t_out - t_in, track, a, inner))
-
-def words_html(text):   # words kept in data-text; spans are built at load (seek-safe)
-    return text
-
 
 def item_attrs(it):
     """List/bullet items carry their own entry time and spoken anchor so beat-check.py can prove each one.
@@ -2199,8 +2195,8 @@ page = """<!doctype html>
 </html>
 """ % (CSS, S["id"], D, S.get("video", "input-video.mp4"), D, "".join(html_parts), S.get("raw_html", ""), "".join(audio_parts),
        GSAP_SRC, HELPERS, "\n        ".join(cam), "\n        ".join(js_parts), S.get("raw_js", ""), D, S["id"])
-open(os.path.join(OUT, "index.html"), "w").write(page)
-open(os.path.join(OUT, "hyperframes.json"), "w").write(json.dumps({
+open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(page)
+open(os.path.join(OUT, "hyperframes.json"), "w", encoding="utf-8").write(json.dumps({
     "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
     "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",
     "paths": {"blocks": "compositions", "components": "compositions/components", "assets": "assets"},

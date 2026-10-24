@@ -212,7 +212,7 @@ class ComposeReel(unittest.TestCase):
         r, _, d = self.build(ALL)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         import json
-        with open(os.path.join(d, "public", "layout.json")) as f:
+        with open(os.path.join(d, "public", "layout.json"), encoding="utf-8") as f:
             lay = json.load(f)
         self.assertEqual(sorted(b["id"] for b in lay), sorted(["h1", "st", "lg", "sn", "ch", "pl", "pt", "c1"]))
         for b in lay:

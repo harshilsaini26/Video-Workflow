@@ -12,7 +12,7 @@ CSS = """
   .sh { width:100%%; opacity:0; }
   .sh-fx { height:%dpx; margin-bottom:%dpx; border-radius:14px; display:flex; align-items:center; padding:0 22px; gap:18px;
     font-family: var(--label); font-weight:500; font-size:%dpx; white-space:nowrap; overflow:hidden; }
-  .sh-fx b { font-style:italic; opacity:.6; }
+  .sh-fx b { font-style:italic; opacity:.75; }
   .sh-grid { position:relative; border-radius:14px; overflow:hidden; }
   .sh-row { display:flex; height:%dpx; opacity:0; }
   .sh-cell { flex:1 1 0; min-width:0; display:flex; align-items:center; padding:0 %dpx; font-size:%dpx; font-weight:500;
@@ -60,7 +60,7 @@ def min_width(scene):
 
 
 def render(scene, ctx, box):
-    c = ctx.c
+    c = ctx.pc                     # a spreadsheet is light paper on any ground
     sid, width = ctx.id, box[2]
     ncol = _cols(scene)
     grid_bg, head_bg, line = c["card"], c["bg"], c["line"]
@@ -69,10 +69,10 @@ def render(scene, ctx, box):
         cells = "".join('<div class="sh-cell" style="border-right:1px solid %s">%s</div>' % (line, ctx.esc(r[k]) if k < len(r) else "")
                         for k in range(ncol))
         rows.append('<div class="sh-row%s" style="background:%s;border-bottom:1px solid %s;color:%s">%s</div>'
-                    % (" head" if i == 0 else "", head_bg if i == 0 else "transparent", line, ctx.ink, cells))
+                    % (" head" if i == 0 else "", head_bg if i == 0 else "transparent", line, c["ink"], cells))
     fx = ""
     if scene.get("formula"):
-        fx = '<div class="sh-fx" style="background:%s;color:%s"><b>fx</b>%s</div>' % (head_bg, ctx.ink, ctx.esc(scene["formula"]))
+        fx = '<div class="sh-fx" style="background:%s;color:%s"><b>fx</b>%s</div>' % (head_bg, c["ink"], ctx.esc(scene["formula"]))
     js = [ctx.enter("#%s .sh" % sid, ctx.t_in, {"y": 30}),
           ctx.enter("#%s .sh-row" % sid, ctx.t_in + 0.12, {"y": 12}, stagger=stagger_for(len(rows), 0.07))]
     hl_html = ""

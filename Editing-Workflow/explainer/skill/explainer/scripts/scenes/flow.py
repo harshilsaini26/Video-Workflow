@@ -1,8 +1,10 @@
-"""flow: two to four steps in a column, joined by connectors that draw as each step arrives; a pulse keeps running
+"""flow: two to six steps in a column, joined by connectors that draw as each step arrives; a pulse keeps running
 down every drawn connector while the scene holds (PLAYBOOK §E4). For a process: "it retrieves, then augments, then
-generates"."""
+generates". Five or six steps don't fit the area at a size a phone reads, so then the column runs on past a window
+(VIEW_H tall, its edges fading) and the camera travels down to each step as it arrives: a new framing on every step,
+so it may hold longer than one picture (travels())."""
 import explainer_lib as E
-from scenes import GHOST, js_obj, need
+from scenes import SLOT, js_obj, need
 
 TYPE = "flow"
 NODE, LINK = 112, 72             # a step's height, the connector between two steps
@@ -10,7 +12,10 @@ PAD, ICON, I_GAP = 34, 64, 22    # padding a side, the icon, icon to label
 SIZE = 50                        # label: DM Sans 700, one line
 BORDER = 3
 PULSE = 18
-
+MAX_STILL = 4                    # up to this many steps the whole column shows; more, and it travels
+PEEK = 60                        # how much of the next step a travelling window shows, top and bottom (fading)
+VIEW_H = 3 * NODE + 2 * LINK + 2 * PEEK
+MOVE = 0.7                       # the camera's move to the next step
 CSS = """
   .fl { position:relative; width:100%%; }
   .fl-node { position:absolute; left:0; width:100%%; height:%dpx; border-radius:30px; display:flex; align-items:center;
@@ -20,22 +25,34 @@ CSS = """
   .fl-ic svg { width:100%%; height:100%%; }
   .fl-link { position:absolute; left:50%%; width:8px; margin-left:-4px; overflow:visible; }
   .fl-pulse { position:absolute; left:50%%; width:%dpx; height:%dpx; margin-left:-%dpx; border-radius:50%%; opacity:0; }
-""" % (NODE, I_GAP, PAD, BORDER, SIZE, ICON, ICON, PULSE, PULSE, PULSE // 2)
+  .fl-view { position:relative; width:100%%; overflow:hidden;
+    -webkit-mask-image: linear-gradient(transparent, #000 %dpx, #000 calc(100%% - %dpx), transparent);
+    mask-image: linear-gradient(transparent, #000 %dpx, #000 calc(100%% - %dpx), transparent); }
+  .fl-mv { position:absolute; left:0; top:0; width:100%%; }
+""" % (NODE, I_GAP, PAD, BORDER, SIZE, ICON, ICON, PULSE, PULSE, PULSE // 2, PEEK, PEEK, PEEK, PEEK)
 
 
 def validate(scene):
     errs = need(scene, ["nodes"])
     nodes = scene.get("nodes") or []
-    if not 2 <= len(nodes) <= 4:
-        errs.append("a flow takes 2 to 4 nodes (got %d)" % len(nodes))
+    if not 2 <= len(nodes) <= 6:
+        errs.append("a flow takes 2 to 6 nodes (got %d)" % len(nodes))
     errs += ["node %d has no label" % i for i, n in enumerate(nodes) if not n.get("label")]
     errs += ["node %d has no at" % i for i, n in enumerate(nodes) if n.get("at") is None]
     return errs
 
 
-def height(scene, width):
+def travels(scene):
+    return len(scene["nodes"]) > MAX_STILL
+
+
+def column(scene):
     n = len(scene["nodes"])
     return n * NODE + (n - 1) * LINK
+
+
+def height(scene, width):
+    return VIEW_H if travels(scene) else column(scene)
 
 
 def min_width(scene):
@@ -53,11 +70,12 @@ def render(scene, ctx, box):
         t, attrs = ctx.item(n["at"])
         times.append(t)
         top = i * (NODE + LINK)
-        icon = '<span class="fl-ic" style="color:%s">%s</span>' % (acc, ctx.icon(n["icon"])) if n.get("icon") else ""
-        parts.append('<div class="fl-node" id="%s-n%d"%s style="top:%dpx;%s;border-color:%s;color:%s">%s<span>%s</span></div>'
+        icon = '<span class="fl-ic gt" style="color:%s">%s</span>' % (acc, ctx.icon(n["icon"])) if n.get("icon") else ""
+        parts.append('<div class="fl-node" id="%s-n%d"%s style="top:%dpx;%s;border-color:%s;color:%s">%s<span class="gt">%s</span></div>'
                      % (sid, i, attrs, top, face, rest, ctx.ink, icon, ctx.esc(n["label"])))
-        js.append(ctx.ghost("#%s-n%d" % (sid, i)))
-        js.append(ctx.enter("#%s-n%d" % (sid, i), t, {"opacity": GHOST, "y": 30, "scale": 0.92}))
+        js += ctx.slot("#%s-n%d" % (sid, i))
+        js.append(ctx.enter("#%s-n%d" % (sid, i), t, {"opacity": SLOT, "y": 30, "scale": 0.92}))
+        js.append(ctx.fill("#%s-n%d" % (sid, i), t))
         js.append("tl.to('#%s-n%d', %s, %.3f);" % (sid, i, js_obj({"borderColor": acc, "duration": 0.3, "ease": mo["enter_ease"]}), t))
         if i:
             js.append("tl.to('#%s-n%d', %s, %.3f);" % (sid, i - 1, js_obj({"borderColor": rest, "duration": 0.3, "ease": mo["enter_ease"]}), t))
@@ -76,5 +94,15 @@ def render(scene, ctx, box):
             ctx.ambient("tl.fromTo('#%s-p%d', { y: 0, opacity: 1 }, %s, %.3f);"
                         % (sid, i, js_obj({"y": LINK - PULSE, "opacity": 0, "duration": 0.9, "ease": "power1.in", "immediateRender": False}), t))
             t += 1.2
-    ctx.idle("#%s .fl" % sid, ctx.t_in + 0.6, ctx.t_out, {"y": -8})
-    return '<div class="fl" style="height:%dpx">%s</div>' % (height(scene, box[2]), "".join(parts)), js
+    col = '<div class="fl" style="height:%dpx">%s</div>' % (column(scene), "".join(parts))
+    if not travels(scene):
+        ctx.idle("#%s .fl" % sid, ctx.t_in + 0.6, ctx.t_out, {"y": -8})
+        return col, js
+    # the camera travels: the column slides so each step sits mid-window as it arrives, never past the column's ends
+    total, at = column(scene), 0.0
+    for i, t in enumerate(times):
+        y = max(VIEW_H - total, min(0.0, VIEW_H / 2.0 - (i * (NODE + LINK) + NODE / 2.0)))
+        if abs(y - at) > 0.5:
+            js.append("tl.to('#%s-mv', %s, %.3f);" % (sid, js_obj({"y": round(y, 1), "duration": MOVE, "ease": "expo.out"}), max(ctx.t_in, t - 0.15)))
+            at = y
+    return '<div class="fl-view" style="height:%dpx"><div class="fl-mv" id="%s-mv">%s</div></div>' % (VIEW_H, sid, col), js

@@ -11,9 +11,11 @@ Reads moments.json next to the page (the composer writes it). Exit 1 with "E5 FA
 import argparse, json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import explainer_lib as E
 import layout_check as LC
 
-WORDS = {"overlap": "%s", "covered": "is %s", "crosses": "%s", "spill": "%s", "outside": "%s", "small": "%s", "missing": "%s"}
+WORDS = {"overlap": "%s", "covered": "is %s", "crosses": "%s", "spill": "%s", "outside": "%s", "small": "%s", "missing": "%s",
+         "handover": "%s", "contrast": "%s"}
 
 
 def main():
@@ -25,11 +27,12 @@ def main():
     if not os.path.exists(os.path.join(pub, "moments.json")):
         print("E5 ERROR: no moments.json next to %s: compose the page first (explainer-compose.py writes it)" % a.index)
         sys.exit(2)
-    with open(os.path.join(pub, "moments.json")) as f:
+    with open(os.path.join(pub, "moments.json"), encoding="utf-8") as f:
         moments = json.load(f)
+    E.SCENE.update(moments.get("area") or {})           # the area it was composed for (no captions: their band too)
     smp = LC.samples(moments)
     try:
-        issues = LC.probe(a.index, smp)
+        issues = LC.probe(a.index, smp, LC.handovers(moments))
         hf = [] if a.no_hf else LC.hf_findings(LC.hf_check(pub, smp), moments["scenes"])
     except RuntimeError as e:
         print("E5 ERROR: %s" % e)
@@ -41,11 +44,18 @@ def main():
     for i in hf:
         lines.append("%s: %s%s (hyperframes %s at %s s)" % (i["scene"], ('"%s" ' % i["text"]) if i.get("text") else "",
                                                             i.get("message", ""), i["code"], i.get("time", "-")))
+    seen_cuts = set()
+    for line in list(lines):              # a handover fails on many frames of one cut: say it once
+        m = __import__("re").match(r"(\w+): (.*both on screen)", line)
+        if m:
+            if m.group(1) in seen_cuts:
+                lines.remove(line)
+            seen_cuts.add(m.group(1))
     for line in dict.fromkeys(lines):
         print("E5 FAIL: " + line)
     if lines:
         sys.exit(1)
-    print("E5 PASS: %d scenes clean (overlap, cover, spill, safe area, size%s)" % (len(smp), "" if a.no_hf else ", contrast, clipping"))
+    print("E5 PASS: %d scenes clean at %d moments (overlap, cover, spill, safe area, size%s)" % (len({s["id"] for s in smp}), len(smp), "" if a.no_hf else ", contrast, clipping"))
 
 
 if __name__ == "__main__":

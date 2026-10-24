@@ -3,6 +3,7 @@ built, for text that collides with text or crosses a shape, text that spills out
 safe area, and text too small to read on a phone; HyperFrames' own check adds overlap, clipping and WCAG contrast."""
 import json, os, shutil, subprocess, unittest
 from .helpers import SCRIPTS, run, scratch, write
+import explainer_lib as E
 
 LC = __import__("importlib").import_module("layout_check") if os.path.exists(os.path.join(SCRIPTS, "layout_check.py")) else None
 NODE = shutil.which("node")
@@ -52,6 +53,7 @@ class Gate(unittest.TestCase):
                        'stroke="#1e66f5" stroke-width="8"/></svg><div style="position:absolute;left:100px;top:210px;font-size:60px;'
                        'color:#4c4f69;font-weight:700">Answer</div>',
             "too small": '<div class="card" style="left:0;top:0;width:360px;font-size:18px">Answer</div>',
+            "contrast": '<div class="card" style="left:0;top:0;width:360px;background:#1e66f5;color:#7287fd">Answer</div>',
         }
         for word, body in cases.items():
             r = self.check(body)
@@ -60,8 +62,51 @@ class Gate(unittest.TestCase):
             self.assertIn(word, r.stdout, word)
 
     @unittest.skipUnless(have_browser(), "needs node, puppeteer and Chrome (npx hyperframes browser ensure)")
+    def test_text_and_cards_end_by_1235_and_bare_shapes_by_1650(self):
+        # SOP S7: one bottom limit for anything with words on it; a shape with no text may use the lower frame
+        r = self.check('<div class="card" style="left:0;top:600px;width:360px">Answer</div>')       # y 1200 to 1280
+        self.assertIn("outside the safe area", r.stdout)
+        r = self.check('<div style="position:absolute;left:0;top:960px;width:300px;height:40px;background:#7287fd"></div>')
+        self.assertEqual(r.returncode, 0, r.stdout)                                                  # y 1560 to 1600
+        r = self.check('<div style="position:absolute;left:0;top:1060px;width:300px;height:40px;background:#7287fd"></div>')
+        self.assertIn("outside the safe area", r.stdout)                                             # y 1660 to 1700
+
+    @unittest.skipUnless(have_browser(), "needs node, puppeteer and Chrome (npx hyperframes browser ensure)")
+    def test_two_scenes_on_screen_at_a_cut_fail(self):
+        # SOP S9: the old scene is gone by the cut; if both show above 30% at once, the handover fails
+        card = '<div class="box" id="%s" style="left:150px;top:600px;width:780px;height:300px"><div class="card" style="left:0;top:0;width:360px">%s</div></div>'
+        host = ('<div class="card-host" id="host-%s" data-start="%s" data-duration="%s">%s</div>')
+        for a_dur, ok in (("2.2", False), ("2.0", True)):
+            d = scratch(self)
+            pub = os.path.join(d, "public")
+            body = host % ("sa", "0", a_dur, card % ("sa", "Search")) + host % ("sb", "2.0", "2.0", card % ("sb", "Answer"))
+            write(os.path.join(pub, "index.html"), (PAGE % "").replace(
+                '<div class="card-host" id="host-sc" data-start="0" data-duration="4"><div class="box" id="sc" style="left:150px;top:600px;width:780px;height:700px">\n</div></div>', body))
+            write(os.path.join(pub, "moments.json"), {"duration": 4, "scenes": [{"id": "sa", "type": "x", "in": 0, "out": 2.0},
+                                                                                  {"id": "sb", "type": "x", "in": 2.0, "out": 4.0}], "spans": []})
+            r = run("layout-check.py", "--index", os.path.join(pub, "index.html"), "--no-hf")
+            if ok:
+                self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            else:
+                self.assertIn("E5 FAIL: sb:", r.stdout)
+                self.assertIn("both on screen", r.stdout)
+
+    @unittest.skipUnless(have_browser(), "needs node, puppeteer and Chrome (npx hyperframes browser ensure)")
     def test_every_scene_case_is_clean(self):
         # every library scene, three lengths of text each (dev/make-cases.py), composed and looked at in Chromium
+        self.every_case("latte")
+
+    def test_every_scene_case_is_clean_on_paper(self):
+        # and in the editorial look: its colours on its grounds
+        self.every_case("paper")
+
+    def test_every_scene_case_is_clean_in_each_palette(self):
+        # the five palettes (colour only), on paper: its texture darkens the base ground, the harder case for contrast
+        for name in E.PALETTES:
+            with self.subTest(palette=name):
+                self.every_case("paper", name)
+
+    def every_case(self, look, palette=None):
         from .test_theme import make_cases
         from .test_assets import COURSERA, png
         from .test_scenes_ui import stub_vendor
@@ -78,17 +123,20 @@ class Gate(unittest.TestCase):
                 write(os.path.join(d, "transcript.json"), {"words": [{"text": "word%d" % i, "start": 0.5 + i * 0.4, "end": 0.8 + i * 0.4}
                                                                       for i in range(40)]})
                 silent_wav(os.path.join(d, "voice.wav"), 15.5)
-                for key in ("screenshot", "src"):
-                    if data.get(key):
-                        png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
-                sc = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:0", "out": 16.0}, **data)
-                sp = write(os.path.join(d, "storyboard.json"), {"id": "t", "scenes": [sc], "sound": {"music": "none", "sfx": False}})
+                for rel, w, h in mc.images(data):           # every src anywhere in the data (photos[].src too)
+                    png(os.path.join(d, rel), w, h)
+                bg = ("mantle", "blue", "base", "ink")[(len(pages) + 1) % 4]     # every scene type meets the dark grounds too
+                sc = dict({"type": typ, "id": "sc", "bg": bg, "in": "word:1", "out": 16.0}, **data)
+                sb = {"id": "t", "look": look, "scenes": [mc.LEAD_IN, sc], "sound": {"music": "none", "sfx": False}}
+                if palette:
+                    sb["palette"] = palette
+                sp = write(os.path.join(d, "storyboard.json"), sb)
                 r = run("explainer-compose.py", "--spec", sp, "--out", os.path.join(d, "public"), "--vendor", vendor)
                 self.assertEqual(r.returncode, 0, "%s-%s: %s" % (typ, name, r.stdout))
-                with open(os.path.join(d, "public", "moments.json")) as f:
+                with open(os.path.join(d, "public", "moments.json"), encoding="utf-8") as f:
                     pages.append({"index": os.path.join(d, "public", "index.html"), "samples": LC.samples(json.load(f))})
         issues = LC.probe_pages(pages)
-        self.assertEqual([], ["%s: %s %s" % (os.path.basename(os.path.dirname(os.path.dirname(i["page"]))), i["text"], i["detail"])
+        self.assertEqual([], ["%s %s: %s %s" % (look, os.path.basename(os.path.dirname(os.path.dirname(i["page"]))), i["text"], i["detail"])
                               for i in issues])
 
     def test_a_page_not_composed_yet_is_named(self):

@@ -33,7 +33,7 @@ class Fonts(unittest.TestCase):
                           % (os.path.abspath(os.path.join(FONTS, "DMSans-%d.woff2" % w)), w) for w in (400, 500, 700))
         page = write(os.path.join(d, "fonts.html"), PAGE % (faces, repr(TEXT)))
         r = subprocess.run([CHROME, "--headless=new", "--no-sandbox", "--disable-gpu", "--allow-file-access-from-files",
-                            "--virtual-time-budget=10000", "--dump-dom", "file://" + page], capture_output=True, text=True, timeout=120)
+                            "--virtual-time-budget=10000", "--dump-dom", "file://" + page], capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace")
         title = re.search(r"<title>(.*?)</title>", r.stdout)
         self.assertTrue(title and title.group(1).startswith("R "), r.stdout[-500:] + r.stderr[-500:])
         for row in title.group(1)[2:].split():

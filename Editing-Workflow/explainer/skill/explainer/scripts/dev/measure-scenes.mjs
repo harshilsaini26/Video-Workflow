@@ -4,6 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { launch } from "./_browser.mjs";
+import { pathToFileURL } from "node:url";
 
 const dir = path.resolve(process.argv[2] || ".");
 const cases = JSON.parse(fs.readFileSync(path.join(dir, "cases.json"), "utf8"));
@@ -11,7 +12,7 @@ const browser = await launch();
 const page = await browser.newPage();
 await page.setViewport({ width: 1080, height: 1920 });
 for (const c of cases) {
-  await page.goto("file://" + path.join(dir, c.case, "public", "index.html"), { waitUntil: "load" });
+  await page.goto(pathToFileURL(path.join(dir, c.case, "public", "index.html")).href, { waitUntil: "load" });
   const rows = await page.evaluate(async (id) => {
     const box = document.getElementById(id);
     box.closest(".card-host").style.visibility = "visible";

@@ -52,6 +52,15 @@ they want. The picture is never re-encoded: audio work copies the video stream.
 8. **Deliver:** md5 `reel.mp4` and confirm the copy matches; never pass it through a chat download. Then the Producer
    asks QA for the final check (loudness rows now PASS/FAIL, rows 15 to 19).
 
+### The post caption is a draft, checked
+
+Write `POST.md` as a draft for the creator to edit, then run `python3 "$SK/scripts/post-check.py" --post deliver/POST.md
+--script $W/script.json --keyword <the comment keyword, if any>` and fix what fails: the hook in the first 125
+characters; one ask with a reason ("save this for when you buy a cable"), never bait that gives nothing back ("tag 3
+friends", "double tap"); no dead closer ("thoughts?"); 3 to 5 hashtags at the end, 2 to 3 niche, 1 to 2 mid, 0 to 1
+broad, all on topic, rotated between posts; every number one the script sources (§R13). In the hand-off flow the covers
+and the loudness come from the creator's own export.
+
 ## Done when
 
 `$D` holds `reel.mp4` (levelled, tagged, md5 matched), the voice-only twin when music was mixed, the cover candidates,

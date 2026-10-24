@@ -18,7 +18,7 @@ ap.add_argument("--cut-list", required=True)
 ap.add_argument("--out", required=True)
 args = ap.parse_args()
 
-cl = json.load(open(args.cut_list))
+cl = json.load(open(args.cut_list, encoding="utf-8"))
 dur = float(cl["source_duration"])
 kept = sorted(cl["kept"], key=lambda s: s["start"])
 reasons = {}
@@ -44,5 +44,5 @@ edl = {
     "delete_ranges": deletes,
     "keep_ranges": [{"start": s["start"], "end": s["end"]} for s in kept],
 }
-json.dump(edl, open(args.out, "w"), indent=1)
+json.dump(edl, open(args.out, "w", encoding="utf-8"), indent=1)
 print("EDL: %d kept, %d cut ranges, removed %.1fs of %.1fs -> %s" % (len(kept), len(deletes), removed, dur, args.out))

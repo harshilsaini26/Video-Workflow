@@ -23,7 +23,7 @@ ap.add_argument("--before", type=float, default=0.15); ap.add_argument("--after"
 a = ap.parse_args()
 if a.add and not (a.transcript and a.speech):
     ap.error("--add needs --transcript and --speech")
-cl = json.load(open(a.cut_list))
+cl = json.load(open(a.cut_list, encoding="utf-8"))
 kept = list(cl["kept"]); log = []
 
 # ---- --drop-flat: validate every range against cut-map.json before touching anything ----------------------------
@@ -32,7 +32,7 @@ if a.drop_flat:
     cm_path = a.cut_map or os.path.join(os.path.dirname(a.cut_list), "cut-map.json")
     if not os.path.exists(cm_path):
         sys.exit("no cut-map.json at %s: run apply-cut.py first (flat times only mean something against the flat cut it made)" % cm_path)
-    cm = json.load(open(cm_path)); segs = cm["segments"]; flat_d = float(cm["flat_duration"])
+    cm = json.load(open(cm_path, encoding="utf-8")); segs = cm["segments"]; flat_d = float(cm["flat_duration"])
     for c in segs:   # the map must describe THIS cut list (apply-cut snaps to the frame grid, so allow a frame)
         if not any(s["start"] - 0.05 <= c["src_start"] and c["src_end"] <= s["end"] + 0.05 for s in kept):
             sys.exit("cut-map.json does not match cut-list.json (source %.3f-%.3f is not kept): re-run apply-cut.py first"
@@ -57,9 +57,9 @@ for t in a.drop:
     n = len(kept); kept = [s for s in kept if abs(s["start"] + a.before - t) > 0.3 and abs(s["start"] - t) > 0.3]
     log.append("drop %.2f: %d segment(s)" % (t, n - len(kept)))
 if a.add:
-    raw = json.load(open(a.transcript)); words = raw["words"] if isinstance(raw, dict) and "words" in raw else raw
+    raw = json.load(open(a.transcript, encoding="utf-8")); words = raw["words"] if isinstance(raw, dict) and "words" in raw else raw
     words = sorted([{"start": float(w["start"]), "end": float(w["end"]), "text": w["text"]} for w in words], key=lambda w: w["start"])
-    d = json.load(open(a.speech)); num, den = [int(x) for x in str(d.get("timebase", "30/1")).split("/")]; fps = num / den
+    d = json.load(open(a.speech, encoding="utf-8")); num, den = [int(x) for x in str(d.get("timebase", "30/1")).split("/")]; fps = num / den
     chunks = [(x / fps, y / fps) for x, y, sp in d["chunks"] if sp not in (99999, 0)]
 for spec in a.add:
     A, B = [float(x) for x in spec.split("-")]
@@ -91,7 +91,7 @@ for spec, src in flat_src:
 if not merged:
     sys.exit("that would remove everything; nothing written")
 cl["kept"] = merged; cl["kept_seconds"] = round(sum(s["end"] - s["start"] for s in merged), 2); cl["hand_patched"] = True
-json.dump(cl, open(a.cut_list, "w"), indent=1)
+json.dump(cl, open(a.cut_list, "w", encoding="utf-8"), indent=1)
 print("; ".join(log) + " => kept %.1f s in %d segments" % (cl["kept_seconds"], len(merged)))
 if flat_src:
     print("now re-run apply-cut.py (cut-map.json is stale) and re-transcribe the flat cut")

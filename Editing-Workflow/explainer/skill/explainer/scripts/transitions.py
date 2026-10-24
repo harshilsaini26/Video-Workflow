@@ -13,30 +13,51 @@ velocity-matched (MOTION.md): the exit accelerates into the cut and the entrance
   wipe   the new background opens as a circle from the scene area; used at a background change
   burst  a spray of coloured squares from the centre; the new scene grows from 0.7 (for a hook or a reveal)
   cut    nothing moves: the old scene is gone on the frame the new one starts
+  leak   a wide soft streak of light (the accent and the second accent, screen-blended) sweeps across over the cut; never
+         picked on its own: name it for a jolt of energy or a reveal
+  brush  five ragged ink bands sweep across and cover the frame on the cut, then sweep off (the paper look's wipe at a
+         new ground; after ClaudeAnimationBase's brush wipe, MIT)
+  dive   Kurzgesagt's scale crossing as a cut: the outgoing ground's accent opens from the middle of the scene area on a
+         log zoom (each frame grows by the same factor) until it fills the frame on the cut, then shrinks away while the
+         next scene pulls out to its size on a log zoom out; never picked on its own (after huashu-art-motion's
+         y1_kurzgesagt transition B and CAM.zlerp, MIT)
+
+The last scene leaves too (close()): over the first half of the last CLOSE seconds; the hook's ground wipes in over the
+second half, ending exactly at the end, so the loop seams back into the hook.
 """
-import random
+import math, random
 
 import explainer_lib as E
 from scenes import js_obj
 
-KINDS = ("fade", "push", "zoom", "wipe", "burst", "cut")
-ENTER, EXIT = 0.5, 0.2           # exits stay within tokens.motion.exit
+KINDS = ("fade", "push", "zoom", "wipe", "burst", "cut", "brush", "leak", "dive")
+ENTER, EXIT = 0.5, E.EXIT        # exits take E.EXIT, the composer's one exit time
 IN_EASE, OUT_EASE = "expo.out", "power3.in"   # the exit accelerates into the cut, the entrance decelerates out of it
 WIPE, BURST = 0.55, 0.9
 WIPE_FROM, WIPE_TO = "circle(0% at 50% 60%)", "circle(150% at 50% 60%)"
-CENTRE = (540, (E.SCENE["top"] + E.SCENE["bottom"]) // 2)   # the scene area's centre
 PARTICLES = 28
+BRUSH, UNCOVER, TILT = 0.35, 0.3, -0.1        # the cover (s), the uncover (s), the bands' tilt (radians)
+STAGGER = (0, .14, .06, .18, .1)               # of the cover time: no two bands move as twins
+CLOSE = E.CLOSE
+LEAK, LEAK_W = 0.9, 1100       # the streak's sweep (s, centred on the cut) and its width (px)
+DIVE_IN, DIVE_OUT, DIVE_FROM, DIVE_R0 = 0.45, 0.6, 1.6, 24   # the crossing in and out (s), the next scene's start scale, the disc's start
+ZOOM_JS = ("window.zoomIn = function (Z) { return function (t) { var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; "
+           "return (Math.pow(Z, e) - 1) / (Z - 1); }; }; "
+           "window.zoomOut = function (Z) { return function (t) { var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; "
+           "return (Z - Math.pow(Z, 1 - e)) / (Z - 1); }; };")
+"""Log zoom eases (CAM.zlerp): a tween from 1 to Z (or Z to 1) on zoomIn(Z) (zoomOut(Z)) grows (shrinks) by the same factor
+every frame, on a cubic in-out, so a crossing of scales reads as one steady flight, never slow then sudden."""
 
 
-def pick(index, prev_bg, bg, explicit):
-    """The way scene `index` comes in: the storyboard's choice, else fade first, wipe on a new background, then zoom and
-    push in turn."""
+def pick(index, prev_bg, bg, explicit, look=None):
+    """The way scene `index` comes in: the storyboard's choice, else fade first, wipe on a new background (brush in the
+    paper look), then zoom and push in turn."""
     if explicit:
         return explicit
     if index == 0:
         return "fade"
     if prev_bg is not None and prev_bg != bg:
-        return "wipe"
+        return "brush" if look == "paper" else "wipe"
     return "push" if index % 2 == 0 else "zoom"
 
 
@@ -52,28 +73,34 @@ def enter(kind, sid, t):
         return [_from(sel, {"y": 300, "filter": "blur(10px)"}, {"y": 0, "filter": "blur(0px)"}, t)]
     if kind == "zoom":
         return [_from(sel, {"scale": 0.75, "filter": "blur(8px)"}, {"scale": 1, "filter": "blur(0px)"}, t)]
-    if kind == "wipe":
+    if kind in ("wipe", "brush"):
         return [_from(sel, {"scale": 0.94}, {"scale": 1}, t)]
+    if kind == "leak":
+        return [_from(sel, {"scale": 0.92, "filter": "blur(8px)"}, {"scale": 1, "filter": "blur(0px)"}, t)]
     if kind == "burst":
         return [_from(sel, {"scale": 0.7}, {"scale": 1}, t)]
+    if kind == "dive":
+        return ["tl.fromTo('%s', %s, { scale: 1, filter: 'blur(0px)', duration: %s, ease: zoomOut(%s), immediateRender: false }, %.3f);"
+                % (sel, js_obj({"scale": DIVE_FROM, "filter": "blur(6px)"}), DIVE_OUT, DIVE_FROM, t)]
     return []
 
 
-def exit(kind, sid, t):
-    """The outgoing scene's exit, matched to the way the next one comes in."""
+def exit(kind, sid, cut):
+    """The outgoing scene's exit, matched to the way the next one comes in. It runs over the EXIT seconds before the
+    cut and is over on it, so the old scene and the new one are never on screen together (SOP S9)."""
     sel = "#" + sid
     if kind == "cut":
-        return ["tl.set('%s', { opacity: 0 }, %.3f);" % (sel, t)]
-    move = {"push": {"y": -260, "filter": "blur(12px)"}, "zoom": {"scale": 1.2, "filter": "blur(10px)"},
-            "burst": {"scale": 1.3, "filter": "blur(10px)"}}.get(kind, {"y": -24})
-    return ["tl.to('%s', %s, %.3f);" % (sel, js_obj(dict({"opacity": 0}, **dict(move, duration=EXIT, ease=OUT_EASE))), t)]
+        return ["tl.set('%s', { opacity: 0 }, %.3f);" % (sel, cut)]
+    move = {"push": {"y": -260, "filter": "blur(12px)"}, "zoom": {"scale": 1.2, "filter": "blur(10px)"}, "dive": {"scale": 1.25, "filter": "blur(10px)"},
+            "burst": {"scale": 1.3, "filter": "blur(10px)"}, "leak": {"scale": 1.08, "filter": "blur(10px)"}}.get(kind, {"y": -24})
+    return ["tl.to('%s', %s, %.3f);" % (sel, js_obj(dict({"opacity": 0}, **dict(move, duration=EXIT, ease=OUT_EASE))), max(0.0, cut - EXIT))]
 
 
-def wipe_bg(bg_id, t):
-    """Open background `bg_id` as a growing circle (it was hidden until now)."""
+def wipe_bg(bg_id, t, dur=WIPE):
+    """Open background `bg_id` as a growing circle over `dur` seconds (it was hidden until now)."""
     return ["tl.set('#%s', { opacity: 1 }, %.3f);" % (bg_id, t),
             "tl.fromTo('#%s', %s, %s, %.3f);" % (bg_id, js_obj({"clipPath": WIPE_FROM}),
-                                                 js_obj({"clipPath": WIPE_TO, "duration": WIPE, "ease": "power2.inOut",
+                                                 js_obj({"clipPath": WIPE_TO, "duration": dur, "ease": "power2.inOut",
                                                          "immediateRender": False}), t)]
 
 
@@ -85,9 +112,80 @@ def burst(k, t, colors):
     for i in range(PARTICLES):
         size = rng.randint(14, 46)
         html.append('<i class="tx-p" id="tx%d-%d" style="left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:%s"></i>'
-                    % (k, i, CENTRE[0] - size // 2, CENTRE[1] - size // 2, size, size, colors[i % len(colors)]))
+                    % (k, i, 540 - size // 2, (E.SCENE["top"] + E.SCENE["bottom"]) // 2 - size // 2, size, size, colors[i % len(colors)]))
         js.append("tl.fromTo('#tx%d-%d', %s, %s, %.3f);" % (
             k, i, js_obj({"x": 0, "y": 0, "rotation": 0, "opacity": 1}),
             js_obj({"x": rng.randint(-620, 620), "y": rng.randint(-900, 900), "rotation": rng.randint(-240, 240), "opacity": 0,
                     "duration": BURST, "ease": "power2.out", "immediateRender": False}), t))
     return "".join(html), js
+
+
+def brush(k, t, colors):
+    """Five ragged bands that cover the frame on the cut at `t` and uncover it after: (html, [js]). Seeded by `k`."""
+    rng = random.Random(1000 + k)
+    top, h, x0, x1 = -260, 500, -240, 1320          # tilted, five bands of 500 px still cover 1080x1920 edge to edge
+    paths, js = [], []
+    for i, f in enumerate(STAGGER):
+        y = top + i * (h - 50)                       # 50 px of overlap: more than two edges' wander (2 x 22)
+        xs = list(range(x0, x1 + 1, 60))
+        edge = ["%d,%d" % (x, y + rng.randint(-22, 22)) for x in xs] + ["%d,%d" % (x, y + h + rng.randint(-22, 22)) for x in reversed(xs)]
+        paths.append('<path class="tx-brush" id="txb%d-%d" d="M%sZ" fill="%s"/>' % (k, i, " L".join(edge), colors[i % len(colors)]))
+        start = round(max(0.0, t - BRUSH + f * BRUSH), 3)   # never before 0: GSAP would shift the whole page later
+        js.append("tl.set('#txb%d-%d', { scaleX: 0 }, 0);" % (k, i))      # hidden until it sweeps in
+        js.append("tl.fromTo('#txb%d-%d', %s, %s, %.3f);" % (k, i, js_obj({"scaleX": 0}), js_obj(
+            {"scaleX": 1, "duration": round(t - start, 3), "ease": "power3.in", "transformOrigin": "0% 50%", "immediateRender": False}), start))
+        js.append("tl.to('#txb%d-%d', %s, %.3f);" % (k, i, js_obj({"scaleX": 0, "transformOrigin": "100% 50%", "duration": UNCOVER,
+                                                                  "ease": "expo.out"}), t))
+    svg = ('<svg class="tx-brushes" width="1080" height="1920" viewBox="0 0 1080 1920" style="position:absolute;left:0;top:0">'
+           '<g transform="rotate(%.2f 540 960)">%s</g></svg>' % (math.degrees(TILT), "".join(paths)))
+    return svg, js
+
+
+def close(sid, end, kind="fade"):
+    """The last scene's exit, over the first half of the last CLOSE seconds: gone before the ground changes in the second
+    half (the composer's wipe), so no words are ever read over a ground that is changing. A "rewind" close streaks it
+    back, blurred, under the rewind mark (rewind_mark)."""
+    move = {"x": 160, "filter": "blur(14px)"} if kind == "rewind" else {"y": -24}
+    return ["tl.to('#%s', %s, %.3f);" % (sid, js_obj(dict({"opacity": 0}, **move, duration=CLOSE / 2, ease=OUT_EASE)), end - CLOSE)]
+
+
+def rewind_mark(end, color):
+    """The rewind mark (two left triangles) in the middle of the scene area over the close: (html, [js])."""
+    tri = '<i style="display:inline-block;width:0;height:0;border-top:44px solid transparent;border-bottom:44px solid transparent;border-right:66px solid %s"></i>' % color
+    html = '<div class="rw" id="rw" style="position:absolute;left:0;top:%dpx;width:1080px;text-align:center;opacity:0">%s%s</div>' % (
+        (E.SCENE["top"] + E.SCENE["bottom"]) // 2 - 44, tri, tri)
+    return html, ["tl.fromTo('#rw', %s, %s, %.3f);" % (js_obj({"opacity": 0, "scale": 0.8}), js_obj(
+                      {"opacity": 1, "scale": 1, "duration": 0.12, "ease": "power3.out", "immediateRender": False}), end - CLOSE),
+                  "tl.to('#rw', %s, %.3f);" % (js_obj({"opacity": 0, "duration": 0.1, "ease": OUT_EASE}), end - 0.1)]
+
+
+def leak(k, t, colors):
+    """A soft streak of light that sweeps across the frame over the cut at `t`: (html, [js]). Two palette colours."""
+    a, b = (E.rgba(c, 0.85) for c in colors[:2])
+    html = ('<div class="tx-leak" id="txl%d" style="position:absolute;left:%dpx;top:-30%%;width:%dpx;height:160%%;'
+            'background:linear-gradient(90deg, transparent, %s 35%%, %s 65%%, transparent);filter:blur(70px);mix-blend-mode:screen;'
+            'opacity:0"></div>' % (k, (1080 - LEAK_W) // 2, LEAK_W, a, b))
+    span = 1080 + LEAK_W
+    js = ["tl.fromTo('#txl%d', %s, %s, %.3f);" % (k, js_obj({"x": -span, "rotation": -18, "opacity": 1}),
+                                                  js_obj({"x": span, "duration": LEAK, "ease": "power1.inOut", "immediateRender": False}),
+                                                  t - LEAK / 2.0),
+          "tl.set('#txl%d', { opacity: 0 }, %.3f);" % (k, t + LEAK / 2.0)]
+    return html, js
+
+
+def dive(k, t, color, at=(540, (E.SCENE["top"] + E.SCENE["bottom"]) // 2)):
+    """The crossing's disc over the cut at `t`: (html, [js]). It opens from `at` on a log zoom until it covers the
+    farthest corner on the cut, then shrinks back to nothing over DIVE_OUT while the next scene pulls out under it."""
+    x, y = at
+    R = int(math.ceil(max(math.hypot(x - cx, y - cy) for cx in (0, 1080) for cy in (0, 1920)))) + 2
+    Z = round(R / float(DIVE_R0), 1)
+    circ = lambda r: "circle(%dpx at %dpx %dpx)" % (r, x, y)
+    html = ('<div class="tx-dive" id="txd%d" style="position:absolute;left:0;top:0;width:1080px;height:1920px;background:%s;'
+            'clip-path:%s;opacity:0"></div>' % (k, color, circ(0)))
+    t0 = max(0.0, t - DIVE_IN)
+    js = ["tl.set('#txd%d', { opacity: 1 }, %.3f);" % (k, t0),
+          "tl.fromTo('#txd%d', { clipPath: '%s' }, { clipPath: '%s', duration: %s, ease: zoomIn(%s), immediateRender: false }, %.3f);"
+          % (k, circ(DIVE_R0), circ(R), round(t - t0, 2), Z, t0),
+          "tl.to('#txd%d', { clipPath: '%s', duration: %s, ease: 'power2.in' }, %.3f);" % (k, circ(0), DIVE_OUT, t),
+          "tl.set('#txd%d', { opacity: 0 }, %.3f);" % (k, t + DIVE_OUT)]
+    return html, js

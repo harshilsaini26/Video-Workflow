@@ -9,7 +9,7 @@ import argparse, json, subprocess, sys
 ap = argparse.ArgumentParser(); ap.add_argument("--video", required=True); ap.add_argument("--out", required=True)
 ap.add_argument("--fps", type=float, default=2.0); ap.add_argument("--width", type=int, default=96)
 a = ap.parse_args()
-probe = json.loads(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", a.video], capture_output=True, text=True).stdout)
+probe = json.loads(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", a.video], capture_output=True, text=True, encoding="utf-8", errors="replace").stdout)
 w0, h0 = probe["streams"][0]["width"], probe["streams"][0]["height"]; W = a.width; H = max(2, round(h0 * W / w0 / 2) * 2)
 p = subprocess.Popen(["ffmpeg", "-v", "error", "-i", a.video, "-vf", "fps=%s,scale=%d:%d,format=gray" % (a.fps, W, H), "-f", "rawvideo", "-"], stdout=subprocess.PIPE)
 n = W * H; prev = None; out = []; i = 0
@@ -20,5 +20,5 @@ while True:
         d = sum(abs(x - y) for x, y in zip(buf, prev)) / n
         out.append([round(i / a.fps, 2), round(d, 2)])
     prev = buf; i += 1
-json.dump(out, open(a.out, "w"))
+json.dump(out, open(a.out, "w", encoding="utf-8"))
 print("%s: %d samples, %.1f s, active(>1.5) %.0f%%" % (a.video, len(out), len(out) / a.fps, 100 * sum(1 for t, d in out if d > 1.5) / max(1, len(out))))

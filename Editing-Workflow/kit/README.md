@@ -23,6 +23,23 @@ I record, drop the raw files into Claude Code, and it hands me back a first vers
    > Install the youtube-edit skill from the Editing-Workflow/kit folder into this project's .claude/skills folder. Then check everything it needs, install what's missing, and run its tests.
 4. Drop in a raw clip and use the first editing prompt from `PROMPTS.md`.
 
+## The editor hand-off (filmcraft)
+
+Every profile ends at a project you finish yourself in a video editor, not a rendered video. The kit writes it:
+`nle_xml.py` (Final Cut Pro 7 XML, which filmcraft, Premiere Pro and DaVinci Resolve import), `layer-pages.py` and
+`render-layers.py` (each scene or card as a transparent ProRes 4444 clip), and `filmcraft.py`, which turns the XML and
+the captions into a native filmcraft project when `filmcraft-cli` is installed.
+
+To get `filmcraft-cli` (free; MIT OR Apache-2.0): download it from a filmcraft release
+(github.com/storytold/filmcraft), or build it from a checkout with Rust installed:
+
+```bash
+git clone https://github.com/storytold/filmcraft && cd filmcraft
+cargo build --release -p filmcraft-cli      # about 8 minutes; the binary is target/release/filmcraft-cli
+```
+
+Put it on your PATH or set `FILMCRAFT_CLI` to its path. Without it, open the `.xml` in filmcraft with File ▸ Import.
+
 ## What it costs to run
 
 The skill itself is free, and so are most of the tools it uses (HyperFrames, FFmpeg, auto-editor, the Parakeet transcription). The $20 Claude plan is enough to set everything up. Editing a full video uses a lot more: I'm on the $200 Max plan, and in the video I break down what one video costs me. Tella (screen recordings) and Epidemic Sound (music) are paid tools I use. You can skip both: record your screen with anything, and pull sounds from the free library the skill points to.

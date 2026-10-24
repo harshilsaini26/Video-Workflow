@@ -1,6 +1,7 @@
-"""Motion with a reason (MOTION.md): no scene breathes or pushes in on its own; the background's glows move only on a
-cut, travelling with it, and hold still between cuts; no ease overshoots. None of that ambient motion counts as a change
-for pace-check (gate E4 still wants a new picture)."""
+"""A picture that is never still (MOTION.md, after measuring the reference: 7% of its frames still, ours 67%): every
+scene drifts with a slow camera move over its whole life, and a field of particles rises behind the scenes for the
+whole reel. The background's glows still move only on a cut, travelling with it; no ease overshoots. None of this
+ambient motion counts as a change for pace-check (gate E4 still wants a new picture)."""
 import copy, json, os, re, unittest
 from .helpers import read, run, scratch, write
 from .test_compose import BOARD, D, VOICE, silent_wav, t_word, words30
@@ -9,6 +10,11 @@ import explainer_lib as E
 from scenes import icon_row
 
 TOK = E.load_tokens()
+
+
+def _n(v):
+    """A number as js_obj writes it."""
+    return ("%.3f" % v).rstrip("0").rstrip(".") if isinstance(v, float) else str(v)
 
 
 class Living(unittest.TestCase):
@@ -22,11 +28,67 @@ class Living(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         return read(os.path.join(out, "index.html")), out
 
-    def test_no_scene_breathes(self):
-        # HyperFrames' motion language: no lazy breathing, no slow push-in; a held scene is still unless it says something
-        html, _ = self.build(BOARD)
+    def test_every_scene_drifts_with_the_camera(self):
+        # the camera keeps moving through a scene: a steady push-in with a slight turn, over the scene's whole life, the
+        # turn alternating from scene to scene; the scene's own fit (its .live scale) is never animated. It never comes
+        # to rest (a linear move: an eased one stops at both ends, and E6 measured those ends still on the RAG demo),
+        # and it pushes far enough to be seen, never so far that it draws text under 28 px (the floor counts its start)
+        html, out = self.build(BOARD)
+        cam = TOK["ambient"]["camera"]
+        self.assertGreaterEqual(round(cam["to"] - cam["from"], 3), 0.04)
+        m = json.load(open(os.path.join(out, "moments.json"), encoding="utf-8"))
+        from . import explainer_compose_shim as C
+        import scenes
+        for k, sc in enumerate(m["scenes"]):
+            yaw = cam["yaw"] * (1 if k % 2 == 0 else -1)
+            start = C.cam_from(scenes.REGISTRY[sc["type"]], sc["scale"], TOK)
+            self.assertGreaterEqual(start, cam["from"])
+            self.assertIn("tl.fromTo('#%s-cam', { scale: %s, y: %s, rotationY: %s }, { scale: %s, y: %s, rotationY: %s, duration: %s, "
+                          "ease: 'none', immediateRender: false }, %.3f);"
+                          % (sc["id"], _n(start), cam["y"], _n(-yaw), _n(cam["to"]), -cam["y"], _n(yaw), _n(round(sc["out"] - sc["in"], 3)), sc["in"]),
+                          html, sc["id"])
+            self.assertRegex(html, r'<div class="box" id="%s"[^>]*><div class="cam" id="%s-cam"><div class="live" id="%s-live"' % ((sc["id"],) * 3))
         self.assertNotRegex(html, r"tl\.\w+\('#\w+-live'")
-        self.assertNotIn("push", TOK["ambient"])
+
+    def test_particles_drift_behind_the_scenes_for_the_whole_reel(self):
+        html, out = self.build(BOARD)
+        p = TOK["ambient"]["particles"]
+        for i in (0, 1):                                   # each background layer has its own field
+            self.assertEqual(len(re.findall(r'<i class="pt" id="bg%d-p(\d+)"' % i, html)), p["count"])
+            for k in range(p["count"]):
+                for prop in ("x", "y"):                    # four quarters of one loop, end to end, over the whole reel
+                    legs = self.legs(html, "bg%d-p%d" % (i, k), prop)
+                    self.assertEqual(len(legs), 4)
+                    self.assertAlmostEqual(sum(d for _, _, d, _ in legs), D, places=2)
+                    self.assertEqual([b for _, b, _, _ in legs[:-1]], [a for a, _, _, _ in legs[1:]])   # no jump between legs
+        a, b = self.build(BOARD)[0], self.build(BOARD)[0]
+        self.assertEqual(re.findall(r'class="pt"[^>]*>', a), re.findall(r'class="pt"[^>]*>', b))   # seeded: the same every time
+
+    def test_the_particle_field_loops_without_a_jump(self):
+        # the reel loops: at D every particle is back where it was at 0, and the close's layer (the hook's ground again)
+        # carries the hook's own field, so the seam shows the same picture
+        html, _ = self.build(BOARD)
+        bgs = re.findall(r'<div class="bg" id="bg(\d+)" style="background:([^;"]+)', html)
+        last = int(bgs[-1][0])
+        self.assertEqual(bgs[-1][1], bgs[0][1])
+        field = lambda i: [re.sub(r'id="bg\d+-', 'id="', m) for m in re.findall(r'<i class="pt" id="bg%d-p\d+"[^>]*>' % i, html)]
+        self.assertEqual(field(last), field(0))
+        for k in range(TOK["ambient"]["particles"]["count"]):
+            for prop in ("x", "y"):
+                a, b = self.legs(html, "bg0-p%d" % k, prop), self.legs(html, "bg%d-p%d" % (last, k), prop)
+                self.assertEqual(a[0][0], a[-1][1])          # where it starts is where it ends
+                self.assertEqual(a, b)
+        # a quarter of an ellipse each (never still); the turn is a quarter turn, the same picture for a square or a dot
+        self.assertNotRegex(html, r"tl\.fromTo\('#bg\d+-p\d+', \{ [xy]: [^;]*ease: '(?!sine\.in'|sine\.out')")
+        for turn in re.findall(r"tl\.fromTo\('#bg\d+-p\d+', \{ rotation: 0 \}, \{ rotation: (-?\d+),", html):
+            self.assertEqual(abs(int(turn)), 90)
+
+    @staticmethod
+    def legs(html, pid, prop):
+        """[(from, to, duration, ease)] of one particle's tweens on one property, in time order."""
+        rx = r"tl\.fromTo\('#%s', \{ %s: (-?[\d.]+) \}, \{ %s: (-?[\d.]+), duration: ([\d.]+), ease: '([\w.]+)', immediateRender: false \}, ([\d.]+)\);"
+        found = sorted(re.findall(rx % (pid, prop, prop), html), key=lambda m: float(m[4]))
+        return [(float(a), float(b), float(d), e) for a, b, d, e, _ in found]
 
     def test_each_background_has_its_own_glows(self):
         html, _ = self.build(BOARD)                      # black, black, then light at the count-up: two background layers
@@ -75,7 +137,7 @@ class Living(unittest.TestCase):
 
     def test_ambient_motion_is_not_a_change(self):
         _, out = self.build(BOARD)
-        with open(os.path.join(out, "moments.json")) as f:
+        with open(os.path.join(out, "moments.json"), encoding="utf-8") as f:
             spans = json.load(f)["spans"]
         self.assertLess(max(e - s for s, e in spans), 2.0)        # idle floats and glow shifts are not changes
         board = copy.deepcopy(BOARD)

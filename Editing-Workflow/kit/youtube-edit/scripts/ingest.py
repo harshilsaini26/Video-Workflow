@@ -34,7 +34,7 @@ def probe(path):
     out = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
                           "stream=index,codec_type,codec_name,width,height,r_frame_rate,sample_rate,channels,pix_fmt",
                           "-show_entries", "format=duration,size", "-of", "json", path],
-                         capture_output=True, text=True, check=True).stdout
+                         capture_output=True, text=True, check=True, encoding="utf-8", errors="replace").stdout
     j = json.loads(out)
     v = next((s for s in j["streams"] if s["codec_type"] == "video"), None)
     a = next((s for s in j["streams"] if s["codec_type"] == "audio"), None)
@@ -95,7 +95,7 @@ if args.concat and clips:
     out = os.path.join(args.out, args.name)
     if same:
         listfile = os.path.join(args.out, "concat-list.txt")
-        with open(listfile, "w") as fh:
+        with open(listfile, "w", encoding="utf-8") as fh:
             for c in clips:
                 fh.write("file '%s'\n" % c["path"].replace("'", "'\\''"))
         cmd = ["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", listfile, "-c", "copy"]
@@ -122,7 +122,7 @@ if args.concat and clips:
     subprocess.run(cmd, check=True)
     ingest["concat"] = {"file": out, "stream_copy": same}
 
-json.dump(ingest, open(os.path.join(args.out, "ingest.json"), "w"), indent=1)
+json.dump(ingest, open(os.path.join(args.out, "ingest.json"), "w", encoding="utf-8"), indent=1)
 print("%d clip(s), %.1fs total%s" % (len(clips), t, ", set aside: %s" % ", ".join(c["file"] for c in side) if side else ""))
 for c in clips:
     print("  %-14s %7.1fs  %dx%d %.3ffps  starts at %8.3f" % (c["file"], c["duration"], c["width"], c["height"], c["fps"], c["source_start"]))

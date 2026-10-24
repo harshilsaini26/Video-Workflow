@@ -22,7 +22,7 @@ ap.add_argument("--note", action="append", default=[])
 ap.add_argument("--concern", action="append", default=[])
 a = ap.parse_args()
 
-S = json.load(open(a.spec))
+S = json.load(open(a.spec, encoding="utf-8"))
 WHAT = {"hook": "hook text", "headline": "headline", "point": "big point", "steps": "numbered steps card",
         "pills": "pills", "logo": "logo plate + pop", "chip": "punchline chip", "stat": "count-up number",
         "clip": "full-frame clip", "image": "full-frame image"}
@@ -70,7 +70,7 @@ if S.get("loop"):
 if S.get("sounds"):
     out.append("**Sounds:** " + ", ".join("%s at %.1f s" % (os.path.basename(s["src"]), float(s["at"])) for s in S["sounds"]))
 if a.assets and os.path.exists(a.assets):
-    rows = [l for l in open(a.assets).read().splitlines() if re.match(r"\| r\d+ ", l)]
+    rows = [l for l in open(a.assets, encoding="utf-8").read().splitlines() if re.match(r"\| r\d+ ", l)]
     out += ["", "## Assets and licences", "", "| id | kind | file | source | licence | used |", "|---|---|---|---|---|---|"]
     for l in rows:
         c = [x.strip() for x in l.strip().strip("|").split("|")]
@@ -78,5 +78,5 @@ if a.assets and os.path.exists(a.assets):
             out.append("| %s | %s | %s | %s | %s | %s |" % (c[0], c[1], c[8], c[9], c[10], c[11]))
 out.append("")
 os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
-open(a.out, "w").write("\n".join(out))
+open(a.out, "w", encoding="utf-8").write("\n".join(out))
 print("wrote %s (%d beats)" % (a.out, len(S.get("beats", []))))

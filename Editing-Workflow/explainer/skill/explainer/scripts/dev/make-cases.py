@@ -6,14 +6,22 @@
   make-cases.py DIR --merge measured.jsonl      # writes tests/fixtures/heights.json
 
 Three text lengths per scene type (custom excluded: it brings its own box). A developer tool, not part of a video run.
+More cases live beside this file in cases_<group>.py (each sets CASES = {type: [(name, data), ...]}); with
+--only TYPE,TYPE the run covers just those types, and --fixture NAME writes tests/fixtures/heights-NAME.json, so a new
+group of scenes is measured without touching anyone else's rows. Every "src" or "screenshot" anywhere in a case's data
+gets a placeholder PNG (images(): a name ending in -<W>x<H> sets its size, for an odd aspect).
 """
-import argparse, json, os, struct, subprocess, sys, wave, zlib
+import argparse, glob, importlib.util, json, os, re, struct, subprocess, sys, wave, zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.dirname(HERE)
 FIXTURE = os.path.join(SCRIPTS, "tests", "fixtures", "heights.json")
 WORDS = ["word%d" % i for i in range(40)]
 D = 40 * 0.4 + 1.0
+
+
+# a short title first: the case is never the reel's hook (whose items must land by 0.8 s, SOP S8)
+LEAD_IN = {"type": "title", "id": "lead", "bg": "mantle", "in": "word:0", "out": "word:1", "text": "Lead"}
 
 
 def at(i):
@@ -27,8 +35,8 @@ def lengths(short, mid, long):
 CASES = {
     "title": lengths({"text": "Three certificates"},
                      {"text": "Three certificates finance bros gatekeep", "kicker": "IF YOU'RE NEW TO FINANCE"},
-                     {"text": "The three certificates that finance people quietly gatekeep from everyone new",
-                      "kicker": "A LONG KICKER THAT RUNS OVER MORE THAN ONE LINE AT THIS SIZE", "size": 96}),
+                     {"text": "The three certificates finance people quietly gatekeep",
+                      "kicker": "A LONG KICKER THAT RUNS OVER MORE THAN ONE LINE", "size": 96}),
     "number": lengths({"n": 1}, {"n": 2, "name": "Coursera finance"},
                       {"n": 3, "name": "The Corporate Finance Institute's financial modelling certificate"}),
     "count-up": lengths({"value": 1000, "prefix": "$", "source": "s"}, {"value": 2.5, "decimals": 1, "suffix": "%", "sub": "a year", "source": "s"},
@@ -118,55 +126,104 @@ SHOTS = [("shot-short", {"title": "Coursera", "domain": "coursera.org", "screens
          ("shot-long", {"title": "Introduction to Corporate Finance", "subtitle": "The Wharton School",
                         "domain": "coursera.org", "screenshot": "shot.png"})]
 CASES["browser"] = CASES["browser"] + SHOTS
+# giant captions: the voice's words (word0 to word39 in every case), with and without keywords
+CASES["giant-captions"] = lengths({}, {"keywords": ["word5"]}, {"keywords": ["word3", "word7", "word11"]})
+# a flow too long for the area travels down a window
+CASES["flow"] = CASES["flow"] + [("travel", {"nodes": [{"label": l, "at": at(2 + 2 * i)} for i, l in
+                                                     enumerate(["Question", "Search", "Passages", "Prompt", "Answer", "Cite"])]})]
+
+
+def load_groups(folder=HERE):
+    """{type: cases} from every cases_<group>.py in `folder`."""
+    out = {}
+    for path in sorted(glob.glob(os.path.join(folder, "cases_*.py"))):
+        spec = importlib.util.spec_from_file_location(os.path.basename(path)[:-3], path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        for typ, variants in mod.CASES.items():
+            if typ in out or typ in CASES:
+                raise ValueError("%s: cases for %s are already defined elsewhere" % (path, typ))
+            out[typ] = variants
+    return out
+
+
+CASES.update(load_groups())
 
 
 def png(path, w, h):
-    raw = b"".join(b"\x00" + b"\x30\x60\xc0" * w for _ in range(h))
+    raw = b"".join(b"\x00" + b"\x30\x60\xc0\xff" * w for _ in range(h))
     chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
     with open(path, "wb") as f:
-        f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) +
+        f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0)) +
                 chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 
 
-def compose(root, vendor):
+SIZED = re.compile(r"-(\d+)x(\d+)\.\w+$")
+
+
+def images(data):
+    """[(path, width, height)]: a placeholder picture for every "src" and "screenshot" anywhere in a case's data (a
+    photo's src inside photos[] too). A name ending in -<W>x<H> before its extension is drawn at that size
+    ("banner-3000x1000.png", a 3:1 banner); otherwise a screenshot is 1280x2400 and any other picture 1280x256."""
+    out = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k in ("src", "screenshot") and isinstance(v, str) and v:
+                    m = SIZED.search(v)
+                    out.append((v,) + ((int(m.group(1)), int(m.group(2))) if m else (1280, 2400) if k == "screenshot" else (1280, 256)))
+                else:
+                    walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+    walk(data)
+    return list(dict.fromkeys(out))
+
+
+def compose(root, vendor, only=None, look=None):
     cases = []
     for typ, variants in CASES.items():
+        if only and typ not in only:
+            continue
         for name, data in variants:
             case = "%s-%s" % (typ, name)
             d = os.path.join(root, case)
             os.makedirs(d, exist_ok=True)
-            with open(os.path.join(d, "transcript.json"), "w") as f:
+            with open(os.path.join(d, "transcript.json"), "w", encoding="utf-8") as f:
                 json.dump({"words": [{"text": w, "start": 0.5 + i * 0.4, "end": 0.8 + i * 0.4} for i, w in enumerate(WORDS)]}, f)
             with wave.open(os.path.join(d, "voice.wav"), "wb") as w:
                 w.setnchannels(1); w.setsampwidth(2); w.setframerate(8000)
                 w.writeframes(b"\x00\x00" * int((D - 0.5) * 8000))
-            for key in ("screenshot", "src"):
-                if data.get(key):
-                    png(os.path.join(d, data[key]), 1280, 2400 if key == "screenshot" else 256)
-            scene = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:0", "out": D}, **data)
-            with open(os.path.join(d, "storyboard.json"), "w") as f:
-                json.dump({"id": case, "scenes": [scene]}, f)
+            for rel, w, h in images(data):
+                os.makedirs(os.path.dirname(os.path.join(d, rel)), exist_ok=True)
+                png(os.path.join(d, rel), w, h)
+            scene = dict({"type": typ, "id": "sc", "bg": "mantle", "in": "word:1", "out": D}, **data)
+            with open(os.path.join(d, "storyboard.json"), "w", encoding="utf-8") as f:
+                json.dump(dict({"id": case, "scenes": [LEAD_IN, scene]}, **({"look": look} if look else {})), f)
             r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "explainer-compose.py"), "--spec", os.path.join(d, "storyboard.json"),
-                                "--out", os.path.join(d, "public"), "--vendor", vendor], capture_output=True, text=True)
+                                "--out", os.path.join(d, "public"), "--vendor", vendor], capture_output=True, text=True, encoding="utf-8", errors="replace")
             if r.returncode:
                 sys.exit("%s: %s" % (case, r.stdout + r.stderr))
-            cases.append({"case": case, "type": typ, "scene": scene})
-    with open(os.path.join(root, "cases.json"), "w") as f:
+            cases.append(dict({"case": case, "type": typ, "scene": scene}, **({"look": look} if look else {})))
+    with open(os.path.join(root, "cases.json"), "w", encoding="utf-8") as f:
         json.dump(cases, f, indent=1)
     print("composed %d cases in %s" % (len(cases), root))
 
 
-def merge(root, measured):
-    cases = {c["case"]: c for c in json.load(open(os.path.join(root, "cases.json")))}
+def merge(root, measured, fixture=FIXTURE):
+    cases = {c["case"]: c for c in json.load(open(os.path.join(root, "cases.json"), encoding="utf-8"))}
     rows = []
-    for line in open(measured):
+    for line in open(measured, encoding="utf-8"):
         m = json.loads(line)
         c = cases[m["case"]]
-        rows.append({"case": m["case"], "type": c["type"], "scene": c["scene"], "width": m["width"], "height": m["height"]})
-    os.makedirs(os.path.dirname(FIXTURE), exist_ok=True)
-    with open(FIXTURE, "w") as f:
+        rows.append(dict({"case": m["case"], "type": c["type"], "scene": c["scene"], "width": m["width"], "height": m["height"]},
+                         **({"look": c["look"]} if c.get("look") else {})))
+    os.makedirs(os.path.dirname(fixture), exist_ok=True)
+    with open(fixture, "w", encoding="utf-8") as f:
         f.write("[\n" + ",\n".join(json.dumps(r) for r in rows) + "\n]\n")
-    print("wrote %d rows to %s" % (len(rows), FIXTURE))
+    print("wrote %d rows to %s" % (len(rows), fixture))
 
 
 if __name__ == "__main__":
@@ -174,5 +231,9 @@ if __name__ == "__main__":
     ap.add_argument("dir")
     ap.add_argument("--vendor", default=os.path.join(SCRIPTS, "..", "assets", "vendor"))
     ap.add_argument("--merge")
+    ap.add_argument("--only", help="comma-separated scene types")
+    ap.add_argument("--fixture", help="write tests/fixtures/heights-<NAME>.json instead of heights.json")
+    ap.add_argument("--look", help="compose the cases in this look (paper); the rows record it")
     a = ap.parse_args()
-    merge(a.dir, a.merge) if a.merge else compose(a.dir, a.vendor)
+    fx = os.path.join(SCRIPTS, "tests", "fixtures", "heights-%s.json" % a.fixture) if a.fixture else FIXTURE
+    merge(a.dir, a.merge, fx) if a.merge else compose(a.dir, a.vendor, set(a.only.split(",")) if a.only else None, a.look)

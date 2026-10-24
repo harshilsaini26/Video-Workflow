@@ -5,6 +5,12 @@ Read this before you plan a storyboard (Director) or build a reel (Animator). Th
 rest is your eye. The bar is the one in motion-graphics-skills: **stunning, or it is not done.** The look follows Apple's
 Human Interface Guidelines (clarity, deference, one colour meaning one thing) in Catppuccin Latte.
 
+**Measured against the reference reel** (2026-10-17, the RAG reel beside a reel the creator rates highly): the
+reference is still 7% of the time and never longer than 0.5 s, changes its ground between black, strong blue and light
+every few seconds, shows real objects (course pages, charts with numbers, a clock, a phone feed) and puts a giant figure
+on screen often. The RAG reel was still 67% of the time, sat on one pale ground, held one diagram for 27 s and showed
+labelled boxes. The rules below are what closed that gap.
+
 Distilled from three free, open sources, read as references (none of their code runs here):
 - [charlie947/motion-graphics-skills](https://github.com/charlie947/motion-graphics-skills): the eight-part brief
   ("the hero fills 60 to 70% of the frame and shows one satisfying change"), the effect recipes, the explainer review
@@ -13,51 +19,128 @@ Distilled from three free, open sources, read as references (none of their code 
   language, the cut catalogue, typography and the portrait layout rules.
 - [remotion-dev/remotion](https://github.com/remotion-dev/remotion), the prompt-to-motion-graphics skills: springs and
   expo-out arrivals, "never constrain content to a small centred box".
+- [alchaincyf/huashu-art-motion](https://github.com/alchaincyf/huashu-art-motion) (MIT), its animation-grammar cards and
+  their measured numbers: 3Blue1Brown's Transform and `smooth` ease (`morph`), Kurzgesagt's flat two-tone shapes and
+  log-zoom scale crossing (`orbit`, the `dive` cut), Vox's evidence desk on two frame rates (`clippings`). Ported, not
+  run: its canvas engine draws frames; here the same moves are GSAP tweens on the page.
 
 ## 1. The picture
 
 1. **Fill the frame.** The hero is big: 60 to 70% of the frame, never a small widget in empty space. The composer
-   lays every library scene out narrower and scales it up (to 1.8x) to fill the scene area, x 65 to 1015 and y 520
-   to 1420 (780 px wide below y 960, clear of Instagram's buttons). A title grows to 150 px; numbers to 1.3x.
+   lays every library scene out narrower and scales it up (to 1.8x) to fill the scene area, x 65 to 1015 and y 345
+   to 1105 (780 px wide below y 960, clear of Instagram's buttons and caption): **the centre is always the
+   animation's**; the captions are small, under it (y 1130 to 1235). **No text goes below y 1235**, one line for the
+   composer, gate E5 and QA (SOP S7); shapes with no text may run on to y 1650, behind the captions, so the lower
+   frame is not left empty. A title grows to 150 px; numbers to 1.3x; a `stat` is 200 to 320 px.
 2. **Type is the picture.** A hero word is 120 px or more; a label is 34 px or more after the scale; at most about 5
    words of on-screen text at once, and never the narration's sentence (the captions already say it).
-3. **One accent, one meaning.** Catppuccin Latte, light only (tokens.json): ink `text`, secondary `subtext0`, unsaid
-   caption words `overlay2`, rules `surface1`, cards `base` with a hairline, and **blue is the accent: "what the voice
-   is talking about now"**. Green, red and peach are signals, always beside a label (never colour alone). Every role
-   pair meets WCAG on both backgrounds (test_theme). No gradient text, no glow on type or shapes.
-4. **Real things.** A real logo (simple-icons), a real page (snap-page.py), a real number with a source. No stock
-   icons standing in for a product the voice names.
+3. **One accent, one meaning; four grounds.** Catppuccin Latte (tokens.json) on four grounds: the light `mantle` and
+   `base`, strong `blue`, and dark `ink` (Latte's text colour). On the light ones: ink `text`, secondary `subtext0`,
+   cards `base` with a hairline, and **blue is the accent: "what the voice is talking about now"**; on `blue` and `ink`
+   the text turns light, cards are outlined in the ground's own colour, and the accent becomes one that shows there
+   (light chips on blue, yellow on ink). **Change grounds with the story** (the planner does: the hook on `ink`, the
+   payoff on `blue`, light grounds between, a blue beat every third scene in a section): a reel on one pale ground
+   reads as one long slide. **UI mock-ups stay light paper on any ground** (a window, a chat, a document, an editor:
+   `ctx.pc`), like the reference's white windows on blue. Green, red and peach are signals, always beside a label.
+   Every text holds 3:1 against what is really behind it (gate E5; all text is 28 px or more). No gradient text.
+4. **Real things, not labelled boxes.** A real logo (simple-icons), a real page (snap-page.py), a real number with a
+   source as a giant `stat`, a `chat` with the question and its answer, the `doc` passage a system found, an editor's
+   timeline, a phone's reel feed. A box with a word in it is the last resort, not the default.
 5. **No two beats look the same.** The composer WARNs when two scenes in a row share a layout: change the picture,
    or merge the two into one build that keeps growing (one object changing beats a new widget every line).
+6. **Two looks** (tokens.json `looks`, the storyboard's `look`). `latte` is the default above. `paper` is the
+   editorial look of the Bose reference: one warm paper ground (#EFEAE3), near-black ink (#141414), one orange-red
+   accent (#D9472E), colour only from the images; **three faces by role**: the hero face (Archivo 800 at width 125%,
+   upper case) for headlines, kinetic, giant captions, title cards, stats and stickers; an Instrument Serif italic
+   aside for the voice's asides ("seriously?"); JetBrains Mono for small labels, kickers and credits. Body text inside
+   UI mock-ups stays DM Sans. Lay it out like an editorial page: a top-left headline, one big object under it (a
+   product cut-out the headline sits behind, a photo, a waveform), notes pointing at the part the voice names, and
+   the thread carrying the eye from one scene into the next. The motion stays: everything still moves while it holds.
 
 ## 2. Motion with a reason
 
-1. **Nothing moves unless the voice gives it a reason.** "I'd rather have no motion than bad motion" (HyperFrames).
-   No slow push-in on every scene, no glows drifting the whole time. A piece arrives on the word that names it; a
-   screenshot holds still, then punches in on the line its `focus` names, on that word. The one exception is the
-   hold: a build may keep **one** small alive thing while it waits for its next word (the library's float, pulse or
-   the hub's slow turn), and that is all.
+1. **The picture is never still** (changed 2026-10-17, measured: the earlier "nothing moves without a reason" left
+   two thirds of the RAG reel's frames frozen). The camera moves through every scene: a steady push-in from 0.95 to
+   0.995 (linear, so it never comes to rest; shallower where the scene's smallest text would drop under 28 px) with a 1.5° turn that alternates scene to scene (`.cam`, the composer's), and a field of small squares and
+   dots drifts behind the scenes for the whole reel, each once round a small ellipse (back where it began, so the loop has no seam). Both are quiet enough to read through and never count as a new
+   picture for pace-check. Gate E6 (`motion-check.py`) measures the page before any render (`--index`) and the rendered file: no still stretch over 1 s, under
+   15% still (a frame is still when under 0.1% of it changes visibly). **Pieces still arrive on the words that name them**; a screenshot punches in on its `focus` word; a
+   build keeps one small alive thing while it waits.
 2. **The background moves on the cut.** Its glows travel with each cut (expo.out, about 1.2 s) and hold between cuts.
-3. **Eases:** arrivals decelerate (`power3.out` for pieces, `expo.out` for scenes and cuts); exits accelerate
-   (`power3.in`, 0.2 to 0.28 s). **Never `back`, `elastic` or `bounce`**: an overshoot reads as cheap. No linear
-   movement (linear is for counts, draws and the hub's slow turn).
-4. **One object changing shape** beats a fade: a bar that grows, a line that draws, a card that turns. Show a dim ghost
-   of where a build is going (the library's build-up scenes do), stagger by a beat, keep the hold to one alive thing.
-5. **Deterministic, on the timeline.** No `Math.random` or `Date.now`, no `repeat` or `yoyo`, no `infinite` CSS
+3. **A new picture at least every 8 s** (E4). A long process travels: `flow` with 5 or 6 steps runs down a window
+   and the camera moves to each step as it is said. Never hold one diagram while a highlight walks down it.
+4. **Eases:** arrivals decelerate (`power3.out` for pieces, `expo.out` for scenes and cuts); exits accelerate
+   (`power3.in`, 0.2 s, over before the cut). **Never `back`, `elastic` or `bounce`**: an overshoot reads as cheap. A
+   `gravity-drop` falls and rebounds as physics (power2 in, then smaller power2 out and in), not as an eased overshoot.
+   Linear only for counts, draws, the hub's slow turn, the camera's drift and the particles' turn.
+5. **One object changing shape** beats a fade: a bar that grows, a line that draws, a card that turns. A build shows
+   where it is going as **empty slots** (outlines, their words hidden), never as faint text, then fills each on its word.
+6. **Deterministic, on the timeline.** No `Math.random` or `Date.now`, no `repeat` or `yoyo`, no `infinite` CSS
    animation: every render of the page is the same frame for frame (the custom-scene lint refuses them).
+7. **One read at a time; fast actions, slow meanings.** Two items of one scene land at least 0.6 s apart unless they
+   are one stagger (E4 lists them as "two reads at once"); a number stays on screen at least 1.0 s before its scene
+   leaves; the last read of the reel lands at least 1.5 s before the end (both E4 FAIL, `pace-check.py`).
+8. **Lead the eye.** Before an important item lands, the thread or the camera moves there first; the viewer is already
+   looking when it arrives.
+9. **Cause, then reaction, never on the same frame.** The strike lands, then the price drops; the circle draws, then
+   its label slides in (the annotation waits 0.3 s for its leader). Two things that happen together read as one.
+10. **Avoid twinning.** Two pieces never move as mirror images on the same frame: offset their staggers (the brush's
+    bands start at 0, .14, .06, .18 and .1 of the cover), vary their distances.
+11. **Into, between and out of.** Every scene enters, holds alive and leaves, the last one included: the close takes it
+    off over the first half of the last 0.4 s, then the hook's ground wipes in (never words over a changing ground; E3
+    wants the last scene 1 s long at least), and **the ending rhymes with the hook** (the same ground, the same
+    word, the same shape back), so the loop seams back into the start.
+12. **Hand-drawn strokes (paper).** In the paper look the strokes boil: the thread, annotation circles and leaders and
+    line-art wobble a little, an SVG turbulence whose seed steps 12 times a second (ambient, after
+    ClaudeAnimationBase). Never text, never a fill. Gate E6 samples the page with it off (`data-boil="off"`), so a boil
+    never hides a frozen stretch.
 
 ## 3. Cuts
 
 Every cut is **velocity-matched**: the old scene accelerates into the cut, the new one decelerates out of it, and a
-short blur carries the speed (HyperFrames' cut catalogue). The composer picks them:
+short blur carries the speed (HyperFrames' cut catalogue). **The old scene is gone by the cut** (its exit runs over the
+0.2 s before it); two scenes are never on screen together, and gate E5 looks at every cut every 2 frames to prove it
+(SOP S9). The composer picks them:
 - **zoom-through:** out 1 to 1.2 with a 10 px blur, `power3.in` 0.2 s; in 0.75 to 1 out of an 8 px blur, `expo.out` 0.5 s;
 - **whip (push):** out 260 px up with a 12 px blur; in from 300 px below out of a 10 px blur;
 - **wipe:** a new background opens as a circle; **burst:** a spray for the hook or a reveal; **cut:** a hard cut.
+- **brush** (the paper look's wipe): five ragged bands in the outgoing ground's accent and ink sweep across, cover
+  the frame on the cut, then sweep off in 0.3 s (`expo.out`); the new ground swaps under them;
+- **the close:** the last scene leaves over the first 0.2 s of the last 0.4 s; the hook's ground wipes in over the last 0.2 s.
+- **captions over a new ground:** a caption still on screen when a ground comes in (a cut or the close) turns to that
+  ground's colours (words, grey and halo) over the change, never white words left on a light ground.
+- **leak:** a wide, soft streak of light (the accent and the second accent, screen-blended) sweeps across the frame
+  over the cut in 0.9 s; the old scene blurs out under it. Named only, for energy or a reveal.
+- **dive** (Kurzgesagt's scale crossing): the outgoing ground's accent opens as a disc from the middle of the scene area
+  over the last 0.45 s, on a **log zoom** (`zoomIn(Z)`: the radius grows by the same factor every frame), covering the
+  frame on the cut; then it shrinks away in 0.6 s while the next scene pulls out from 1.6 to 1 (`zoomOut`). A linear
+  zoom reads slow then sudden, and the flight breaks. Named only, for "inside it".
+
+**Three grammars, three rules** (PLAYBOOK §E6.13):
+- **3Blue1Brown:** one object becomes the next (`morph`): no cut, no fade-out-and-in; the move is `smooth`
+  (6t^5 - 15t^4 + 10t^3), 1 to 1.2 s, and the wait after it is **still**: no drift, no breathing on the subject.
+- **Kurzgesagt:** flat, no outlines (a shadow band and a light edge do the shading), glow only on dark grounds; the
+  ambient layer (stars, signals along the links) moves while the subject, once landed, holds still; a crossing of
+  scales is a log zoom.
+- **Vox:** the camera layer is smooth, the desk moves **on twos** (twelve steps a second: `onTwos(n, k)`, `steps(n)`);
+  a label types at 13 characters a second; paper and grain are static; nothing pops or bounces; red is for the pen and
+  the string, yellow for the highlighter under the words, and nothing else is coloured.
+
+**3D scenes** (`bars-3d`, `cube`, `cards-3d`, `briefcase`, `beaker`, `donut`, `coin`, `balance`) are CSS 3D (the beaker, the donut and the
+balance are 2.5D: an elliptical rim and a ring stacked into depth), flat-shaded (top lighter, side darker), seek-safe: heights and
+turns are tweens on the timeline, and their words sit flat over the 3D so gate E5 can read them.
+
+**Choose a transition for a reason**, not in turn: a new place (a new ground, a new subject) gets a wipe or a brush;
+the same idea continuing gets a fade or no more than the camera's push; a jolt (a reversal, "but") gets a whip. The
+composer's defaults follow this; a scene's `"transition"` overrides it when the voice asks for another.
 
 ## 4. The hook, and bespoke moments
 
 **The hook (0 to 3 s) is kinetic type from data** (`kinetic`): a big accent token, one or two words, a claim line, a
-strike and a punch, each rising out of its mask on its word. The writer hints it in script.json
+strike and a punch, each rising out of its mask; **whole on screen by 1.0 s** (E3 holds every hook item to 0.8 s; the
+planner lands the pieces on the words said by then). A number written into the words ("5 STEPS") becomes the big
+token. Where the words themselves are the picture, `giant-captions` puts them 120 to 200 px in the middle of the frame
+and the caption band steps aside. The writer hints it in script.json
 (`{"type": "kinetic", "big": "3", "words": ["STEP", "TRICK"], "line": "AI INVENTS", "strike": "INVENTS", "punch": "LESS"}`)
 and the planner lands every piece on its word: no code, no tokens beyond the script. **Custom scenes are opt-in**: only
 when the creator asks for a moment the library cannot make. Brief one the motion-graphics-skills way:
@@ -71,6 +154,7 @@ when the creator asks for a moment the library cannot make. Brief one the motion
 
 **Gate E5 first** (`layout-check.py`): every scene in Chromium at the moment it is fully built, failing on text over
 text, text covered by or crossing a shape, text out of its card, anything outside the safe area, text under 28 px,
-clipped text and WCAG contrast. It costs nothing and catches what an eye skimming stills misses. Then look at the stills
-the composer names (a contact sheet is one image) as a design director would, full size and at 200 px wide: is the hero
-big and clear, does anything sit small in empty space, is any text the narration repeated? Fix, re-run, then render.
+clipped text, text under 3:1, and two scenes on screen at a cut. It costs nothing and catches what an eye skimming
+stills misses. Then look at the settled stills (`stills.py`: every scene once all of it has arrived, the hook at 0.3,
+0.7 and 1.0 s) as a design director would, full size and at 200 px wide: is the hero big and clear, does anything sit
+small in empty space, is any text the narration repeated? Fix, re-run, then render; after the render, E6.

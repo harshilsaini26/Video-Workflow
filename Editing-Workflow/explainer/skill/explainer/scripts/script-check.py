@@ -12,8 +12,12 @@ script.json:
  "sources": {"s1": {"title": "...", "url": "...", "note": "..."}}}
 
 Fails when:
-- the shown text is outside the length range (2.7 words a second; 81 to 240 words, 30 to 90 s, narrowed to +-15% of
-  target_seconds x 2.7 when there is a target);
+- the estimated length is outside 30 to 90 s, or outside target_seconds +-15% (inside 30 to 90) when there is a
+  target. The estimate is the spoken words at the voice's own rate (voice-rates.json, measured from its samples by
+  tts-kokoro.py --samples; 2.4 words a second until then, am_michael's) plus the pauses between lines (SOP S4);
+- there are more section breaks than 3 every 75 s (each is a long pause; SOP S5);
+- with --voice voice.wav (the script voiced once before Checkpoint A, SOP S16): the voiced length is over 90 s, with
+  the lines to trim listed (never the hook, the payoff or the call to action);
 - format or goal is set to something unknown;
 - the hook (line 0) is over 12 words;
 - a line whose shown text has a digit, % or $ (or is marked "fact": true) has no source, or names one that isn't
@@ -29,13 +33,17 @@ Warns (PLAYBOOK §E1, §E2; what makes an informative reel spread), and still pa
 - the format's shape is missing: how-to steps (two lines with role step), myth then truth, problem then solution,
   versus with a compare picture.
 
-Usage: python3 script-check.py --script videos/<p>/script.json [--report videos/<p>/SCRIPT.md]
+Usage: python3 script-check.py --script videos/<p>/script.json [--report videos/<p>/SCRIPT.md] [--voice voice.wav]
+       [--rates voice-rates.json]
 """
-import argparse, json, re, sys
+import argparse, json, os, re, sys, wave
 
-WPS = 2.7
-MIN_WORDS, MAX_WORDS, HOOK_MAX = 81, 240, 12      # 30 to 90 s at 2.7 words a second
+HERE = os.path.dirname(os.path.abspath(__file__))
+WPS = 2.4                    # am_michael at 1.0, measured on the RAG reel; a voice's own rate replaces it
+PAUSE = {"comma": 0.15, "sentence": 0.35, "section": 0.6}       # tts-kokoro.py's pauses between lines
+HOOK_MAX = 12
 MIN_S, MAX_S = 30, 90
+SECTIONS_PER_75 = 3
 FORMATS = ("how-to", "versus", "myth", "story", "explainer")
 GOALS = {"follow": ("follow",), "comment": ("comment", "tell me", "drop", "reply"), "save": ("save",),
          "share": ("share", "send"), "link": ("link", "bio"), "learn": ()}
@@ -45,9 +53,12 @@ NUMERIC = re.compile(r"[\d%$]")
 ap = argparse.ArgumentParser()
 ap.add_argument("--script", required=True)
 ap.add_argument("--report")
+ap.add_argument("--voice", help="the voiced script (voice.wav): its real length is checked")
+ap.add_argument("--rates", default=os.path.join(HERE, "..", "voice-rates.json"))
 a = ap.parse_args()
 
-S = json.load(open(a.script))
+with open(a.script, encoding="utf-8") as f:
+    S = json.load(f)
 lines = S.get("lines", [])
 sources = S.get("sources", {}) or {}
 errors = []
@@ -59,19 +70,50 @@ if dupes:
 if not lines:
     errors.append("no lines")
 
-words = sum(len(str(ln.get("show", "")).split()) for ln in lines)
-lo, hi = MIN_WORDS, MAX_WORDS
+spoken = lambda ln: str(ln.get("say") or ln.get("show", ""))
+words = sum(len(spoken(ln).split()) for ln in lines)
+voice, speed = S.get("voice", "am_michael"), float(S.get("speed", 1.0))
+rates = {}
+if a.rates and os.path.exists(a.rates):
+    with open(a.rates, encoding="utf-8") as f:
+        rates = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
+rate = float(rates.get("%s@%g" % (voice, speed), WPS))
+pauses = sum(PAUSE.get(ln.get("break") or "sentence", PAUSE["sentence"]) for ln in lines[:-1])
+est = words / rate + pauses
 target = S.get("target_seconds")
 if target and not MIN_S <= float(target) <= MAX_S:   # a target outside leaves no length to aim for
     errors.append("target_seconds %g is outside %d to %d s" % (float(target), MIN_S, MAX_S))
-else:
-    if target:
-        t = float(target) * WPS
-        lo, hi = max(MIN_WORDS, round(t * 0.85)), min(MAX_WORDS, round(t * 1.15))
-    if words < lo:
-        errors.append("%d words: under %d words (about %.0f s)" % (words, lo, lo / WPS))
-    if words > hi:
-        errors.append("%d words: over %d words (about %.0f s)" % (words, hi, hi / WPS))
+elif est < MIN_S:
+    errors.append("about %.1f s: under 30 s (at %.1f words a second, at least %d words)" % (est, rate, (MIN_S - pauses) * rate))
+elif est > MAX_S:
+    errors.append("about %.1f s: over 90 s (at %.1f words a second, at most %d words)" % (est, rate, (MAX_S - pauses) * rate))
+elif target:
+    lo, hi = max(MIN_S, float(target) * 0.85), min(MAX_S, float(target) * 1.15)
+    if est < lo:
+        errors.append("about %.1f s: under the %g s target (%.1f s at least)" % (est, float(target), lo))
+    if est > hi:
+        errors.append("about %.1f s: over the %g s target (%.1f s at most)" % (est, float(target), hi))
+sections = sum(1 for ln in lines[:-1] if ln.get("break") == "section")
+allowed = max(1, int(SECTIONS_PER_75 * est / 75.0 + 1e-9))
+if sections > allowed:
+    errors.append("%d section breaks: at most %d in a reel this long (3 every 75 s; each is a %.1f s pause); make the "
+                  "others sentence breaks" % (sections, allowed, PAUSE["section"]))
+voiced = None
+if a.voice:
+    with wave.open(a.voice) as w:
+        voiced = w.getnframes() / float(w.getframerate())
+    if voiced > MAX_S + 1e-6:
+        need = int((voiced - MAX_S) * rate) + 1
+        keep = {lines[0].get("id"), S.get("payoff"), S.get("cta")} if lines else set()
+        cands = sorted((ln for ln in lines if ln.get("id") not in keep), key=lambda ln: -len(spoken(ln).split()))
+        picked, got = [], 0
+        for ln in cands:
+            if got >= need:
+                break
+            picked.append(ln)
+            got += len(spoken(ln).split())
+        errors.append("voiced %.1f s: over the 90 s ceiling; trim about %d words; lines to trim or shorten: %s"
+                      % (voiced, need, ", ".join("%s (%d words)" % (ln.get("id"), len(spoken(ln).split())) for ln in picked)))
 
 if lines:
     hook = len(str(lines[0].get("show", "")).split())
@@ -92,6 +134,19 @@ for key in ("payoff", "cta"):
 
 # ---- the brief: what the reel is for, and the shape that makes it land (warnings) -------------------------------------
 warnings = []
+
+# ---- plain spoken words (PLAYBOOK §E2.9; the kit's wording.py): fails block E1, the rest is for the writer -----------
+notes = []
+sys.path.insert(0, HERE)
+import explainer_lib as E
+if E.kit_dir():
+    _w = E.find_kit("wording").check_lines([{"id": ln.get("id"), "text": ln.get("show", ""), "say": ln.get("say")} for ln in lines],
+                                           rate=rate)
+    errors += _w["fail"]
+    warnings += _w["warn"]
+    notes += _w["note"]
+else:
+    warnings.append("the kit's wording check was not found (install the kit next to this skill): the words were not checked")
 fmt, goal, aud = S.get("format"), S.get("goal"), S.get("audience")
 if fmt is not None and fmt not in FORMATS:
     errors.append("format %r is not one of %s" % (fmt, ", ".join(FORMATS)))
@@ -126,7 +181,8 @@ shape = {"how-to": (roles.count("step") >= 2, "a how-to needs its steps: two or 
 if fmt in shape and not shape[fmt][0]:
     warnings.append(shape[fmt][1])
 
-summary = "%d words, est %.1f s, %d lines, %d sources" % (words, words / WPS, len(lines), len(sources))
+summary = ("%d words, est %.1f s (%.1f words a second for %s at %g, plus %.1f s of pauses), %d lines, %d sources%s"
+           % (words, est, rate, voice, speed, pauses, len(lines), len(sources), (", voiced %.1f s" % voiced) if voiced else ""))
 if a.report:
     out = ["# %s" % S.get("title", "Script"), "", summary, "",
            "**Format:** %s · **Audience:** %s · **Goal:** %s" % (fmt or "-", aud or "-", goal or "-"), "", "## Script (as shown)", ""]
@@ -145,15 +201,17 @@ if a.report:
             out.append("- **%s** %s: %s%s" % (k, v.get("title", ""), v.get("url", ""), (" (%s)" % v["note"]) if v.get("note") else ""))
         else:   # a plain "Publisher, Title, date, link" string
             out.append("- **%s** %s" % (k, v))
-    if warnings:
-        out += ["", "## Worth a look", ""] + ["- " + w for w in warnings]
+    if warnings or notes:
+        out += ["", "## Worth a look", ""] + ["- " + w for w in warnings + notes]
     if errors:
         out += ["", "## Gate E1: FAIL", ""] + ["- " + e for e in errors]
-    with open(a.report, "w") as f:
+    with open(a.report, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
 
 for w in warnings:
     print("E1 WARN: " + w)
+for n in notes:
+    print("E1 NOTE: " + n)
 if errors:
     print("E1 FAIL: " + summary)
     for e in errors:

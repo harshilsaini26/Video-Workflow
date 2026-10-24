@@ -17,7 +17,7 @@ ap.add_argument("--lead", type=float, default=0.07); ap.add_argument("--tail", t
 a = ap.parse_args()
 pcm = np.frombuffer(subprocess.run(["ffmpeg", "-v", "error", "-i", a.audio, "-ac", "1", "-ar", "16000", "-f", "s16le", "-"], capture_output=True).stdout, np.int16).astype(float)
 rms = np.sqrt(np.mean(pcm[: len(pcm) // 160 * 160].reshape(-1, 160) ** 2, axis=1))
-d = json.load(open(a.cut_list)); kept = []
+d = json.load(open(a.cut_list, encoding="utf-8")); kept = []
 for s in d["kept"]:
     if s.get("room_tone"):
         kept.append(s); continue
@@ -35,5 +35,5 @@ for s in d["kept"]:
     for r0, r1 in runs:
         kept.append({"start": round(max(s["start"], (i0 + r0) / 100 - a.lead - 0.02), 3), "end": round(min(s["end"], (i0 + r1 + 1) / 100 + a.tail), 3)})
 d["kept"] = kept; d["kept_seconds"] = round(sum(k["end"] - k["start"] for k in kept), 3)
-json.dump(d, open(a.out, "w"), indent=1)
+json.dump(d, open(a.out, "w", encoding="utf-8"), indent=1)
 print("segments %d, kept %.2fs" % (len(kept), d["kept_seconds"]))

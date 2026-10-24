@@ -31,7 +31,7 @@ if not files:
 os.makedirs(a.out, exist_ok=True)
 
 def size(path):
-    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=width,height", "-of", "json", path], capture_output=True, text=True, check=True)
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=width,height", "-of", "json", path], capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
     s = json.loads(r.stdout)["streams"][0]
     return int(s["width"]), int(s["height"])
 

@@ -1,4 +1,7 @@
-"""line-chart: the line draws point by point on its words, points pop, the value counts up in step (SPEC §6.2)."""
+"""line-chart: the line draws point by point on its words, points pop, the value counts up in step (SPEC §6.2).
+
+"shape": "step" draws it as steps instead (a level, then the jump: H then V between points), for prices, tiers and
+plans that change all at once; the draw-on and the counted readout are the same."""
 import explainer_lib as E
 from scenes import js_str, line_px, mono_lines, need, widest
 
@@ -7,9 +10,10 @@ NEEDS_SOURCE = True
 L_SIZE, L_LH, L_GAP = 30, 1.3, 18      # the mono label on top
 V_SIZE, V_GAP = 96, 12                 # the value readout (line height 1)
 CHART = 400                            # the plot, px tall
-X_SIZE, X_LH, X_GAP = 26, 1.3, 10      # the x labels under it
+X_SIZE, X_LH, X_GAP = 28, 1.3, 10      # the x labels under it (at the 28 px floor)
 DOT = 22
 DRAW = 0.6                             # seconds a segment takes to draw
+SHAPES = ("line", "step")
 
 CSS = """
   .c-label { font-family: var(--label); font-weight:500; font-size:%dpx; line-height:%dpx; letter-spacing:.12em;
@@ -41,6 +45,8 @@ def validate(scene):
             errs.append("reveal point %r is not one of the %d points" % (r.get("point"), len(pts)))
     if any(not isinstance(p, (int, float)) for p in pts):
         errs.append("points must be numbers")
+    if scene.get("shape") is not None and scene["shape"] not in SHAPES:
+        errs.append("shape is line or step (got %r)" % (scene["shape"],))
     return errs
 
 
@@ -67,7 +73,11 @@ def render(scene, ctx, box):
     span = (hi - lo) or 1.0
     xy = [(round(DOT + i * (width - 2 * DOT) / (len(pts) - 1), 1), round(CHART - DOT - (p - lo) / span * (CHART - 2 * DOT), 1))
           for i, p in enumerate(pts)]
-    seg = [((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5 for (x1, y1), (x2, y2) in zip(xy, xy[1:])]
+    step = scene.get("shape") == "step"
+    if step:     # along the level, then up or down to the next point
+        seg = [abs(x2 - x1) + abs(y2 - y1) for (x1, y1), (x2, y2) in zip(xy, xy[1:])]
+    else:
+        seg = [((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5 for (x1, y1), (x2, y2) in zip(xy, xy[1:])]
     total = round(sum(seg), 1)
     upto = lambda k: round(sum(seg[:k]), 1)
     line_col = c["accent"]
@@ -83,7 +93,10 @@ def render(scene, ctx, box):
         ctx.fail("reveal points must move forward in time (got %s)" % [p for _, p in reveals])
     parts.append('<div class="c-read" id="%s-v" data-final="%s" style="color:%s">%s</div>'
                  % (sid, ctx.esc(fmt(scene, pts[reveals[-1][1]])), ctx.ink, ctx.esc(fmt(scene, first))))
-    path = "M" + " L".join("%s %s" % p for p in xy)
+    if step:
+        path = "M%s %s" % xy[0] + "".join(" H%s V%s" % p for p in xy[1:])
+    else:
+        path = "M" + " L".join("%s %s" % p for p in xy)
     dots = "".join('<div class="c-dot" id="%s-d%d" style="left:%spx;top:%spx;border-color:%s;background:%s"></div>'
                    % (sid, i, x, y, line_col, c["card"]) for i, (x, y) in enumerate(xy))
     parts.append('<div class="c-plot" id="%s-plot"><svg width="%d" height="%d" viewBox="0 0 %d %d">'
