@@ -94,10 +94,24 @@ class Network(E3.Case):
         for d in range(10):
             self.assertRegex(html, r'class="nw-label"[^>]*>%d<' % d)
 
-    def test_the_digit_is_a_pixel_grid(self):
+    def test_the_digit_is_a_soft_handwritten_grid(self):
+        # like the reference's MNIST digit: a 14x14 grid of grey levels drawn from pen strokes, soft at the edges, so it
+        # reads as a 3 even small (a hard 5x7 block beside the input column read as "3:")
         html = self.ok(GOOD["network"])
-        self.assertEqual(len(re.findall(r'class="nw-px"', html)), 35)
-        self.assertEqual(len(re.findall(r'class="nw-px" [^>]*data-on="1"', html)), 14)     # a 5x7 three lights 14 cells
+        levels = [float(v) for v in re.findall(r'class="nw-px" [^>]*fill-opacity="([\d.]+)"', html)]
+        self.assertEqual(len(levels), 14 * 14)
+        self.assertGreater(sum(v > 0.8 for v in levels), 12)                        # the strokes
+        self.assertGreater(sum(0.2 < v < 0.8 for v in levels), 6)                   # their soft edges
+        other = self.ok(dict(GOOD["network"], input={"digit": 7, "at": W(5)}))
+        self.assertNotEqual(levels, [float(v) for v in re.findall(r'class="nw-px" [^>]*fill-opacity="([\d.]+)"', other)])
+
+    def test_the_digit_stands_clear_of_the_input_layer(self):
+        html = self.ok(GOOD["network"])
+        frame = re.search(r'<g id="sc-in" [^>]*><rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"', html)
+        right = float(frame.group(1)) + float(frame.group(2))
+        nodes = [(float(x), float(r)) for x, r in re.findall(r'class="nw-node" cx="([\d.]+)" cy="[\d.]+" r="([\d.]+)"', html)]
+        x0, r = min(nodes)
+        self.assertGreaterEqual(x0 - r - right, 16)
 
     def test_the_forward_pass_lights_layer_by_layer_and_the_backward_sweeps_back(self):
         html = self.ok(GOOD["network"])

@@ -88,10 +88,18 @@ for (const s of pg.samples) {
     };
     // the text on screen: elements with their own visible text, and the rectangles of its lines
     const texts = [];
-    for (const k of root.querySelectorAll(".katex")) {    // a typeset formula is one piece: KaTeX places its glyphs itself
-      if (alpha(k) < 0.5) continue;
-      const r = k.getBoundingClientRect();
-      if (r.width > 1) texts.push({ el: k, rects: [r], text: k.textContent.trim().slice(0, 40), px: 99, formula: true });
+    for (const k of root.querySelectorAll(".katex")) {    // a typeset formula is one piece, judged by its glyphs: a hat,
+      if (alpha(k) < 0.5) continue;                       // a subscript or a descender is where it touches its neighbours
+      const rects = [];
+      for (const g of k.querySelectorAll(".katex-html *")) {
+        for (const n of g.childNodes) {
+          if (n.nodeType !== 3 || !n.textContent.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(n);
+          for (const r of range.getClientRects()) if (r.width > 1 && r.height > 1) rects.push(r);
+        }
+      }
+      if (rects.length) texts.push({ el: k, rects, text: k.querySelector(".katex-html").textContent.replace(/\u200b/g, "").trim().slice(0, 40), px: 99, formula: true });
     }
     for (const el of root.querySelectorAll("*")) {
       if (el.closest(".katex")) continue;
@@ -142,6 +150,10 @@ for (const s of pg.samples) {
     // headline touch boxes without touching letters; collisions are judged on the middle 60% of each line
     const core = (r) => ({ left: r.left + 2, right: r.right - 2, top: r.top + r.height * 0.2, bottom: r.bottom - r.height * 0.2,
                            width: r.width - 4, height: r.height * 0.6 });
+    // a formula's glyph box is near its glyph (KaTeX sets each one): only a sliver is trimmed, so a descender counts
+    const glyph = (r) => ({ left: r.left + 1, right: r.right - 1, top: r.top + r.height * 0.1, bottom: r.bottom - r.height * 0.1,
+                            width: r.width - 2, height: r.height * 0.8 });
+    const box = (t) => t.rects.map(t.formula ? glyph : core);
     const hit = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
     for (const t of texts) {
       // half a pixel of grace: the camera's push-in ends at 0.995, so 28 px type settles at 27.9
@@ -170,7 +182,7 @@ for (const s of pg.samples) {
       // scene's picture; only that pair is let through, and every other check still applies to it
       const depth = t.el.closest('[data-depth="behind"]'), host = depth && depth.closest(".card-host");
       const ownDepth = (e) => !!host && host.contains(e);
-      for (const r of (t.formula ? [] : t.rects.map(core))) {
+      for (const r of box(t)) {
         // a grid every ~6 px down and ~24 px across the line: a thin rule or a spoke through the words is found
         const ny = Math.max(4, Math.ceil(r.height / 6)), nx = Math.max(3, Math.ceil(r.width / 24));
         for (let ix = 0; ix < nx; ix++) for (let iy = 0; iy < ny; iy++) {
@@ -199,7 +211,7 @@ for (const s of pg.samples) {
     for (let i = 0; i < texts.length; i++) for (let k = i + 1; k < texts.length; k++) {
       const a = texts[i], b = texts[k];
       if (related(a.el, b.el)) continue;
-      if (a.rects.some((ra) => b.rects.some((rb) => hit(core(ra), core(rb)) > 6)))
+      if (box(a).some((ra) => box(b).some((rb) => hit(ra, rb) > 6)))
         out.push({ kind: "overlap", text: a.text, detail: "overlaps \"" + b.text + "\"" });
     }
     for (const el of root.querySelectorAll("*")) {          // shapes too must stay inside the safe area

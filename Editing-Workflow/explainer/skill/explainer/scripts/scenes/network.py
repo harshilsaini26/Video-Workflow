@@ -4,7 +4,7 @@ it layer by layer, the answer is ringed, and the error sweeps back from the outp
   {"type": "network", "layers": [4, 6, 6, 10], "labels": ["0", ..., "9"], "input": {"digit": 3, "at": "word:5"},
    "forward": "word:7", "answer": {"node": 8, "at": "word:10"}, "backward": "word:13"}
 
-2 to 5 layers of 1 to 10 nodes; `labels` (one per output node) sit right of the last column; `input` draws a 5x7 pixel
+2 to 5 layers of 1 to 10 nodes; `labels` (one per output node) sit right of the last column; `input` draws a 14x14 grey pixel
 digit on the left. The weights are seeded from the scene id (the same every render): a positive weight in the accent, a
 negative one in the second accent, its strength as its opacity. Each step is a tween on the timeline (seek-safe).
 """
@@ -17,10 +17,42 @@ DECOR_KEYS = ("layers", "labels", "input", "answer", "forward", "backward")   # 
 ASPECT = 0.8
 STEP = 0.3                      # a layer's turn in a pass (s)
 L_SIZE, MAX_LABEL = 30, 3
-DIGITS = ("01110100011001110101110011000101110", "00100011000010000100001000010001110", "01110100010000100010001000100011111",
-          "11111000100010000010000011000101110", "00010001100101010010111110001000010", "11111100001111000001000011000101110",
-          "00110010001000011110100011000101110", "11111000010001000100010000100001000", "01110100011000101110100011000101110",
-          "01110100011000101111000010001001100")
+GRID = 14                       # the input digit: GRID x GRID grey cells, like a small MNIST image
+
+
+def _ring(cx, cy, rx, ry, a0=0, a1=360, n=24):
+    return [(cx + rx * math.cos(math.radians(a0 + (a1 - a0) * k / float(n))), cy + ry * math.sin(math.radians(a0 + (a1 - a0) * k / float(n))))
+            for k in range(n + 1)]
+
+
+# each digit as pen strokes in a unit box (x right, y down), drawn the way a hand writes it
+STROKES = {
+    0: [_ring(0.5, 0.5, 0.27, 0.38)],
+    1: [[(0.36, 0.26), (0.54, 0.12), (0.54, 0.88)]],
+    2: [_ring(0.5, 0.33, 0.24, 0.21, 200, 380, 12) + [(0.25, 0.86), (0.78, 0.86)]],
+    3: [_ring(0.48, 0.3, 0.22, 0.18, 210, 450, 14), _ring(0.48, 0.67, 0.25, 0.21, -90, 150, 14)],
+    4: [[(0.6, 0.88), (0.6, 0.12), (0.2, 0.64), (0.8, 0.64)]],
+    5: [[(0.72, 0.12), (0.33, 0.12), (0.29, 0.46)] + _ring(0.48, 0.65, 0.24, 0.23, -120, 150, 14)],
+    6: [[(0.66, 0.12), (0.42, 0.3)] + _ring(0.5, 0.66, 0.22, 0.22, 200, 560, 20)],
+    7: [[(0.22, 0.14), (0.78, 0.14), (0.42, 0.88)]],
+    8: [_ring(0.5, 0.3, 0.19, 0.18), _ring(0.5, 0.68, 0.23, 0.21)],
+    9: [_ring(0.5, 0.34, 0.21, 0.22, 20, 380, 20) + [(0.6, 0.88)]],
+}
+
+
+def digit_levels(d):
+    """GRID x GRID grey levels (0 to 1) of digit d: each cell by its distance to the nearest stroke, soft at the edge."""
+    segs = [(a, b) for st in STROKES[d] for a, b in zip(st, st[1:])]
+
+    def dist(px, py):
+        best = 9.0
+        for (ax, ay), (bx, by) in segs:
+            dx, dy = bx - ax, by - ay
+            u = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / ((dx * dx + dy * dy) or 1e-9)))
+            best = min(best, math.hypot(px - ax - u * dx, py - ay - u * dy))
+        return best
+    return [round(max(0.0, min(1.0, 1 - (dist((k % GRID + 0.5) / GRID, (k // GRID + 0.5) / GRID) - 0.05) / 0.07)), 2)
+            for k in range(GRID * GRID)]
 
 CSS = """
   .nw { position:relative; width:100%%; }
@@ -109,14 +141,14 @@ def render(scene, ctx, box):
     if scene.get("input"):
         t, attrs = ctx.item(scene["input"]["at"])
         marks.append("<i%s></i>" % attrs)
-        bits = DIGITS[scene["input"]["digit"]]
-        cell = min((x0 - 2 * pad) / 5.0, (H * 0.5) / 7.0)
-        gx, gy = pad, H / 2.0 - 3.5 * cell
+        side = min(x0 - r - 2 * pad - 12, H * 0.5)          # the frame ends a clear gap before the input column
+        cell = side / float(GRID)
+        gx, gy = pad, H / 2.0 - side / 2.0
         svg_px = ('<g id="%s-in" opacity="0"><rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="none" stroke="%s" stroke-width="3"/>%s</g>'
-                  % (sid, gx - 6, gy - 6, 5 * cell + 12, 7 * cell + 12, c["line"],
-                     "".join('<rect class="nw-px" data-on="%s" x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="%s" fill-opacity="%s"/>'
-                             % (b, gx + (j % 5) * cell + 1, gy + (j // 5) * cell + 1, cell - 2, cell - 2, c["ink"], "1" if b == "1" else "0.08")
-                             for j, b in enumerate(bits))))
+                  % (sid, gx - 6, gy - 6, side + 12, side + 12, c["line"],
+                     "".join('<rect class="nw-px" x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="%s" fill-opacity="%s"/>'
+                             % (gx + (k % GRID) * cell, gy + (k // GRID) * cell, cell + 0.4, cell + 0.4, c["ink"], max(v, 0.05))
+                             for k, v in enumerate(digit_levels(scene["input"]["digit"])))))
         js.append(ctx.enter("#%s-in" % sid, t, {"x": -20}))
     if scene.get("forward") is not None:
         t, attrs = ctx.item(scene["forward"])

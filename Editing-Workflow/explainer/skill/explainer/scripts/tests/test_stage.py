@@ -83,5 +83,41 @@ class Stage(E3.Case):
                 self.assertTrue(any(b - 0.6 <= t < b for t in shots), b)    # the settled picture before each change
 
 
+
+class FormulaOverlap(unittest.TestCase):
+    """Gate E5 judges a typeset formula by its glyphs: a hat, a subscript or a descender touching another object's words
+    is caught (the line-box middle that suits plain text cut those off)."""
+
+    def compose(self, eq_y, out_y):
+        from .test_layout import have_browser
+        from .helpers import run, scratch, write
+        from .test_compose import VOICE, silent_wav, words30
+        vendor = os.environ.get("EXPLAINER_VENDOR")
+        if not have_browser() or not vendor or not os.path.isdir(os.path.join(vendor, "katex")):
+            self.skipTest("needs Chrome and the real vendor folder (EXPLAINER_VENDOR with katex)")
+        d = scratch(self)
+        write(os.path.join(d, "transcript.json"), {"words": words30()})
+        silent_wav(os.path.join(d, "voice.wav"), VOICE)
+        out = MATH["outputs"]
+        st = {"type": "stage", "id": "st", "bg": "mantle", "in": W(2), "out": "end", "objects": [
+            {"id": "eq", "scene": {"type": "formula", "tex": r"e = \hat{y}_i - y_i"}, "box": [175, eq_y, 600]},
+            {"id": "out", "scene": dict(out, at=W(3), target={"row": 3, "at": W(4)}, error=W(5), loss=W(6)), "box": [330, out_y, 535]}]}
+        sb = {"id": "t", "look": "dark", "captions": "off", "sound": {"music": "none", "sfx": False},
+              "scenes": [{"type": "title", "id": "hook", "bg": "mantle", "in": "word:0", "out": W(2), "text": "Lead in"}, st]}
+        r = run("explainer-compose.py", "--spec", write(os.path.join(d, "storyboard.json"), sb), "--out", os.path.join(d, "public"),
+                "--vendor", vendor)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        return run("layout-check.py", "--index", os.path.join(d, "public", "index.html"), "--no-hf")
+
+    def test_a_formula_touching_a_chart_fails(self):
+        r = self.compose(60, 200)
+        self.assertNotEqual(r.returncode, 0, r.stdout)
+        self.assertRegex(r.stdout, r"E5 FAIL: st: .*e ?=")
+
+    def test_the_same_two_apart_pass(self):
+        r = self.compose(0, 195)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
