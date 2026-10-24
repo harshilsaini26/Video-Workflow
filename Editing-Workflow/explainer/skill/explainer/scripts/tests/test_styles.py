@@ -173,6 +173,11 @@ class Orbit(E3.Case):
         self.assertRegex(html, r"tl\.fromTo\('#sc-w1', \{ opacity: 1, scale: ([\d.]+) \}, \{ scale: 1, duration: 1, ease: zoomOut\(\1\), immediateRender: false \}, %.3f\);" % (t + 0.8))
         self.assertIn("tl.set('#sc-w0', { opacity: 0 }, %.3f);" % (t + 0.8), html)
 
+    def test_the_dive_fills_the_frame_not_just_the_box(self):
+        # Kurzgesagt's crossing ends with the node's colour edge to edge: the scene never clips its world to its box
+        import scenes.orbit as O
+        self.assertNotRegex(O.CSS, r"\.ob \{[^}]*overflow:hidden")
+
     def test_its_pictures_are_checked_before_each_beat(self):
         import json, os
         self.ok(GOOD["orbit"])

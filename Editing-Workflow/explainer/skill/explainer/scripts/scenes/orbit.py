@@ -39,7 +39,7 @@ PULSE = 1.4
 STARS = 18
 
 CSS = """
-  .ob { position:relative; width:100%%; overflow:hidden; }
+  .ob { position:relative; width:100%%; }
   .ob-w { position:absolute; left:0; top:0; width:100%%; height:100%%; }
   .ob svg { position:absolute; left:0; top:0; overflow:visible; }
   .ob-flat, .ob-ripple { transform-box:fill-box; transform-origin:center; }
