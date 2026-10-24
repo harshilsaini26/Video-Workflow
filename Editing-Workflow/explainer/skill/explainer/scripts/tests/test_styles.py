@@ -276,6 +276,19 @@ class Dive(E3.Case):
         self.assertRegex(html, r"tl\.to\('#txd1', \{ clipPath: 'circle\(0px at 540px 725px\)', duration: 0\.6, ease: 'power2\.in' \}, %.3f\);" % t)
         self.assertIn("tl.fromTo('#sc', { scale: 1.6, filter: 'blur(6px)' }, { scale: 1, filter: 'blur(0px)', duration: 0.6, ease: zoomOut(1.6), "
                       "immediateRender: false }, %.3f);" % t, html)
+        # the eases are defined before the first line that calls them (else the page's script stops on that line)
+        self.assertLess(html.index("window.zoomOut = function"), html.index("ease: zoomOut("))
+        self.assertLess(html.index("window.zoomIn = function"), html.index("ease: zoomIn("))
+
+    def test_every_helper_is_defined_before_it_is_used(self):
+        # the same for every scene that brings its own easing helpers, wherever it sits on the page
+        html = self.ok(dict(GOOD["orbit"], transition="dive"))
+        for name in ("zoomIn", "zoomOut"):
+            self.assertLess(html.index("window.%s = function" % name), html.index("ease: %s(" % name), name)
+        html = self.ok(GOOD["clippings"])
+        self.assertLess(html.index("window.onTwos = function"), html.index("ease: onTwos("))
+        html = self.ok(GOOD["morph"])
+        self.assertLess(html.index("window.smoothEase = function"), html.index("ease: smoothEase"))
 
 
 if __name__ == "__main__":

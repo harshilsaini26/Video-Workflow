@@ -493,7 +493,7 @@ def main():
             th_ = E.theme(tok, timed[k - 1][2] if k else sbg)   # the outgoing ground's accent: the thing we dive into
             disc, disc_js = X.dive(k, t_in, th_["accent"])
             tx_html.append(disc)
-            lines += [X.ZOOM_JS] + disc_js
+            lines = [X.ZOOM_JS] + lines + disc_js    # the log zoom eases first: the entrance above already calls zoomOut
         elif kinds[k] == "brush":
             th_ = E.theme(tok, timed[k - 1][2] if k else sbg)   # the outgoing ground's ink: the bands show over it
             bands, band_js = X.brush(k, t_in, [th_["accent"], th_["ink"]])
